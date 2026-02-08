@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="20037" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="44t-md-WcW">
+    <device id="retina6_0" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="20020"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <!--Favorites-->
+        <scene sceneID="Kt4-8b-a32">
+            <objects>
+                <viewController storyboardIdentifier="Favorites" title="Favorites" id="44t-md-WcW" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="OMl-g4-TIb">
+                        <rect key="frame" x="0.0" y="0.0" width="390" height="844"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <viewLayoutGuide key="safeArea" id="45c-4c-1mB"/>
+                        <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                    </view>
+                    <tabBarItem key="tabBarItem" title="" image="Favorites" selectedImage="FavoritesSelected" id="52m-yj-6aG"/>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="MmX-OO-95u" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-35" y="123"/>
+        </scene>
+    </scenes>
+    <resources>
+        <image name="Favorites" width="41" height="36"/>
+        <image name="FavoritesSelected" width="42" height="36"/>
+    </resources>
+</document>

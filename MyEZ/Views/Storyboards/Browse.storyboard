@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="20037" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="9e1-hD-AtL">
+    <device id="retina6_0" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="20020"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <!--Browse-->
+        <scene sceneID="UXv-wD-HBd">
+            <objects>
+                <viewController storyboardIdentifier="browse" title="Browse" id="9e1-hD-AtL" customClass="BrowseViewController" customModule="MyEZ" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="08r-F9-DVU">
+                        <rect key="frame" x="0.0" y="0.0" width="390" height="844"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <view alpha="0.0" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="cG1-ML-sbA">
+                                <rect key="frame" x="0.0" y="-6" width="390" height="816"/>
+                                <color key="backgroundColor" red="0.53981584819999995" green="0.085574776790000001" blue="0.17338169640000001" alpha="1" colorSpace="calibratedRGB"/>
+                            </view>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="7k6-wk-caF"/>
+                        <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                        <constraints>
+                            <constraint firstItem="cG1-ML-sbA" firstAttribute="trailing" secondItem="7k6-wk-caF" secondAttribute="trailing" id="5e2-B8-yar"/>
+                            <constraint firstItem="cG1-ML-sbA" firstAttribute="top" secondItem="7k6-wk-caF" secondAttribute="top" constant="-50" id="RQC-gf-xD3"/>
+                            <constraint firstItem="7k6-wk-caF" firstAttribute="bottom" secondItem="cG1-ML-sbA" secondAttribute="bottom" id="ebi-Rc-tce"/>
+                            <constraint firstItem="cG1-ML-sbA" firstAttribute="leading" secondItem="7k6-wk-caF" secondAttribute="leading" id="upB-xh-hlz"/>
+                        </constraints>
+                    </view>
+                    <tabBarItem key="tabBarItem" image="browseSelected" selectedImage="browse" id="z9G-yO-TZT"/>
+                    <nil key="simulatedTopBarMetrics"/>
+                    <connections>
+                        <outlet property="web" destination="cG1-ML-sbA" id="AQ0-OY-wFa"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="FQ8-BK-p7L" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-132" y="116.49175412293854"/>
+        </scene>
+    </scenes>
+    <resources>
+        <image name="browse" width="44.5" height="32"/>
+        <image name="browseSelected" width="44" height="32.5"/>
+    </resources>
+</document>

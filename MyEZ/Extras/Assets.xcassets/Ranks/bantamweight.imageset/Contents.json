@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "idiom" : "iphone",
+      "filename" : "myez-charecter3.png"
+    }
+  ],
+  "info" : {
+    "version" : 1,
+    "author" : "xcode"
+  }
+}

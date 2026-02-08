@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="20037" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="APR-A4-EZV">
+    <device id="retina6_0" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="20020"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <!--Getting Started-->
+        <scene sceneID="dLD-gD-dzJ">
+            <objects>
+                <viewController storyboardIdentifier="getStarted" title="Getting Started" modalPresentationStyle="fullScreen" id="APR-A4-EZV" customClass="GetStartedUIViewController" customModule="MyEZ" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="0zQ-yg-12P">
+                        <rect key="frame" x="0.0" y="0.0" width="390" height="844"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="NY0-xW-GQ0">
+                                <rect key="frame" x="0.0" y="0.0" width="390" height="734.33333333333337"/>
+                                <subviews>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="KC1-8Q-MmQ">
+                                        <rect key="frame" x="87.666666666666671" y="112.99999999999999" width="214.66666666666663" height="214.66666666666663"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" secondItem="KC1-8Q-MmQ" secondAttribute="height" multiplier="1:1" id="RHx-DU-2aw"/>
+                                        </constraints>
+                                        <state key="normal" image="signinUp"/>
+                                        <connections>
+                                            <segue destination="KbM-dl-nMd" kind="show" id="MNk-X8-cfJ"/>
+                                        </connections>
+                                    </button>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="6Oq-WR-Urs">
+                                        <rect key="frame" x="87.666666666666671" y="425.00000000000006" width="214.66666666666663" height="214.66666666666669"/>
+                                        <state key="normal" image="signUpUp"/>
+                                        <connections>
+                                            <segue destination="0df-IQ-eiq" kind="show" id="n0P-zy-hmj"/>
+                                        </connections>
+                                    </button>
+                                </subviews>
+                                <color key="backgroundColor" red="0.19215686274509802" green="0.20000000000000001" blue="0.2196078431372549" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <constraints>
+                                    <constraint firstItem="6Oq-WR-Urs" firstAttribute="width" secondItem="KC1-8Q-MmQ" secondAttribute="width" id="0xt-yn-0Cu"/>
+                                    <constraint firstItem="KC1-8Q-MmQ" firstAttribute="centerY" secondItem="NY0-xW-GQ0" secondAttribute="centerY" multiplier="0.6" id="AuF-mX-NOl"/>
+                                    <constraint firstItem="6Oq-WR-Urs" firstAttribute="height" secondItem="KC1-8Q-MmQ" secondAttribute="height" id="JXr-s8-p1e"/>
+                                    <constraint firstItem="6Oq-WR-Urs" firstAttribute="centerY" secondItem="NY0-xW-GQ0" secondAttribute="centerY" multiplier="1.45" id="Vec-dt-2pl"/>
+                                    <constraint firstItem="KC1-8Q-MmQ" firstAttribute="centerX" secondItem="NY0-xW-GQ0" secondAttribute="centerX" id="dCW-7q-6pr"/>
+                                    <constraint firstItem="KC1-8Q-MmQ" firstAttribute="width" secondItem="NY0-xW-GQ0" secondAttribute="width" multiplier="0.55" id="hAT-O2-PSQ"/>
+                                    <constraint firstItem="6Oq-WR-Urs" firstAttribute="centerX" secondItem="KC1-8Q-MmQ" secondAttribute="centerX" id="whj-D4-MBM"/>
+                                </constraints>
+                            </view>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="1Y2-Db-N89">
+                                <rect key="frame" x="117" y="734.33333333333337" width="156" height="109.66666666666663"/>
+                                <state key="normal" image="skipButton">
+                                    <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                </state>
+                                <connections>
+                                    <action selector="skipGetStarted:" destination="APR-A4-EZV" eventType="touchUpInside" id="dy4-yW-d3Q"/>
+                                </connections>
+                            </button>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="HFF-eD-mfb">
+                                <rect key="frame" x="0.0" y="0.0" width="390" height="844"/>
+                                <subviews>
+                                    <imageView userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="BackgroundLaunch" translatesAutoresizingMaskIntoConstraints="NO" id="Mby-sL-f8j">
+                                        <rect key="frame" x="0.0" y="0.0" width="390" height="844"/>
+                                    </imageView>
+                                </subviews>
+                                <constraints>
+                                    <constraint firstAttribute="trailing" secondItem="Mby-sL-f8j" secondAttribute="trailing" id="Mni-Ia-Bji"/>
+                                    <constraint firstItem="Mby-sL-f8j" firstAttribute="leading" secondItem="HFF-eD-mfb" secondAttribute="leading" id="Qcw-qR-8Iq"/>
+                                    <constraint firstItem="Mby-sL-f8j" firstAttribute="top" secondItem="HFF-eD-mfb" secondAttribute="top" id="REt-gm-t6r"/>
+                                    <constraint firstAttribute="bottom" secondItem="Mby-sL-f8j" secondAttribute="bottom" id="ndU-7d-WBU"/>
+                                </constraints>
+                            </view>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="p4g-ln-4zW"/>
+                        <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                        <constraints>
+                            <constraint firstItem="HFF-eD-mfb" firstAttribute="leading" secondItem="0zQ-yg-12P" secondAttribute="leading" id="DVY-rw-JLe"/>
+                            <constraint firstAttribute="bottom" secondItem="HFF-eD-mfb" secondAttribute="bottom" id="NhT-NI-XGy"/>
+                            <constraint firstItem="1Y2-Db-N89" firstAttribute="width" secondItem="0zQ-yg-12P" secondAttribute="width" multiplier="0.4" id="PKv-aL-iXr"/>
+                            <constraint firstItem="1Y2-Db-N89" firstAttribute="height" secondItem="0zQ-yg-12P" secondAttribute="height" multiplier="0.13" id="TJ5-xQ-wR6"/>
+                            <constraint firstItem="1Y2-Db-N89" firstAttribute="top" secondItem="NY0-xW-GQ0" secondAttribute="bottom" id="VTX-hD-XUG"/>
+                            <constraint firstItem="NY0-xW-GQ0" firstAttribute="height" secondItem="0zQ-yg-12P" secondAttribute="height" multiplier="0.87" id="acx-p1-7fd"/>
+                            <constraint firstItem="HFF-eD-mfb" firstAttribute="top" secondItem="0zQ-yg-12P" secondAttribute="top" id="aj3-GC-Bqo"/>
+                            <constraint firstItem="p4g-ln-4zW" firstAttribute="trailing" secondItem="NY0-xW-GQ0" secondAttribute="trailing" id="kTN-8o-AD5"/>
+                            <constraint firstItem="p4g-ln-4zW" firstAttribute="trailing" secondItem="HFF-eD-mfb" secondAttribute="trailing" id="nTk-PE-2VI"/>
+                            <constraint firstItem="NY0-xW-GQ0" firstAttribute="leading" secondItem="p4g-ln-4zW" secondAttribute="leading" id="sMn-S0-f2F"/>
+                            <constraint firstItem="NY0-xW-GQ0" firstAttribute="top" secondItem="0zQ-yg-12P" secondAttribute="top" id="vrh-Wt-O0t"/>
+                            <constraint firstItem="1Y2-Db-N89" firstAttribute="centerX" secondItem="0zQ-yg-12P" secondAttribute="centerX" id="zC6-Ql-A6H"/>
+                        </constraints>
+                    </view>
+                    <connections>
+                        <outlet property="backLaunch" destination="HFF-eD-mfb" id="9r5-YE-JTy"/>
+                        <outlet property="signinButton" destination="KC1-8Q-MmQ" id="J9g-Vc-nbK"/>
+                        <outlet property="signupButton" destination="6Oq-WR-Urs" id="chE-Jq-bju"/>
+                        <outlet property="skipButton" destination="1Y2-Db-N89" id="01R-hm-Z2S"/>
+                        <segue destination="pI0-w6-J5k" kind="presentation" identifier="getstartedMain" modalPresentationStyle="fullScreen" modalTransitionStyle="crossDissolve" id="uUf-ga-k2x"/>
+                        <segue destination="FDb-vH-Pes" kind="show" identifier="getstartedSignupInfo" id="PEW-Xv-sL1"/>
+                        <segue destination="o6O-jn-ceN" kind="show" identifier="showWalk" id="iAR-0F-f4g"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="6Hc-fQ-fYf" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="76" y="133.5832083958021"/>
+        </scene>
+        <!--login-->
+        <scene sceneID="1w3-SO-hvq">
+            <objects>
+                <viewControllerPlaceholder storyboardName="Login" referencedIdentifier="login" id="KbM-dl-nMd" sceneMemberID="viewController"/>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="fzc-aE-Id5" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="827" y="-251"/>
+        </scene>
+        <!--walkthrough-->
+        <scene sceneID="v8V-ea-HCY">
+            <objects>
+                <viewControllerPlaceholder storyboardName="Walkthrough" referencedIdentifier="walkthrough" id="o6O-jn-ceN" sceneMemberID="viewController"/>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="X6r-lq-dZP" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="862" y="-54"/>
+        </scene>
+        <!--main-->
+        <scene sceneID="Yv6-5r-bn5">
+            <objects>
+                <viewControllerPlaceholder storyboardName="Main" referencedIdentifier="main" id="pI0-w6-J5k" sceneMemberID="viewController"/>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="09S-Fb-S2F" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="827" y="133"/>
+        </scene>
+        <!--signupInfo-->
+        <scene sceneID="tEX-eP-B6g">
+            <objects>
+                <viewControllerPlaceholder storyboardName="Signup" referencedIdentifier="signupInfo" id="FDb-vH-Pes" sceneMemberID="viewController"/>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="HdI-4I-5ca" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="855" y="296"/>
+        </scene>
+        <!--signup-->
+        <scene sceneID="67p-Fr-kEP">
+            <objects>
+                <viewControllerPlaceholder storyboardName="Signup" referencedIdentifier="signup" id="0df-IQ-eiq" sceneMemberID="viewController"/>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="4HR-Z3-Pbe" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="834" y="440"/>
+        </scene>
+    </scenes>
+    <resources>
+        <image name="BackgroundLaunch" width="414" height="736"/>
+        <image name="signUpUp" width="247" height="247"/>
+        <image name="signinUp" width="247" height="247"/>
+        <image name="skipButton" width="123" height="42"/>
+    </resources>
+</document>
