@@ -48,7 +48,6 @@
 		3B8453101F3D07DC009EA3B8 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B84530F1F3D07DC009EA3B8 /* AppDelegate.swift */; };
 		3B8453151F3D07DC009EA3B8 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3B8453131F3D07DC009EA3B8 /* Main.storyboard */; };
 		3B84531A1F3D07DC009EA3B8 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3B8453181F3D07DC009EA3B8 /* LaunchScreen.storyboard */; };
-		3BEE1B5B1F732913008F5C20 /* LoginViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BDA444D1F635C55008E0D58 /* LoginViewController.swift */; };
 		653E84F52146244100993838 /* RulesTableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 653E84F42146244100993838 /* RulesTableViewController.swift */; };
 		65D4CABF1FB415BC00453715 /* BrowseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65D4CABE1FB415BC00453715 /* BrowseViewController.swift */; };
 		BA0F56FF21B1FFEE008C5366 /* wave_load.json in Resources */ = {isa = PBXBuildFile; fileRef = BA0F56FE21B1FFEE008C5366 /* wave_load.json */; };
@@ -114,7 +113,6 @@
 		3B8453241F3D0C3A009EA3B8 /* FBSDKLoginKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = FBSDKLoginKit.framework; sourceTree = "<group>"; };
 		3B8453251F3D0C3A009EA3B8 /* FBSDKShareKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = FBSDKShareKit.framework; sourceTree = "<group>"; };
 		3BDA444A1F635C55008E0D58 /* Login.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = Login.storyboard; sourceTree = "<group>"; };
-		3BDA444D1F635C55008E0D58 /* LoginViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewController.swift; sourceTree = "<group>"; };
 		653E84F42146244100993838 /* RulesTableViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RulesTableViewController.swift; sourceTree = "<group>"; };
 		65D4CABE1FB415BC00453715 /* BrowseViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowseViewController.swift; sourceTree = "<group>"; };
 		BA0F56FE21B1FFEE008C5366 /* wave_load.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = wave_load.json; sourceTree = "<group>"; };
@@ -145,6 +143,7 @@
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		220724CA2F3949BD00D68B92 /* Security */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (2225278D2F394CAC003032EC /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); name = Security; path = MyEZ/Security; sourceTree = "<group>"; };
+		22A763AD2F394F9E00403841 /* Signin */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Signin; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -357,7 +356,7 @@
 				3B447F1B1F635FF600F37DEA /* Signup */,
 				3B356DF61F748B2200604CA9 /* MainTabBarController.swift */,
 				3B356DF91F748BA600604CA9 /* GetStartedUIViewController.swift */,
-				3BDA444D1F635C55008E0D58 /* LoginViewController.swift */,
+				22A763AD2F394F9E00403841 /* Signin */,
 			);
 			path = Controllers;
 			sourceTree = "<group>";
@@ -411,6 +410,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				220724CA2F3949BD00D68B92 /* Security */,
+				22A763AD2F394F9E00403841 /* Signin */,
 			);
 			name = MyEZ;
 			productName = MyEZ;
@@ -553,7 +553,6 @@
 				BA8D63812201232700AC425B /* PreviewTopUsersViewController.swift in Sources */,
 				22D9E601231605DB00E42C1E /* CategoriesTableViewCell.swift in Sources */,
 				2270677C1F9A816000AE018A /* SpecialsViewController.swift in Sources */,
-				3BEE1B5B1F732913008F5C20 /* LoginViewController.swift in Sources */,
 				22EC091B2327283400B90873 /* ThumbnailImagesCollectionViewController.swift in Sources */,
 				22EE577E2F31AFF100F94469 /* ProductsCollectionViewController.swift in Sources */,
 				22A608062F36770600773058 /* EmailSender.swift in Sources */,

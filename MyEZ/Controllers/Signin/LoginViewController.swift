@@ -8,9 +8,7 @@
 
 import UIKit
 import Firebase
-import FirebaseAuth
-
-
+//import FirebaseAuth
 
 extension UITextField{
     @IBInspectable var placeHolderColor: UIColor? {
@@ -105,9 +103,11 @@ class LoginViewController: UIViewController, UITextFieldDelegate{
             // TODO: Save to Keychain here
             
             // Navigate to Main App
-            // let mainVC = MainTabBarController()
-            // mainVC.modalPresentationStyle = .fullScreen
-            // self.present(mainVC, animated: true)
+//             let mainVC = MainTabBarController()
+//             mainVC.modalPresentationStyle = .fullScreen
+//             self.present(mainVC, animated: true)
+        
+        self.performSegue(withIdentifier: "loginMain", sender: self)
             
         alert(message: "Welcome", title: "Hello, \(user.name)")
         }
@@ -207,6 +207,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate{
         
     }
     
+    //TODO: Future function
     func signinInOdooAndGetData(email: String, password: String, apiKey: String) {
         
         // 1. ENDPOINT TO "AUTHENTICATE"
@@ -282,6 +283,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate{
         }.resume()
     }
     
+    //TODO: Remove function ?
     func signinInFirebase(email: String, password: String, uidOdoo: Int) {
        
         Auth.auth().signIn(withEmail: email, password: password) { (user, error) in
@@ -296,7 +298,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate{
                 //TODO: call saveInfolocal, sync Odoo information into firebase)
 //                saveInfoIntoUserDefaults()
                 
-                //Temporal going to login page
+                //Temporal going to main page from login
                 self.performSegue(withIdentifier: "loginMain", sender: self)
     
             } else {
