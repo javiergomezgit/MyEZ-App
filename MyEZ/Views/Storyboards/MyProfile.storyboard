@@ -38,7 +38,7 @@
                                                 <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="4V5-zK-80b">
                                                     <rect key="frame" x="132.33333333333334" y="10.000000000000007" width="125.33333333333334" height="125.66666666666669"/>
                                                     <connections>
-                                                        <segue destination="qee-eB-am6" kind="show" id="KjX-gq-gDj"/>
+                                                        <action selector="userProfileButtonTapped:" destination="14t-vb-ShM" eventType="touchUpInside" id="lAx-i9-iFl"/>
                                                     </connections>
                                                 </button>
                                             </subviews>
@@ -503,7 +503,7 @@
                         <outlet property="signinupTableCell" destination="lnL-UO-WuQ" id="xZG-Zj-y0s"/>
                         <outlet property="signupButton" destination="nzI-eY-9pu" id="KBG-U7-9fk"/>
                         <outlet property="typeUserLabel" destination="JRH-jf-7fD" id="Dgu-sc-MFQ"/>
-                        <outlet property="updateImageProfile" destination="4V5-zK-80b" id="1NA-TE-G80"/>
+                        <outlet property="userProfileButton" destination="4V5-zK-80b" id="Kfh-TU-4PN"/>
                         <outlet property="userProfileImage" destination="rug-cC-oZR" id="WBa-dF-F9m"/>
                         <outlet property="websiteLabel" destination="RHW-5p-8FR" id="mr1-C2-sve"/>
                     </connections>
@@ -511,35 +511,6 @@
                 <placeholder placeholderIdentifier="IBFirstResponder" id="r68-2O-2x2" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="-1621.5999999999999" y="-155.17241379310346"/>
-        </scene>
-        <!--Photo Profile-->
-        <scene sceneID="FsI-Pl-1iG">
-            <objects>
-                <viewController title="Photo Profile" id="qee-eB-am6" customClass="PhotoProfileViewController" customModule="MyEZ" customModuleProvider="target" sceneMemberID="viewController">
-                    <view key="view" contentMode="scaleToFill" id="94F-d7-Rwo">
-                        <rect key="frame" x="0.0" y="0.0" width="390" height="844"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <subviews>
-                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="cjG-AK-JbE">
-                                <rect key="frame" x="0.0" y="94" width="390" height="682"/>
-                            </imageView>
-                        </subviews>
-                        <viewLayoutGuide key="safeArea" id="F5c-v0-VSl"/>
-                        <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                        <constraints>
-                            <constraint firstItem="cjG-AK-JbE" firstAttribute="top" secondItem="94F-d7-Rwo" secondAttribute="topMargin" id="3Xm-EE-BMV"/>
-                            <constraint firstItem="F5c-v0-VSl" firstAttribute="bottom" secondItem="cjG-AK-JbE" secondAttribute="bottom" id="PkV-bL-VVF"/>
-                            <constraint firstItem="cjG-AK-JbE" firstAttribute="leading" secondItem="F5c-v0-VSl" secondAttribute="leading" id="s1v-dU-jIt"/>
-                            <constraint firstItem="F5c-v0-VSl" firstAttribute="trailing" secondItem="cjG-AK-JbE" secondAttribute="trailing" id="uay-fo-vU0"/>
-                        </constraints>
-                    </view>
-                    <connections>
-                        <outlet property="imageProfile" destination="cjG-AK-JbE" id="BzS-ap-MU0"/>
-                    </connections>
-                </viewController>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="PhV-Vp-L96" userLabel="First Responder" sceneMemberID="firstResponder"/>
-            </objects>
-            <point key="canvasLocation" x="-1169" y="594"/>
         </scene>
         <!--Edit Account-->
         <scene sceneID="76p-Xw-8eJ">
@@ -567,9 +538,6 @@
                                         <state key="normal" title="Update Photo">
                                             <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         </state>
-                                        <connections>
-                                            <segue destination="qee-eB-am6" kind="show" id="S6a-lZ-l6S"/>
-                                        </connections>
                                     </button>
                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="cbh-3J-fLm">
                                         <rect key="frame" x="10" y="94" width="40" height="40"/>
@@ -946,9 +914,6 @@
             <point key="canvasLocation" x="-2200" y="588"/>
         </scene>
     </scenes>
-    <inferredMetricsTieBreakers>
-        <segue reference="S6a-lZ-l6S"/>
-    </inferredMetricsTieBreakers>
     <resources>
         <image name="IconPasswordDark" width="17" height="23"/>
         <image name="cancelbutton" width="23" height="23"/>

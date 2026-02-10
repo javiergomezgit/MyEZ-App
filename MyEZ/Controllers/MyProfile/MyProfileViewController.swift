@@ -10,14 +10,15 @@ import UIKit
 import FirebaseAuth
 import SCLAlertView
 import MessageUI
+import YPImagePicker
 import FirebaseDatabase
 
 
 class MyProfileViewController: UITableViewController, MFMailComposeViewControllerDelegate {
 
-    @IBOutlet weak var updateImageProfile: UIButton!
-    
+    @IBOutlet weak var userProfileButton: UIButton!
     @IBOutlet weak var userProfileImage: UIImageView!
+
     @IBOutlet weak var nameLabel: UILabel!
     @IBOutlet weak var typeUserLabel: UILabel!
     @IBOutlet weak var websiteLabel: UILabel!
@@ -58,6 +59,10 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
         
     }
     
+    
+    @IBAction func userProfileButtonTapped(_ sender: UIButton) {
+        showPhotoCamera()
+    }
     
     @objc func signout(sender: UIBarButtonItem) {
         
@@ -146,7 +151,7 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
         
         if hideOrDisable {
             
-            updateImageProfile.isEnabled = false
+            userProfileButton.isEnabled = false
             
             nameLabel.isHidden = false
             nameLabel.text = "Signin for more features"
@@ -166,7 +171,7 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
             
             self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Logout", style: .done, target: self, action: #selector(signout(sender:)))
 
-            updateImageProfile.isEnabled = true
+            userProfileButton.isEnabled = true
 
             nameLabel.isHidden = false
             typeUserLabel.isHidden = false
@@ -216,16 +221,7 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
         try! Auth.auth().signOut()
     }
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+     
     
     @IBAction func isSubscribed(_ sender: UISwitch) {
         
@@ -245,87 +241,32 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
     
     
     @IBAction func reportProblem(_ sender: UIButton) {
-
-        if MFMailComposeViewController.canSendMail() {
-
-            var alert = SCLAlertView()
-            
-            let apparance = SCLAlertView.SCLAppearance(kWindowWidth: UIScreen.main.bounds.width * 0.9)
-            
-            alert = SCLAlertView(appearance: apparance)
-            
-            let message = alert.addTextField("Message")
-            message.autocorrectionType = .no
-            message.autocapitalizationType = .none
-            message.spellCheckingType = .no
-            message.keyboardType = UIKeyboardType.alphabet
-            message.layer.borderColor = UIColor.blue.cgColor
-            
-            alert.addButton("Send") {
-                self.sendEmail(subjectText: "Report Problem", bodyText: message.text!)
-            }
-            alert.showEdit("Contact Us",
-                           subTitle: "Type your message",
-                           closeButtonTitle: "Cancel",
-                           colorStyle: 0x60A2BF,
-                           colorTextButton: 0xFFFFFF)
-        } else {
-            SCLAlertView().showError("Your email app is not configured", subTitle:"Send us an email to javier@ezinflatables.com")
-
-        }
+        sendEmail(email: "javier@ezinflatables.com", name: "Javier")
     }
         
     
     @IBAction func contactTechnial(_ sender: UIButton) {
-      
-        if MFMailComposeViewController.canSendMail() {
-
-            var alert = SCLAlertView()
-      //      let aparance = SCLAlertView.SCLAppearance(kDefaultShadowOpacity: T##CGFloat, kCircleTopPosition: T##CGFloat, kCircleBackgroundTopPosition: T##CGFloat, kCircleHeight: T##CGFloat, kCircleIconHeight: T##CGFloat, kTitleTop: T##CGFloat, kTitleHeight: T##CGFloat, kWindowWidth: T##CGFloat, kWindowHeight: T##CGFloat, kTextHeight: T##CGFloat, kTextFieldHeight: T##CGFloat, kTextViewdHeight: T##CGFloat, kButtonHeight: T##CGFloat, kTitleFont: T##UIFont, kTitleMinimumScaleFactor: T##CGFloat, kTextFont: T##UIFont, kButtonFont: T##UIFont, showCloseButton: T##Bool, showCircularIcon: T##Bool, shouldAutoDismiss: T##Bool, contentViewCornerRadius: T##CGFloat, fieldCornerRadius: T##CGFloat, buttonCornerRadius: T##CGFloat, hideWhenBackgroundViewIsTapped: T##Bool, circleBackgroundColor: T##UIColor, contentViewColor: T##UIColor, contentViewBorderColor: T##UIColor, titleColor: T##UIColor, dynamicAnimatorActive: T##Bool, disableTapGesture: T##Bool, buttonsLayout: T##SCLAlertButtonLayout, activityIndicatorStyle: T##UIActivityIndicatorView.Style)
-            
-            let apparance = SCLAlertView.SCLAppearance(kWindowWidth: UIScreen.main.bounds.width * 0.9)
-            
-            alert = SCLAlertView(appearance: apparance)
-            
-            let message = alert.addTextField("Message")
-            message.autocorrectionType = .no
-            message.autocapitalizationType = .none
-            message.spellCheckingType = .no
-            message.keyboardType = UIKeyboardType.alphabet
-            message.layer.borderColor = UIColor.blue.cgColor
-            //message.backgroundColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.1)
-            
-            alert.addButton("Send") {
-                self.sendEmail(subjectText: "Technical Problem", bodyText: message.text!)
-            }
-            alert.showEdit("Contact Us",
-                           subTitle: "Type your message",
-                           closeButtonTitle: "Cancel",
-                           colorStyle: 0x60A2BF,
-                           colorTextButton: 0xFFFFFF)
-        } else {
-            SCLAlertView().showError("Your email app is not configured", subTitle:"Send us an email to javier@ezinflatables.com")
-        }
+        sendEmail(email: "javier@ezinflatables.com", name: "Javier")
     }
     
     
-    func sendEmail(subjectText: String, bodyText: String) {
+    private let supportEmail = EmailSender()
+    func sendEmail(email: String, name: String){
+        let body = """
+            Hi \(name),
+            
+            I need help with:
+            
+            ---
+            User: \(self.nameLabel.text ?? "No name")
+            App Version: \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?")
+            iOS: \(UIDevice.current.systemVersion)
+            Device: \(UIDevice.current.model)
+            ---
+            """
+        supportEmail.presentEmailSender(from: self, to: [email], subject: "MyEZ App Contact", body: body)
+    }
         
-        if MFMailComposeViewController.canSendMail() {
-            let mail = MFMailComposeViewController()
-            
-            mail.mailComposeDelegate = self
-            mail.setToRecipients(["javier@ezinflatables.com"])
-            mail.setSubject(subjectText)
-            mail.setMessageBody("<h1>\(subjectText):</h1> <br /> <h3>\(bodyText):</h3 > <br /> <h3>Name: \(userInformation.name) <br /> Email: \(userInformation.email)</h3>", isHTML: true)
-            
-            self.present(mail, animated: true, completion: nil)
-        } else {
-            SCLAlertView().showError("Your email app is not configured", subTitle:"Send us an email to javier@ezinflatables.com")
-        }
-    }
-    
-    
     @IBAction func openTermsOnline(_ sender: UIButton) {
         if let url = URL(string: "https://www.ezinflatables.com/pages/terms-and-conditions") {
             UIApplication.shared.open(url, options: [:])
@@ -341,5 +282,50 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
     
     func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
         controller.dismiss(animated: true)
+    }
+}
+
+
+//MARK: Photo camera/album picker
+extension MyProfileViewController {
+    
+    func showPhotoCamera() {
+        var config = YPImagePickerConfiguration()
+        config.isScrollToChangeModesEnabled = true
+        config.onlySquareImagesFromCamera = true
+        config.usesFrontCamera = false
+        config.showsPhotoFilters = false
+        config.showsVideoTrimmer = false
+        config.shouldSaveNewPicturesToAlbum = true
+        config.startOnScreen = YPPickerScreen.library
+        config.screens = [.library, .photo]
+        config.showsCrop = .none
+        config.targetImageSize = YPImageSize.original
+        config.overlayView = UIView()
+        config.hidesStatusBar = true
+        config.hidesBottomBar = false
+        config.hidesCancelButton = false
+        config.silentMode = true
+        config.preferredStatusBarStyle = UIStatusBarStyle.default
+        config.maxCameraZoomFactor = 1.0
+        
+        let picker = YPImagePicker(configuration: config)
+        
+        picker.didFinishPicking { [unowned picker] items, cancelled in
+            if cancelled {
+                print("Picker was cancelled")
+            }
+            
+            if let photo = items.singlePhoto {
+                print(photo.fromCamera) // Image source (camera or library)
+                print(photo.image) // Final image selected by the user
+                print(photo.originalImage) // original image selected by the user, unfiltered
+                print(photo.modifiedImage) // Transformed image, can     be nil
+                print(photo.exifMeta) // Print exif meta data of original image.
+                self.userProfileImage.image = photo.image
+            }
+            picker.dismiss(animated: true, completion: nil)
+        }
+        present(picker, animated: true, completion: nil)
     }
 }
