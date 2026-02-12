@@ -59,6 +59,16 @@ struct OdooUser {
     let companyID: Int
 }
 
+struct AppUser: Codable {
+    let uid: Int
+    let partnerID: Int
+    let name: String
+    let email: String
+    let typeUser: String
+    let companyID: Int
+    var completedSigningUp: Bool    
+}
+
 var userInformation = UserValues(name: "", userId: "", email: "", zipCode: "", website: "", companyName: "", phone: "", businessType: "", about: "", myProfileImage: NSData(), typeUser: "", weight: "", subscribed: false, showWalk: true, idShopify: "")
 
 

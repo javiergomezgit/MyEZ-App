@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="20037" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="APR-A4-EZV">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="24506" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="APR-A4-EZV">
     <device id="retina6_0" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="20020"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="24504"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
@@ -95,7 +95,6 @@
                         <outlet property="signupButton" destination="6Oq-WR-Urs" id="chE-Jq-bju"/>
                         <outlet property="skipButton" destination="1Y2-Db-N89" id="01R-hm-Z2S"/>
                         <segue destination="pI0-w6-J5k" kind="presentation" identifier="getstartedMain" modalPresentationStyle="fullScreen" modalTransitionStyle="crossDissolve" id="uUf-ga-k2x"/>
-                        <segue destination="FDb-vH-Pes" kind="show" identifier="getstartedSignupInfo" id="PEW-Xv-sL1"/>
                         <segue destination="o6O-jn-ceN" kind="show" identifier="showWalk" id="iAR-0F-f4g"/>
                     </connections>
                 </viewController>
@@ -145,7 +144,7 @@
         </scene>
     </scenes>
     <resources>
-        <image name="BackgroundLaunch" width="414" height="736"/>
+        <image name="BackgroundLaunch" width="1725" height="3067"/>
         <image name="signUpUp" width="247" height="247"/>
         <image name="signinUp" width="247" height="247"/>
         <image name="skipButton" width="123" height="42"/>

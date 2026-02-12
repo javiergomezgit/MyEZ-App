@@ -97,10 +97,11 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
     
     func loadInformationInScreen() {
     
-        if let information = UserDefaults.standard.object(forKey: "userInformationSession") as? [String: String] {
-            self.nameLabel.text = information["name"]
-            self.websiteLabel.text = information["website"]
-            self.typeUserLabel.text = information["typeUser"]
+        if let user = UserSession.shared.load() {
+            print("Welcome, \(user.name)!")
+            
+            self.nameLabel.text = user.name
+            self.typeUserLabel.text = user.typeUser
         }
         
         getImage()

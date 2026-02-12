@@ -9,7 +9,6 @@
 import UIKit
 import Firebase
 import FirebaseAuth
-//import SwiftyJSON
 
 class SignupEmailViewController: UIViewController {
     
@@ -28,17 +27,17 @@ class SignupEmailViewController: UIViewController {
         super.viewDidLoad()
         setupKeyboardDismiss()
     }
-
+    
     private func setupKeyboardDismiss() {
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tap.cancelsTouchesInView = false // keeps buttons/taps working
         view.addGestureRecognizer(tap)
     }
-
+    
     @objc private func dismissKeyboard() {
         view.endEditing(true)
     }
-
+    
     
     @IBAction func nameChange(_ sender: UITextField) {
         if nameText.text == "" {
@@ -101,40 +100,33 @@ class SignupEmailViewController: UIViewController {
         }
         
         registerUserInOdoo(name: nameText.text!, email: email, password: pass)
-
+        
     }
     
-    // MAIN FUNCTION
+    
     func registerUserInOdoo(name: String, email: String, password: String) {
         
         let urlString = "\(OdooKeys.databaseURL)/jsonrpc"
         let database = OdooKeys.databaseName
         let botKey = OdooKeys.apiKey
-        
-        // ✅ HARDCODED ID FROM YOUR SCREENSHOT
-        let portalGroupID = 10
+        let templateID = 13 // Keep using 13 if that is your Portal Template ID
         
         guard let url = URL(string: urlString) else { return }
         
-        // STEP 1: CREATE USER (Naked - No groups yet)
-        let newUserValues: [String: Any] = [
+        // CLONE COMMAND
+        let newUserOverrides: [String: Any] = [
             "name": name,
             "login": email,
             "password": password,
-            "active": true
+            "active": true,
+            "company_id": 25,
+            "company_ids": [[6, 0, [25]]]
         ]
         
         let params: [String: Any] = [
             "service": "object",
             "method": "execute_kw",
-            "args": [
-                database,
-                2,       // Admin UID
-                botKey,
-                "res.users",
-                "create",
-                [newUserValues]
-            ]
+            "args": [database, 2, botKey, "res.users", "copy", [templateID, newUserOverrides]]
         ]
         
         let body: [String: Any] = ["jsonrpc": "2.0", "method": "call", "params": params, "id": 1]
@@ -144,87 +136,55 @@ class SignupEmailViewController: UIViewController {
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
         
-        print("⏳ Step 1: Creating User...")
+        print("⏳ Cloning Portal Template (ID: \(templateID))...")
         
         URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
-            guard let self = self, let data = data else { return }
+            guard let self = self else { return }
+            
+            // 1. CHECK FOR NETWORK ERRORS
+            if let error = error {
+                print("❌ Network Error: \(error.localizedDescription)")
+                return
+            }
+            
+            guard let data = data else { print("❌ No Data Received"); return }
+            
+            // 2. PRINT THE RAW RESPONSE (This will tell us why it hung!)
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("📨 Odoo Response: \(jsonString)")
+            }
             
             do {
                 if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
                     
-                    // CHECK FOR ERRORS
+                    // ERROR HANDLING
                     if let errorDict = json["error"] as? [String: Any] {
                         let msg = errorDict["message"] as? String ?? "Error"
-                        print("🐞 Step 1 Failed: \(msg)")
+                        print("🐞 ODOO ERROR: \(errorDict)")
                         DispatchQueue.main.async { self.alert(message: msg, title: "Odoo Error") }
                         return
                     }
                     
-                    // SUCCESS -> MOVE TO STEP 2
-                    if let newUID = json["result"] as? Int {
-                        print("✅ Step 1 Success! New UID: \(newUID)")
+                    // SUCCESS PARSING
+                    var newUID: Int?
+                    
+                    if let id = json["result"] as? Int {
+                        newUID = id
+                    } else if let ids = json["result"] as? [Int], let first = ids.first {
+                        newUID = first
+                    }
+                    
+                    if let validUID = newUID {
+                        print("✅ User Cloned! New UID: \(validUID)")
+                        print("🚀 Moving to Fetch Partner ID...")
                         
-                        // CALL STEP 2 IMMEDIATELY
-                        self.assignPortalGroup(uid: newUID, portalID: portalGroupID, botKey: botKey)
-                        
-                        // FETCH INFO FOR FIREBASE
-                        self.fetchPartnerID(uid: newUID, botLogin: "admin", botKey: botKey, name: name, email: email)
+                        self.fetchPartnerID(uid: validUID, botLogin: "admin", botKey: botKey, name: name, email: email)
+                    } else {
+                        print("⚠️ Could not parse UID from result: \(json["result"] ?? "nil")")
                     }
                 }
             } catch {
-                print("Parsing Error: \(error)")
-            }
-        }.resume()
-    }
-
-    // STEP 2: FORCE PORTAL GROUP
-    func assignPortalGroup(uid: Int, portalID: Int, botKey: String) {
-        
-        print("⏳ Step 2: Forcing User \(uid) into Group \(portalID)...")
-        
-        let urlString = "\(OdooKeys.databaseURL)/jsonrpc"
-        let database = OdooKeys.databaseName
-        
-        // MAGIC COMMAND: (6, 0, [ID])
-        // This tells Odoo: "REMOVE all other groups (including Internal) and KEEP ONLY Group 10"
-        let writeValues: [String: Any] = [
-            "groups_id": [[6, 0, [portalID]]]
-        ]
-        
-        let params: [String: Any] = [
-            "service": "object",
-            "method": "execute_kw",
-            "args": [
-                database,
-                2,       // Admin UID
-                botKey,
-                "res.users",
-                "write",
-                [[uid], writeValues]
-            ]
-        ]
-        
-        let body: [String: Any] = ["jsonrpc": "2.0", "method": "call", "params": params, "id": 2]
-        
-        guard let url = URL(string: urlString) else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-        
-        URLSession.shared.dataTask(with: request) { data, _, _ in
-            guard let data = data else { return }
-            
-            // 🔍 DEBUGGING: PRINT THE RESULT
-            if let jsonString = String(data: data, encoding: .utf8) {
-                print("📨 Step 2 Response: \(jsonString)")
-                
-                // Look for "result": true in the console log
-                if jsonString.contains("\"result\":true") {
-                    print("✨ SUCCESS: User is now Portal!")
-                } else {
-                    print("⚠️ WARNING: Failed to switch to Portal. User is still Internal.")
-                }
+                print("❌ JSON Parsing Error: \(error)")
             }
         }.resume()
     }
@@ -233,27 +193,23 @@ class SignupEmailViewController: UIViewController {
     // Helper to get the Partner ID after creation
     func fetchPartnerID(uid: Int, botLogin: String, botKey: String, name: String, email: String) {
         
+        print("⏳ Fetching Partner ID for User \(uid)...")
+        
         let urlString = "\(OdooKeys.databaseURL)/jsonrpc"
         let database = OdooKeys.databaseName
         
-        // We search for the user we just created (by UID) and ask for their partner_id
+        // Command: READ the 'partner_id' field for this User ID
         let params: [String: Any] = [
             "service": "object",
             "method": "execute_kw",
             "args": [
-                database,
-                1,          // Admin (Doorman) UID
-                botKey,     // Admin API Key
-                "res.users",
-                "read",
-                [uid],      // The UID of the new user
-                ["fields": ["partner_id"]] // We only need this field
+                database, 2, botKey,
+                "res.users", "read",
+                [[uid], ["partner_id"]] // We only ask for this one field
             ]
         ]
         
-        let body: [String: Any] = [
-            "jsonrpc": "2.0", "method": "call", "params": params, "id": 1
-        ]
+        let body: [String: Any] = ["jsonrpc": "2.0", "method": "call", "params": params, "id": 2]
         
         guard let url = URL(string: urlString) else { return }
         var request = URLRequest(url: url)
@@ -267,37 +223,36 @@ class SignupEmailViewController: UIViewController {
             do {
                 if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                    let result = json["result"] as? [[String: Any]],
-                   let firstUser = result.first {
+                   let firstRecord = result.first {
                     
-                    // CRITICAL ODOO PARSING:
-                    // 'partner_id' comes back as an Array: [123, "Javier Gomez"]
-                    // We need the first item (123)
-                    var finalPartnerID = ""
+                    // ⚠️ CRITICAL PART:
+                    // Odoo returns partner_id as: [123, "Name"]
                     
-                    if let partnerArray = firstUser["partner_id"] as? [Any],
+                    var partnerID: Int?
+                    
+                    if let partnerArray = firstRecord["partner_id"] as? [Any],
                        let id = partnerArray.first as? Int {
-                        finalPartnerID = "\(id)"
+                        partnerID = id
+                    } else {
+                        print("⚠️ Could not parse partner_id array: \(firstRecord["partner_id"] ?? "nil")")
                     }
                     
-                    print("✅ Found Partner ID: \(finalPartnerID)")
-                    
-                    // ---------------------------------------------------------
-                    // 🎯 THE FINAL STEP: SAVE TO FIREBASE
-                    // ---------------------------------------------------------
-                    DispatchQueue.main.async {
-                        self.saveExtraInfoUser(
-                            partnerID: finalPartnerID,
-                            odooUID: "\(uid)",
-                            email: email,
-                            name: name
-                        )
+                    if let finalPartnerID = partnerID {
+                        print("✅ Found Partner ID: \(finalPartnerID)")
                         
-                        // Optional: Navigate to Home Screen now
-                        // self.performSegue(withIdentifier: "goToHome", sender: self)
+                        //  Go to Home Screen
+                        DispatchQueue.main.async {
+                            // self.saveToFirebase(...)
+                            print("🎉 REGISTRATION COMPLETE! Navigating to Home...")
+                            
+                            self.didFinishRegistration(partnerID: partnerID!, odooUID: uid, email: email, name: name)
+                        }
                     }
+                } else {
+                    print("❌ Failed to read Partner ID from response: \(String(data: data, encoding: .utf8) ?? "")")
                 }
             } catch {
-                print("Parsing Error in fetchPartnerID: \(error)")
+                print("❌ Parsing Error in fetchPartnerID: \(error)")
             }
         }.resume()
     }
@@ -307,21 +262,51 @@ class SignupEmailViewController: UIViewController {
         return email.contains("@") && email.contains(".") && email.count >= 6
     }
     
-    func saveExtraInfoUser(partnerID: String, odooUID: String, email: String, name: String) {
-                
-        let initialInformation = [
-            "email": email,
-            "uid": odooUID,
-            "completedSigningUp" : false,
-            "typeuser" : "minimumweight",
-            "weightowned" : 1
-        ] as [String : Any]
+    func didFinishRegistration(partnerID: Int, odooUID: Int, email: String, name: String) {
         
-        //store in database firebase, odoo UID, name, username, maybe partner id, not sure if needed in future
-        dbRef.child("users").child(partnerID).setValue(initialInformation) {
-            (error:Error?, ref:DatabaseReference) in
+        // Get the current date for analytics (e.g. "When did this user join?")
+        let timestamp = Date().timeIntervalSince1970
+        
+        let firebaseData: [String: Any] = [
+            "uid": odooUID,              // The Odoo User ID (for JSON-RPC calls)
+            "partner_id": partnerID,     // The Odoo Partner ID (for Invoices/Orders)
+            "name": name,                // Display name for the Home Screen
+            "email": email,              // Contact email
+            "completedSigningUp": false,
+            "typeuser": "minimumweight",
+            "weightowned": 1,
+            "unitsownedSKUs": ["SKU": 1], //Going to store the skus of all the units that user owns and the owned quantity of each sku
+            "website": "",
+            "company_id": 25,            // We know they belong to Company 25
+            "company_name": "",
+            "createdAt": timestamp,      // Good for sorting users by "Newest"
+            "phone": "",                 // Placeholder for profile updates
+            "fcmToken": ""               // Placeholder for Push Notifications
+        ]
+        
+        // Save to Firebase
+        dbRef.child("users").child("\(partnerID)").setValue(firebaseData) { (error, ref) in
             if let error = error {
-                print (error)
+                print("❌ Firebase Save Error: \(error.localizedDescription)")
+            } else {
+                print("✅ User Saved to Firebase! Partner ID: \(partnerID)")
+                
+                // 3. SAVE LOCALLY (The New Part)
+                let localUser = AppUser(
+                    uid: odooUID,
+                    partnerID: partnerID,
+                    name: name,
+                    email: email,
+                    typeUser: "minimumweight",
+                    companyID: 25,
+                    completedSigningUp: false
+                )
+                UserSession.shared.save(user: localUser)
+                
+                DispatchQueue.main.async {
+                    print("🚀 Performing Segue 'loginMain'...")
+                    self.performSegue(withIdentifier: "signupMain", sender: self)
+                }
             }
         }
     }

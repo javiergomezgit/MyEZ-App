@@ -12,7 +12,7 @@
 		2204A1202318A0E000208256 /* ProductCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2204A11E2318A0E000208256 /* ProductCollectionViewCell.swift */; };
 		22205BAB1FBCF0400033DC0B /* ContactViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22205BAA1FBCF0400033DC0B /* ContactViewController.swift */; };
 		2224D24F27012A93004AB198 /* Walkthrough.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 2224D24E27012A93004AB198 /* Walkthrough.storyboard */; };
-		225A98FE1F9A6B6200BE8ADF /* AddInformationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 225A98FD1F9A6B6200BE8ADF /* AddInformationViewController.swift */; };
+		225A220B2F3E783A003EEF46 /* UserSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 225A220A2F3E7835003EEF46 /* UserSession.swift */; };
 		2270677A1F9A73BC00AE018A /* UserValues.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227067791F9A73BC00AE018A /* UserValues.swift */; };
 		2270677C1F9A816000AE018A /* SpecialsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2270677B1F9A816000AE018A /* SpecialsViewController.swift */; };
 		2279A7981F881A3B00973C64 /* Login.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3BDA444A1F635C55008E0D58 /* Login.storyboard */; };
@@ -70,8 +70,8 @@
 		2204A11E2318A0E000208256 /* ProductCollectionViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ProductCollectionViewCell.swift; path = MyEZ/Views/ProductCollectionViewCell.swift; sourceTree = SOURCE_ROOT; };
 		22205BAA1FBCF0400033DC0B /* ContactViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactViewController.swift; sourceTree = "<group>"; };
 		2224D24E27012A93004AB198 /* Walkthrough.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = Walkthrough.storyboard; sourceTree = "<group>"; };
+		225A220A2F3E7835003EEF46 /* UserSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSession.swift; sourceTree = "<group>"; };
 		225A98FB1F9A675900BE8ADF /* MyEZ.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = MyEZ.entitlements; sourceTree = "<group>"; };
-		225A98FD1F9A6B6200BE8ADF /* AddInformationViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddInformationViewController.swift; sourceTree = "<group>"; };
 		227067791F9A73BC00AE018A /* UserValues.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserValues.swift; sourceTree = "<group>"; };
 		2270677B1F9A816000AE018A /* SpecialsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpecialsViewController.swift; sourceTree = "<group>"; };
 		228C54AF230CBF7B00D20C47 /* Shop.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Shop.storyboard; path = MyEZ/Views/Storyboards/Shop.storyboard; sourceTree = SOURCE_ROOT; };
@@ -233,6 +233,7 @@
 			isa = PBXGroup;
 			children = (
 				BAFE56BF2151C44A00B3B245 /* SweetAlert.swift */,
+				225A220A2F3E7835003EEF46 /* UserSession.swift */,
 				22A608052F36770600773058 /* EmailSender.swift */,
 			);
 			path = Support;
@@ -307,7 +308,6 @@
 			isa = PBXGroup;
 			children = (
 				3B447F1E1F63611B00F37DEA /* SignupEmailViewController.swift */,
-				225A98FD1F9A6B6200BE8ADF /* AddInformationViewController.swift */,
 			);
 			path = Signup;
 			sourceTree = "<group>";
@@ -552,6 +552,7 @@
 				3B03ED831F759CFA0095F31E /* MyEZViewController.swift in Sources */,
 				BA8D63812201232700AC425B /* PreviewTopUsersViewController.swift in Sources */,
 				22D9E601231605DB00E42C1E /* CategoriesTableViewCell.swift in Sources */,
+				225A220B2F3E783A003EEF46 /* UserSession.swift in Sources */,
 				2270677C1F9A816000AE018A /* SpecialsViewController.swift in Sources */,
 				22EC091B2327283400B90873 /* ThumbnailImagesCollectionViewController.swift in Sources */,
 				22EE577E2F31AFF100F94469 /* ProductsCollectionViewController.swift in Sources */,
@@ -564,7 +565,6 @@
 				BABD82E821682A680039738B /* UnitCollectionViewCell.swift in Sources */,
 				22EE577A2F31AFE700F94469 /* ShopViewController.swift in Sources */,
 				3B447F1F1F63611B00F37DEA /* SignupEmailViewController.swift in Sources */,
-				225A98FE1F9A6B6200BE8ADF /* AddInformationViewController.swift in Sources */,
 				22EC091C2327283400B90873 /* ThumbnailImagesCollectionViewCell.swift in Sources */,
 				BAE1225922E25C790079FCA2 /* InStockViewController.swift in Sources */,
 				22A9E0C7230F677C0001D87D /* MyProfileViewController.swift in Sources */,
