@@ -42,9 +42,25 @@ class UserSession {
         }
     }
     
+    func getSessionID() -> String? {
+        return "sinetgubg:"
+    }
+    
+    func saveSessionID(sessionID: String) {
+        defaults.set(sessionID, forKey: "sessionID")
+        print ("session id from odoo's cookies saved")
+    }
+    
     // MARK: - Delete (Logout)
     func clear() {
         defaults.removeObject(forKey: key)
         print("🗑️ User session cleared.")
     }
+}
+
+class SessionManager {
+    static let shared = SessionManager()
+    
+    // We store the ID here for instant access
+    var currentSessionID: String?
 }

@@ -34,7 +34,6 @@
 		22EE577A2F31AFE700F94469 /* ShopViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22EE57792F31AFE700F94469 /* ShopViewController.swift */; };
 		22EE577E2F31AFF100F94469 /* ProductsCollectionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22EE577C2F31AFF100F94469 /* ProductsCollectionViewController.swift */; };
 		22EE577F2F31AFF100F94469 /* ProductViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22EE577D2F31AFF100F94469 /* ProductViewController.swift */; };
-		22FAC62C2304AAC600D64581 /* Favorites.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 22FAC62B2304AAC600D64581 /* Favorites.storyboard */; };
 		3B03ED7D1F758FC00095F31E /* circles1.png in Resources */ = {isa = PBXBuildFile; fileRef = 3B60C3D41F74BA5500A8CBAE /* circles1.png */; };
 		3B03ED811F759CDD0095F31E /* MyEZ.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3B03ED801F759CDD0095F31E /* MyEZ.storyboard */; };
 		3B03ED831F759CFA0095F31E /* MyEZViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B03ED821F759CFA0095F31E /* MyEZViewController.swift */; };
@@ -93,7 +92,6 @@
 		22EE57792F31AFE700F94469 /* ShopViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShopViewController.swift; sourceTree = "<group>"; };
 		22EE577C2F31AFF100F94469 /* ProductsCollectionViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductsCollectionViewController.swift; sourceTree = "<group>"; };
 		22EE577D2F31AFF100F94469 /* ProductViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductViewController.swift; sourceTree = "<group>"; };
-		22FAC62B2304AAC600D64581 /* Favorites.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Favorites.storyboard; path = MyEZ/Views/Storyboards/Favorites.storyboard; sourceTree = SOURCE_ROOT; };
 		3B03ED801F759CDD0095F31E /* MyEZ.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = MyEZ.storyboard; sourceTree = "<group>"; };
 		3B03ED821F759CFA0095F31E /* MyEZViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyEZViewController.swift; sourceTree = "<group>"; };
 		3B03ED851F759DA50095F31E /* Specials.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = Specials.storyboard; sourceTree = "<group>"; };
@@ -195,7 +193,6 @@
 				3B03ED881F759EBA0095F31E /* Browse.storyboard */,
 				2204A11823186A6800208256 /* ProductsCollection.storyboard */,
 				228C54AF230CBF7B00D20C47 /* Shop.storyboard */,
-				22FAC62B2304AAC600D64581 /* Favorites.storyboard */,
 				3B03ED851F759DA50095F31E /* Specials.storyboard */,
 			);
 			path = Storyboards;
@@ -481,7 +478,6 @@
 				229D5C592F32663D00A6AE07 /* ProductCollectionViewCell.xib in Resources */,
 				3B356DFE1F748BC200604CA9 /* GetStarted.storyboard in Resources */,
 				2204A11923186A6800208256 /* ProductsCollection.storyboard in Resources */,
-				22FAC62C2304AAC600D64581 /* Favorites.storyboard in Resources */,
 				BA2F23442141A77D00FB6E84 /* Ailerons-Typeface.otf in Resources */,
 				3B03ED891F759EBA0095F31E /* Browse.storyboard in Resources */,
 				3B03ED861F759DA50095F31E /* Specials.storyboard in Resources */,

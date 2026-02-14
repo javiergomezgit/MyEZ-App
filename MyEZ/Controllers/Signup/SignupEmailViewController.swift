@@ -303,12 +303,71 @@ class SignupEmailViewController: UIViewController {
                 )
                 UserSession.shared.save(user: localUser)
                 
-                DispatchQueue.main.async {
+                self.loginAndSaveCookie(password: self.passwordText.text!, login: email) {
                     print("🚀 Performing Segue 'loginMain'...")
                     self.performSegue(withIdentifier: "signupMain", sender: self)
                 }
+
             }
         }
+    }
+    
+    // Add 'completion: @escaping () -> Void' to the parameters
+    func loginAndSaveCookie(password: String, login: String, completion: @escaping () -> Void) {
+        let url = URL(string: "\(OdooKeys.databaseURL)/web/session/authenticate")!
+        
+        let params: [String: Any] = [
+            "db": OdooKeys.databaseName,
+            "login": login,
+            "password": password
+        ]
+        
+        let body: [String: Any] = [
+            "jsonrpc": "2.0",
+            "method": "call",
+            "params": params,
+            "id": Int(Date().timeIntervalSince1970)
+        ]
+        
+        var request = URLRequest(url: url)
+        let userAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
+        request.addValue(userAgent, forHTTPHeaderField: "User-Agent")
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        
+        print("🔐 Attempting Login to Capture Cookie...")
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+
+            if let httpResponse = response as? HTTPURLResponse,
+               let fields = httpResponse.allHeaderFields as? [String: String],
+               let url = response?.url {
+                
+                let cookies = HTTPCookie.cookies(withResponseHeaderFields: fields, for: url)
+                
+                for cookie in cookies {
+                    if cookie.name == "session_id" {
+                        print("🍪 CAPTURED SESSION: \(cookie.value)")
+                        
+                        //Save to memory (instant process)
+                        SessionManager.shared.currentSessionID = cookie.value
+                        
+                        //Save to disk (backup for future use in the app)
+                        UserDefaults.standard.set(cookie.value, forKey: "odooSessionID")
+                    }
+                }
+            }
+            
+            // Force the save to happen right now
+            UserDefaults.standard.synchronize()
+
+            // 🛑 CRITICAL: Tell the main thread we are done!
+            DispatchQueue.main.async {
+                completion()
+            }
+            
+        }.resume()
     }
     
     @IBAction func openTermsOnline(_ sender: UIButton) {

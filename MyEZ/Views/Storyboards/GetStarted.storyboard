@@ -126,14 +126,6 @@
             </objects>
             <point key="canvasLocation" x="827" y="133"/>
         </scene>
-        <!--signupInfo-->
-        <scene sceneID="tEX-eP-B6g">
-            <objects>
-                <viewControllerPlaceholder storyboardName="Signup" referencedIdentifier="signupInfo" id="FDb-vH-Pes" sceneMemberID="viewController"/>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="HdI-4I-5ca" userLabel="First Responder" sceneMemberID="firstResponder"/>
-            </objects>
-            <point key="canvasLocation" x="855" y="296"/>
-        </scene>
         <!--signup-->
         <scene sceneID="67p-Fr-kEP">
             <objects>

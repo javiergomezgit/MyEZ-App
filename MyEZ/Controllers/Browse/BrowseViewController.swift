@@ -14,353 +14,171 @@ import NVActivityIndicatorView
 class BrowseViewController: UIViewController, WKUIDelegate {
     
     @IBOutlet weak var web: UIView!
-   
-    var webView: WKWebView!
-        
-    // MARK: - Private properties
-    /// Progress view reflecting the current loading progress of the web view.
-    let progressView = UIProgressView(progressViewStyle: .default)
     
-    /// The observation object for the progress of the web view (we only receive notifications until it is deallocated).
+    var webView: WKWebView!
+    
+    // MARK: - Private properties
+    let progressView = UIProgressView(progressViewStyle: .default)
     private var estimatedProgressObserver: NSKeyValueObservation?
+    
+    var currentSessionID: String? {
+        
+        //Try getting session from memory
+        if let memorySessionID = SessionManager.shared.currentSessionID {
+            return memorySessionID
+        }
+        
+        //Fallback to device memory
+        return UserSession.shared.getSessionID()
+    }
     
     // MARK: - Public methods
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+        self.navigationController?.navigationBar.tintColor = .black
         loadCustomBars(updateBar: true)
-      
         loadWeb()
-        
-        testingfromShopify()
-      
     }
     
-    func testingfromShopify() {
-        
-//        let client = Graph.Client(
-//            shopDomain: "ez-inflatables-inc.myshopify.com",
-//            apiKey:     "e78a3a7c6015dbc918bf038db8596328"
-//        )
-        
-        
-//        let query = Storefront.buildQuery { $0
-//            
-//            .shop { $0
-//                .name()
-//                .description()
-//                .moneyFormat()
-//                .paymentSettings() { $0
-//                    .shopifyPaymentsAccountId()
-//                }
-//            }
-//            .products(first:5) { $0
-//                .edges { $0
-//                    .node() { $0
-//                        .id()
-//                        .description()
-//                        .title()
-//                        .handle()
-//                        .images(first:1) { $0
-//                            .edges { $0
-//                                .node { $0
-//                                    .id()
-//                                    .originalSrc()
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
-//                .hashValue
-//            }
-//            .customer(customerAccessToken: "2147803791402") { $0
-//                .firstName()
-//                .email()
-//                .displayName()
-//                .addresses() { $0
-//                    .edges() { $0
-//                        .node() { $0
-//                            .id()
-//                        }
-//                    }
-//                }
-//            }
-//            .collections(first:1) { $0
-//                .edges() { $0
-//                    .node() { $0
-//                        .title()
-//                    }
-//                }
-//            }
-//        }
-//    
-//        
-//        
-//        
-//        let task = client.queryGraphWith(query) { response, error in
-//          
-//            if let response = response {
-//                let name = response.shop.name
-//                print (name)
-//                print (response.shop)
-//                print (response.shop.description)
-//                print (response.shop.moneyFormat)
-//                print (response.shop.paymentSettings)
-//                print (response.products)
-//                print (response.products.edges)
-//                print (response.products.fields)
-//                
-//                print (response.collections)
-//                
-//                print (response.customer)
-//                print (response.customer?.addresses)
-//                print (response.customer?.email)
-//                print (response.customer?.firstName)
-//            } else {
-//                print("Query failed: \(error)")
-//            }
-//        }
-//        task.resume()
-        
-        
-        //CREate USER SUCCESSFULlY
-//        let input = Storefront.CustomerCreateInput.create(email: "john.smith@gmail.com", password: "123456")
-//
-//        let mutation = Storefront.buildMutation { $0
-//            .customerCreate(input: input) { $0
-//                .customer { $0
-//                    .id()
-//                    .email()
-//                    .firstName()
-//                    .lastName()
-//                }
-//                .userErrors { $0
-//                    .field()
-//                    .message()
-//                }
-//            }
-//        }
-//
-//        let task = client.mutateGraphWith(mutation, completionHandler: { (response, error) in
-//            if let response = response {
-//
-//                print (response)
-//                print (response.fields)
-//            } else {
-//                print (error)
-//            }
-//        })
-//        task.resume()
-    
-        
-        
-//  SIGNIN USER
-//        let input = Storefront.CustomerAccessTokenCreateInput.create(
-//            email:    "john.smith@gmail.com",
-//            password: "123456"
-//        )
-//
-//        let mutation = Storefront.buildMutation { $0
-//            .customerAccessTokenCreate(input: input) { $0
-//                .customerAccessToken { $0
-//                    .accessToken()
-//                    .expiresAt()
-//                }
-//                .userErrors { $0
-//                    .field()
-//                    .message()
-//                }
-//            }
-//        }
-//        let task = client.mutateGraphWith(mutation, completionHandler: { (response, error) in
-//            if let response = response {
-//
-//                print (response)
-//                print (response.fields)
-//            } else {
-//                print (error)
-//            }
-//        })
-//        task.resume()
-        
-        
-        //reset a customer's password using a recovery token:
-//        let customerID = GraphQL.ID(rawValue: "Z2lkOi8vc2hvcGlmeS9DdXN0b21lci8yMTU3NTA3ODM3OTk0")
-//        let input      = Storefront.CustomerResetInput.create(resetToken: "9a3364188282d0cb0090c22a101ca0b4", password: "abc123") //need token that user received in email
-//        let mutation   = Storefront.buildMutation { $0
-//            .customerReset(id: customerID, input: input) { $0
-//                .customer { $0
-//                    .id()
-//                    .firstName()
-//                    .lastName()
-//                }
-//                .userErrors { $0
-//                    .field()
-//                    .message()
-//                }
-//            }
-//        }
-//
-//        let task = client.mutateGraphWith(mutation) { response, error in
-//            if let mutation = response?.customerReset {
-//
-//                if let customer = mutation.customer, !mutation.userErrors.isEmpty {
-//                    let firstName = customer.firstName
-//                    let lastName = customer.lastName
-//
-//                    print (firstName)
-//                } else {
-//
-//                    print("Failed to reset password. Encountered invalid fields:")
-//                    mutation.userErrors.forEach {
-//                        let fieldPath = $0.field?.joined() ?? ""
-//                        print("  \(fieldPath): \($0.message)")
-//                    }
-//                }
-//
-//            } else {
-//                print("Failed to reset password: \(error)")
-//            }
-//        }
-//        task.resume()
-        
-        //SENDING EMAL TO RESET PASSWORD
-//        let mutation = Storefront.buildMutation { $0
-//            .customerRecover(email: "javier.go.go@hotmail.com") { $0
-//                .userErrors { $0
-//                    .field()
-//                    .message()
-//                }
-//            }
-//        }
-//
-//        let task = client.mutateGraphWith(mutation, completionHandler: { (response, error) in
-//            if let response = response {
-//
-//                print (response)
-//                print (response.fields)
-//            } else {
-//                print (error)
-//            }
-//        })
-//
-        
-        
-        //READING TOKEN AND LOGIN AFTER THAT
-//        let input = Storefront.CustomerAccessTokenCreateInput.create(
-//            email:    "javier.go.go@hotmail.com",
-//            password: "javier"
-//        )
-//
-//        let mutation = Storefront.buildMutation { $0
-//            .customerAccessTokenCreate(input: input) { $0
-//                .customerAccessToken { $0
-//                    .accessToken()
-//                    .expiresAt()
-//                }
-//                .userErrors { $0
-//                    .field()
-//                    .message()
-//                }
-//            }
-//        }
-//
-//        var token = "8d654f070f11e2196eca519e3f3b3b4a"
-//        let task = client.mutateGraphWith(mutation, completionHandler: { (response, error) in
-//            if let response = response {
-//
-//                let values = response.fields.values
-//                print (values)
-//                print (values.count)
-//                print (type(of: values))
-//
-//                let val = values.first as? [String: Any]
-//                print (val)
-//
-//                print (val?.first)
-//                print (val?.values)
-//                print (val?.keys)
-//
-//                print (val!["customerAccessToken"])
-//
-//                let va = val!["customerAccessToken"] as? [String: Any]
-//
-//                print (va?.values)
-//                print (va?.keys)
-//                print (val?.count)
-//
-//                print (va!["accessToken"])
-//
-//
-//                let tokens = va!["accessToken"]
-//                token = tokens as! String
-//
-//            } else {
-//                print (error)
-//            }
-//        })
-//        task.resume()
-//
-//
-//        let query = Storefront.buildQuery { $0
-//            .customer(customerAccessToken: token) { $0
-//                .id()
-//                .firstName()
-//                .lastName()
-//                .email()
-//            }
-//        }
-//
-//        let task1 = client.queryGraphWith(query) { (response, error) in
-//            if let response = response {
-//                print (response)
-//                print (response.fields)
-//
-//            } else {
-//                print (error)
-//            }
-//        }
-//        task1.resume()
-    
-
-    }
-        
-
-   
-    
-    //Load web embed on the view
+    // Load web embed with CSS Injection
     func loadWeb() {
         let webConfiguration = WKWebViewConfiguration()
+        let cssString = """
+            .header_logo_wrapper {
+              display: none !important;
+            }
+            #accessibility_settings_toggle{
+              display: none !important;
+            }
+            #bottom {
+              display: none !important;
+            }
+            .o_livechat_button {
+              display: none !important;
+            }
+            #o_livechat_container {
+              display: none !important;
+            }
+            
+            /* Hide the navigation bar container */
+            #o_main_nav_mobile {
+              background: transparent !important;
+              border: none !important;
+              box-shadow: none !important;
+              position: static !important;
+            }
+            
+            /* Hide first 3 li elements */
+            #o_main_nav_mobile ul li:nth-child(-n+3) {
+              display: none !important;
+            }
+            
+            /* Hide the ul styling */
+            #o_main_nav_mobile ul {
+              background: transparent !important;
+              border: none !important;
+              padding: 0 !important;
+              margin: 0 !important;
+            }
+            
+            /* Show only the 4th li with red circle in bottom-right */
+            #o_main_nav_mobile ul li:nth-child(4) {
+              display: block !important;
+              position: fixed;
+              bottom: 20px;
+              right: 20px;
+              z-index: 9999;
+            }
+            
+            #o_main_nav_mobile ul li:nth-child(4) a {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 50px;
+              height: 50px;
+              background-color: #dc3545;
+              border-radius: 50%;
+              color: white !important;
+              text-decoration: none;
+            }
+            
+            /* Hide the text, keep only the icon */
+            #o_main_nav_mobile ul li:nth-child(4) a span {
+              display: none !important;
+            }
+            
+            body { 
+              padding-top: 0px !important; 
+            }
+            .o_content { 
+              margin-top: 0px !important;
+            }
+        """
+       
+        let cleanCSS = cssString.replacingOccurrences(of: "\n", with: " ")
+        
+        let jsString = "var style = document.createElement('style'); style.innerHTML = '\(cleanCSS)'; document.head.appendChild(style);"
+        
+        let userScript = WKUserScript(source: jsString, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
+        
+        webConfiguration.userContentController.addUserScript(userScript)
+        
+        // 2. Initialize WebView with this configuration
         webView = WKWebView(frame: .zero, configuration: webConfiguration)
         webView.uiDelegate = self
+        
+        // Set the main view to be the webView
         view = webView
         
         setupProgressView()
         setupEstimatedProgressObserver()
         
-        if let initialUrl = URL(string: "https://www.ezinflatables.com/collections/testing") {
+        if let initialUrl = URL(string: "https://ezinflatables.odoo.com/shop") {
             setupWebview(url: initialUrl)
         }
     }
     
-    //Load custom navigation bar with 2 different buttons
-    func loadCustomBars(updateBar: Bool){
-        let backBrowserImage = UIImage(named: "backwardBrowser")
-        let leftButton = UIBarButtonItem(image: backBrowserImage, style: .plain, target: self, action: #selector(self.goBackward))
+    // Load custom navigation bar
+    func loadCustomBars(updateBar: Bool) {
+        // 1. Configuration for Nav Bar Icons (Scale: Large makes them easier to tap/see)
+        let config = UIImage.SymbolConfiguration(scale: .large) // or .medium for standard size
         
-        let refreshBrowserImage  = UIImage(named: "refreshBrowser")
-        let rightButton = UIBarButtonItem(image: refreshBrowserImage, style: .plain, target: self, action: #selector(self.refreshBrowser))
+        // 2. Load System Symbols directly (No Assets needed!)
+        // "chevron.backward" is the standard back arrow
+        // "arrow.clockwise" is the standard refresh icon
+        let backImage = UIImage(systemName: "arrowshape.left.circle", withConfiguration: config)?
+            .withRenderingMode(.alwaysOriginal) // Keeps them Black/Dark
         
-        navigationItem.setLeftBarButton(leftButton, animated: true)
-        navigationItem.setRightBarButton(rightButton, animated: true)
+        let refreshImage = UIImage(systemName: "arrow.clockwise.circle", withConfiguration: config)?
+            .withRenderingMode(.alwaysOriginal)
+        
+        // 3. Create Buttons
+        let leftButton = UIBarButtonItem(
+            image: backImage,
+            style: .plain,
+            target: self,
+            action: #selector(self.goBackward)
+        )
+        
+        let rightButton = UIBarButtonItem(
+            image: refreshImage,
+            style: .plain,
+            target: self,
+            action: #selector(self.refreshBrowser)
+        )
+        
+        // 4. Assign to Left and Right
+        navigationItem.leftBarButtonItem = leftButton
+        navigationItem.rightBarButtonItem = rightButton
     }
     
-    //Functions for browser buttons
+    // Functions for browser buttons
     @objc func goBackward() {
         if webView.canGoBack {
             webView.goBack()
         }
     }
+    
     @objc func refreshBrowser(){
         webView.reload()
     }
@@ -371,7 +189,6 @@ class BrowseViewController: UIViewController, WKUIDelegate {
         guard let navigationBar = navigationController?.navigationBar else { return }
         
         progressView.transform = progressView.transform.scaledBy(x: 1, y: 5)
-        
         progressView.translatesAutoresizingMaskIntoConstraints = false
         navigationBar.addSubview(progressView)
         
@@ -380,10 +197,9 @@ class BrowseViewController: UIViewController, WKUIDelegate {
         NSLayoutConstraint.activate([
             progressView.leadingAnchor.constraint(equalTo: navigationBar.leadingAnchor),
             progressView.trailingAnchor.constraint(equalTo: navigationBar.trailingAnchor),
-            
             progressView.bottomAnchor.constraint(equalTo: navigationBar.bottomAnchor),
             progressView.heightAnchor.constraint(equalToConstant: 2.0)
-            ])
+        ])
     }
     
     private func setupEstimatedProgressObserver() {
@@ -392,11 +208,62 @@ class BrowseViewController: UIViewController, WKUIDelegate {
         }
     }
     
+    // 3. COOKIE INJECTION: Inject Session before loading
     private func setupWebview(url: URL) {
-        let request = URLRequest(url: url)
+        
+        // This MUST match the string in loginAndSaveCookie EXACTLY.
+        webView.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
         
         webView.navigationDelegate = self
-        webView.load(request)
+        
+        guard let sessionID = currentSessionID else {
+            // If no session exists, just load normally (user might need to login manually)
+            let request = URLRequest(url: url)
+            webView.load(request)
+            return
+        }
+        
+        clearWebViewCache { [weak self] in
+            guard let self = self else { return }
+            
+            let cookieDomain = url.host ?? "ezinflatables.odoo.com"
+            
+            // Define the cookie
+            let cookieProps: [HTTPCookiePropertyKey: Any] = [
+                .name: "session_id",
+                .value: sessionID,
+                .domain: cookieDomain,
+                .path: "/",
+                .secure: "TRUE",
+                .expires: Date().addingTimeInterval(60 * 60 * 24 * 7) // 1 week
+            ]
+            
+            if let cookie = HTTPCookie(properties: cookieProps) {
+                // Set cookie asynchronously, then load page
+                webView.configuration.websiteDataStore.httpCookieStore.setCookie(cookie) { [weak self] in
+                    print("Cookie injected: \(sessionID)")
+                    let request = URLRequest(url: url)
+                    self?.webView.load(request)
+                }
+            } else {
+                // Fallback if cookie creation fails
+                let request = URLRequest(url: url)
+                webView.load(request)
+            }
+        }
+    }
+    
+    func clearWebViewCache(completion: @escaping () -> Void) {
+        let dataStore = WKWebsiteDataStore.default()
+        let dataTypes = WKWebsiteDataStore.allWebsiteDataTypes()
+        let dateFrom = Date(timeIntervalSince1970: 0)
+        
+        print("🧹 Nuking WebView Cache...")
+        
+        dataStore.removeData(ofTypes: dataTypes, modifiedSince: dateFrom) {
+            print("✨ WebView Cache Cleared.")
+            completion()
+        }
     }
 }
 
@@ -404,26 +271,28 @@ class BrowseViewController: UIViewController, WKUIDelegate {
 extension BrowseViewController: WKNavigationDelegate {
     
     func webView(_: WKWebView, didStartProvisionalNavigation _: WKNavigation!) {
-        UIApplication.shared.isNetworkActivityIndicatorVisible = true
-        
-        UIView.transition(with: progressView,
-                          duration: 0.33,
-                          options: [.transitionCrossDissolve],
-                          animations: {
-                            self.progressView.isHidden = false
-        },
-                          completion: nil)
+        UIView.transition(with: progressView, duration: 0.33, options: [.transitionCrossDissolve], animations: {
+            self.progressView.isHidden = false
+        }, completion: nil)
     }
     
-    func webView(_: WKWebView, didFinish _: WKNavigation!) {
-        UIApplication.shared.isNetworkActivityIndicatorVisible = false
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        // 1. Hide Progress Bar (Your existing code)
+        UIView.transition(with: progressView, duration: 0.33, options: [.transitionCrossDissolve], animations: {
+            self.progressView.isHidden = true
+        }, completion: nil)
         
-        UIView.transition(with: progressView,
-                          duration: 0.33,
-                          options: [.transitionCrossDissolve],
-                          animations: {
-                            self.progressView.isHidden = true
-        },
-                          completion: nil)
+        // 2. DEBUG: Print visible cookies
+        webView.configuration.websiteDataStore.httpCookieStore.getAllCookies { cookies in
+            print("🔎 WEBVIEW COOKIES FOUND: \(cookies.count)")
+            for cookie in cookies {
+                print("🍪 Name: \(cookie.name) | Value: \(cookie.value) | Domain: \(cookie.domain)")
+            }
+            
+            // CHECK: Do you see 'session_id' here?
+            if !cookies.contains(where: { $0.name == "session_id" }) {
+                print("❌ CRITICAL: session_id is MISSING from the WebView!")
+            }
+        }
     }
 }

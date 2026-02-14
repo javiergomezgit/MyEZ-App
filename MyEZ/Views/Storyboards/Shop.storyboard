@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="20037" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="24506" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
     <device id="retina6_0" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="20020"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="24504"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
@@ -17,13 +17,13 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <containerView opaque="NO" alpha="0.0" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="VbL-iJ-tLn">
-                                <rect key="frame" x="0.0" y="80" width="390" height="730"/>
+                                <rect key="frame" x="0.0" y="130" width="390" height="646"/>
                                 <connections>
                                     <segue destination="xOP-O8-61y" kind="embed" id="rLh-aC-v4e"/>
                                 </connections>
                             </containerView>
                             <segmentedControl opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" segmentControlStyle="bar" selectedSegmentIndex="0" translatesAutoresizingMaskIntoConstraints="NO" id="2Fz-xA-Bcp">
-                                <rect key="frame" x="20" y="44" width="350" height="32"/>
+                                <rect key="frame" x="20" y="94" width="350" height="32"/>
                                 <segments>
                                     <segment title="PRODUCTS"/>
                                     <segment title="STOCK"/>
@@ -31,7 +31,7 @@
                                 <color key="tintColor" white="0.33333333333333331" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                             </segmentedControl>
                             <containerView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="wpz-0K-Cww">
-                                <rect key="frame" x="0.0" y="83" width="390" height="727"/>
+                                <rect key="frame" x="0.0" y="133" width="390" height="643"/>
                                 <connections>
                                     <segue destination="gV6-II-D6w" kind="embed" id="gIi-wC-YOW"/>
                                 </connections>
@@ -77,11 +77,11 @@
             <objects>
                 <viewController id="gV6-II-D6w" customClass="CategoriesTableViewController" customModule="MyEZ" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="0tt-dP-ofG">
-                        <rect key="frame" x="0.0" y="0.0" width="390" height="727"/>
+                        <rect key="frame" x="0.0" y="0.0" width="390" height="643"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" showsHorizontalScrollIndicator="NO" showsVerticalScrollIndicator="NO" bouncesZoom="NO" dataMode="prototypes" style="plain" separatorStyle="none" rowHeight="80" estimatedRowHeight="-1" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="g8S-h1-ycG">
-                                <rect key="frame" x="2" y="60" width="386" height="667"/>
+                                <rect key="frame" x="2" y="60" width="386" height="549"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <color key="separatorColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <sections/>
