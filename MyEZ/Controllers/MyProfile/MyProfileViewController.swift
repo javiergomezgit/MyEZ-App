@@ -212,7 +212,23 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
         preferences.removeObject(forKey: "userInformationSession")
         preferences.synchronize()
         
-        userInformation = UserValues(name: "", userId: "", email: "", zipCode: "", website: "", companyName: "", phone: "", businessType: "", about: "", myProfileImage: NSData(), typeUser: "", weight: "", subscribed: false, showWalk: true, idShopify: "")
+        userInformation = UserValues(
+            name: "",
+            userId: "",
+            email: "",
+            zipCode: "",
+            website: "",
+            companyName: "",
+            phone: "",
+            businessType: "",
+            about: "",
+            myProfileImage: NSData(),
+            typeUser: "",
+            weight: 0,
+            subscribed: false,
+            showWalk: true
+        )
+        
         userUnits.removeAll()
         
         print (preferences)

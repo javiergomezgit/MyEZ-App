@@ -342,7 +342,7 @@ class MyEZViewController: UIViewController{
         
         
         userInformation.typeUser =  checkTypeUser(weightUnits: weightUpdated)
-        userInformation.weight = String(weightUpdated)
+        userInformation.weight = weightUpdated
 
         print (weightUpdated)
         

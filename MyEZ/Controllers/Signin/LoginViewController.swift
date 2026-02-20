@@ -8,7 +8,6 @@
 
 import UIKit
 import Firebase
-//import FirebaseAuth
 
 extension UITextField{
     @IBInspectable var placeHolderColor: UIColor? {
@@ -72,14 +71,12 @@ class LoginViewController: UIViewController, UITextFieldDelegate{
     }
     
     @IBAction func loginAction(_ sender: UIButton) {
-        //        let key = OdooKeys.apiKey //Key is for signing as admin
-        //signinInOdooAndGetData(email: emailText.text!, password: passText.text!, apiKey: passText.text!)
+        //let key = OdooKeys.apiKey //Key is for signing as admin
         
         signInWithOdoo(email: emailText.text!, password: passText.text!) { [weak self] result in
             DispatchQueue.main.async(execute: {
                 switch result {
                 case .success(let user):
-                    // You may want to handle login success here, e.g. self?.handleLoginSuccess(user: user)
                     self?.handleLoginSuccess(user: user)
                     
                 case .failure(let error):
@@ -262,6 +259,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate{
                         let username = result["username"] as? String ?? ""
                         let partnerID = result["partner_id"] as? Int ?? 0 // Useful for fetching address later
                         let sessionID = result["session_id"] as? String ?? "" // Keep this if you want to stay logged in!
+                        let companyID = result["company_id"] as? Int ?? 0
                         
                         print("✅ Success!")
                         print("UID: \(uid)")
@@ -272,8 +270,8 @@ class LoginViewController: UIViewController, UITextFieldDelegate{
                         
                         // 6. PROCEED TO FIREBASE IMMEDIATELY
                         DispatchQueue.main.async {
-                            // self.signinInFirebase(email: email, password: apiKey, name: name, uid: uid)
-                            self.signinInFirebase(email: email, password: apiKey, uidOdoo: uid)
+                            let odooUser = OdooUser(uid: uid, name: name, username: username, partnerID: partnerID, sessionID: sessionID, companyID: companyID)
+                            self.downloadDataFirebase(signedUser: odooUser)
                         }
                     }
                 }
@@ -283,72 +281,35 @@ class LoginViewController: UIViewController, UITextFieldDelegate{
         }.resume()
     }
     
-    //TODO: Remove function ?
-    func signinInFirebase(email: String, password: String, uidOdoo: Int) {
-       
-        Auth.auth().signIn(withEmail: email, password: password) { (user, error) in
-            if user != nil {
-                print ("Welcome " + (user?.user.email)! + "\nThis is your ID: " + (user?.user.uid)!)
-                
-                let preferences = UserDefaults.standard
-                            
-                preferences.set((user?.user.uid)!, forKey: "session")
-                preferences.set(uidOdoo, forKey: "userIDOdoo")
-                
-                //TODO: call saveInfolocal, sync Odoo information into firebase)
-//                saveInfoIntoUserDefaults()
-                
-                //Temporal going to main page from login
-                self.performSegue(withIdentifier: "loginMain", sender: self)
     
-            } else {
-                self.alert(message: "Sorry, wrong credentials", title: "Try again!")
-            }
-        }
-    }
-    
-    func saveInfoInLocalVariables(idShopify: String) {
+    func downloadDataFirebase(signedUser: OdooUser) {
         
         var databaseReference : DatabaseReference!
         databaseReference = Database.database().reference()
         
-        userInformation.userId = (Auth.auth().currentUser?.uid)!
-        userInformation.email = (Auth.auth().currentUser?.email)!
-        
-        databaseReference.child("users").child(userInformation.userId).observeSingleEvent(of: .value, with: {
-            (snapshot) in
+        databaseReference.child("users").child(userInformation.userId).observeSingleEvent(of: .value, with: { (snapshot) in
             // Get user value
             let value = snapshot.value as? NSDictionary
-            
-            if snapshot.exists() {
-               // let account = value?["account"] as? [String: String]
-                
+                            
                 if let units = value?["units"] as? NSDictionary {
                     for unit in units {
                         userUnits[unit.key as! String] = UnitInfo(model: unit.value as! String, imageUnit: NSData())
                     }
                 }
                 
-                userInformation.idShopify = idShopify
-                userInformation.name = value?["name"] as? String ?? ""
                 userInformation.website = value?["website"] as? String ?? ""
                 userInformation.companyName = value?["companyName"] as? String ?? ""
                 userInformation.zipCode = value?["zipCode"] as? String ?? ""
                 userInformation.phone =  value?["phone"] as? String ?? ""
                 userInformation.typeUser = value?["typeUser"] as? String ?? ""
-                userInformation.weight = String(value?["weightOwned"] as? Int ?? 0)
+                userInformation.weight = value?["owned_weight"] as? Int ?? 0
                 userInformation.subscribed = value?["subscribed"] as? Bool ?? false
                 
-                self.saveInfoIntoUserDefaults()
-                
                 OperationQueue.main.addOperation {
+                    self.saveLocally(signedOdooUser: signedUser)
                     self.performSegue(withIdentifier: "loginMain", sender: self)
                     
                 }
-            } else {
-                self.saveExtraInfoUser(userId: (Auth.auth().currentUser?.uid)!, email: (Auth.auth().currentUser?.email)!, idShopify: idShopify)
-
-            }
         })
         {
             (error) in
@@ -358,38 +319,19 @@ class LoginViewController: UIViewController, UITextFieldDelegate{
         }
     }
     
-    func saveInfoIntoUserDefaults() {
-           
-           UserDefaults.standard.set([
-               "userId": userInformation.userId,
-               "idShopify": userInformation.idShopify,
-               "emailUser": userInformation.email,
-               "name": userInformation.name,
-               "zipCode": userInformation.zipCode,
-               "website": userInformation.website,
-               "companyName": userInformation.companyName,
-               "phone": userInformation.phone,
-               "subscribed": userInformation.subscribed
-               ], forKey: "userInformationSession")
-       }
-    
-    func saveExtraInfoUser(userId: String, email: String, idShopify: String) {
-        var ref : DatabaseReference!
-        ref = Database.database().reference()
-        
-        extraInfo.completedSigningUp = false
-        
-        let account = ["email": email, "completedSigningUp" : false, "idShopify" : idShopify] as [String : Any]
-        
-        ref.child("users").child(userId).child("account").setValue(account) {
-            (error:Error?, ref:DatabaseReference) in
-            if let error = error {
-                print (error)
-            }
-        }
-        
-        //Go to add info
-        self.performSegue(withIdentifier: "signupAddinfo", sender: self)
+    func saveLocally(signedOdooUser: OdooUser) {
+
+        let localUser = AppUser(
+            uid: signedOdooUser.uid,
+            partnerID: signedOdooUser.partnerID,
+            name: signedOdooUser.name,
+            email: self.emailText.text!,
+            typeUser: userInformation.typeUser,
+            ownwedWeight: userInformation.weight,
+            companyID: 25,
+            completedSigningUp: false
+        )
+        UserSession.shared.save(user: localUser)
     }
     
     @IBAction func forgotPassButton(_ sender: UIButton) {

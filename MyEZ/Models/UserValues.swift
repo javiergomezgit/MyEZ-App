@@ -9,9 +9,7 @@
 import Foundation
 import Firebase
 
-
 struct UserValues {
-    
     var name: String
     var userId: String
     var email: String
@@ -23,31 +21,9 @@ struct UserValues {
     var about: String
     var myProfileImage: NSData
     var typeUser: String
-    var weight: String
+    var weight: Int
     var subscribed: Bool
     var showWalk: Bool
-    var idShopify: String
-    
-    //    var token: String
-    //    var username: String
-    //    var userTokenAmount: Int
-    //    var usercountry: String
-    //    var userstate: String
-    //    var userAvatarId: String
-    //    var userActiveTripsJSON = [Any]()
-    //    var userActiveTrips: Int
-    //    var userInactiveTrip: Int
-    //    var usersRanks = [String:Any]()
-    //    var usersRanksInactive = [String:Any]()
-    //    var userInactiveTrips = [String:[String:UIImage]]()
-    //    var imageTrips = [String:UIImage]()
-    //    var imageTripsResized = [String:[String:UIImage]]()
-    //    var totalGames: Int
-    //    var currentTripId: String
-    //    var finalScore: Int
-    //    var bestScore: Int
-    //    var practiceOrNot: Bool
-    
 }
 
 struct OdooUser {
@@ -65,12 +41,12 @@ struct AppUser: Codable {
     let name: String
     let email: String
     let typeUser: String
+    let ownwedWeight: Int
     let companyID: Int
     var completedSigningUp: Bool    
 }
 
-var userInformation = UserValues(name: "", userId: "", email: "", zipCode: "", website: "", companyName: "", phone: "", businessType: "", about: "", myProfileImage: NSData(), typeUser: "", weight: "", subscribed: false, showWalk: true, idShopify: "")
-
+var userInformation = UserValues(name: "", userId: "", email: "", zipCode: "", website: "", companyName: "", phone: "", businessType: "", about: "", myProfileImage: NSData(), typeUser: "", weight: 0, subscribed: false, showWalk: true)
 
 struct UnitInfo {
     var model: String
@@ -92,20 +68,7 @@ struct UserExtraInfo {
 
 var extraInfo = UserExtraInfo(completedSigningUp: false, myez : [""])
 
-//
-//struct TopUsers {
-//
-//    var weightUser = Int?
-//    var zipCodeUser = String?
-//
-//    init(weightUser: Int?, zipCodeUser: String?) {
-//        self.weightUser = weightUser
-//        self.zipCodeUser = zipCodeUser
-//    }
-//}
-
 var topUsers = [Int:String]()
-
 
 func checkTypeUser(weightUnits: Int) -> String {
     

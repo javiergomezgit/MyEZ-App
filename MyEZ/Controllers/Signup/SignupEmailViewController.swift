@@ -274,8 +274,8 @@ class SignupEmailViewController: UIViewController {
             "email": email,              // Contact email
             "completedSigningUp": false,
             "typeuser": "minimumweight",
-            "weightowned": 1,
-            "unitsownedSKUs": ["SKU": 1], //Going to store the skus of all the units that user owns and the owned quantity of each sku
+            "owned_weight": 1,
+            "units": ["SKU": 1], //Going to store the skus of all the units that user owns and the owned quantity of each sku
             "website": "",
             "company_id": 25,            // We know they belong to Company 25
             "company_name": "",
@@ -291,13 +291,14 @@ class SignupEmailViewController: UIViewController {
             } else {
                 print("✅ User Saved to Firebase! Partner ID: \(partnerID)")
                 
-                // 3. SAVE LOCALLY (The New Part)
+                //SAVE LOCALLY
                 let localUser = AppUser(
                     uid: odooUID,
                     partnerID: partnerID,
                     name: name,
                     email: email,
                     typeUser: "minimumweight",
+                    ownwedWeight: 0,
                     companyID: 25,
                     completedSigningUp: false
                 )
@@ -307,7 +308,6 @@ class SignupEmailViewController: UIViewController {
                     print("🚀 Performing Segue 'loginMain'...")
                     self.performSegue(withIdentifier: "signupMain", sender: self)
                 }
-
             }
         }
     }
