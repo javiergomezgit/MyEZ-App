@@ -21,16 +21,11 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
     @IBOutlet weak var nameLabel: UILabel!
     @IBOutlet weak var typeUserLabel: UILabel!
     
-    @IBOutlet weak var signupButton: UIButton!
-    @IBOutlet weak var signinButton: UIButton!
-    
     @IBOutlet weak var accountButton: UIButton!
     @IBOutlet weak var ordersButton: UIButton!
     @IBOutlet weak var addressesButton: UIButton!
     @IBOutlet weak var dealsSwitch: UISwitch!
-    
-    @IBOutlet weak var signinupTableCell: UITableViewCell!
-    
+        
     override func viewWillAppear(_ animated: Bool) {
         
         navigationController?.navigationBar.isHidden = false
@@ -119,15 +114,15 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
     func hideOrDisableControls(hideOrDisable: Bool) {
         
         if hideOrDisable {
+            self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Login", style: .done, target: self, action: #selector(signinAction))
             
             userProfileButton.isEnabled = false
+            userProfileImage.image = UIImage(named: "defaultProfile")
             
             nameLabel.isHidden = false
             nameLabel.text = "Signin for more features"
             typeUserLabel.isHidden = true
-            
-            signinButton.isHidden = false
-            signupButton.isHidden = false
+
             heightForSignupSection = 50
             
             accountButton.isEnabled = false
@@ -140,12 +135,11 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
             self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Logout", style: .done, target: self, action: #selector(signout(sender:)))
             
             userProfileButton.isEnabled = true
+            //TODO: When user is signed in, should load the image from firebase and get the url from local
             
             nameLabel.isHidden = false
             typeUserLabel.isHidden = false
             
-            signinButton.isHidden = true
-            signupButton.isHidden = true
             heightForSignupSection = 0
             
             accountButton.isEnabled = true

@@ -50,11 +50,11 @@ struct AppUser: Codable {
 var userInformation = UserValues(name: "", userId: "", email: "", zipCode: "", website: "", companyName: "", phone: "", businessType: "", about: "", profileImageUrl: "", typeUser: "", weight: 0, subscribed: false, showWalk: true)
 
 struct UnitInfo {
-    var model: String
+    var skuUnit: String
     var imageUnit: NSData
     
     init(model: String, imageUnit: NSData) {
-        self.model = model
+        self.skuUnit = model
         self.imageUnit = imageUnit
     }
 }

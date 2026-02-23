@@ -44,7 +44,7 @@ extension MyEZViewController: UICollectionViewDelegate, UICollectionViewDataSour
         
         
             _  = Array(userUnits.keys)[indexPath.row]
-            cell.nameUnit.text = value.model
+            cell.nameUnit.text = value.skuUnit
             cell.imageUnit.image = UIImage(data: value.imageUnit as Data)
 
             cell.contentView.layer.cornerRadius = 12.0
@@ -69,7 +69,7 @@ extension MyEZViewController: UICollectionViewDelegate, UICollectionViewDataSour
   
         selectedCell = indexPath.row
         guard let imageToShow = UIImage(data: (Array(userUnits.values)[self.selectedCell]).imageUnit as Data) else { return }
-        let unitSelected = String(Array(userUnits.values)[self.selectedCell].model)
+        let unitSelected = String(Array(userUnits.values)[self.selectedCell].skuUnit)
         
         
         let popOverVC = UIStoryboard(name: "MyEZ", bundle: nil).instantiateViewController(withIdentifier: "downoadMyez") as! DownloadMyezViewController
@@ -207,7 +207,7 @@ class MyEZViewController: UIViewController{
         
         for userUnit in userUnitsTemp {
             
-            let path = "UnitImages/" + (userUnit.value.model) + ".jpg"
+            let path = "UnitImages/" + (userUnit.value.skuUnit) + ".jpg"
             print (path)
 
             // Create a reference to the file you want to download
@@ -222,7 +222,7 @@ class MyEZViewController: UIViewController{
                 } else {
                     // Data for "images/island.jpg" is returned
                     //self.unitImagesArray.append(UIImage(data: data!)!)
-                    userUnits.updateValue(UnitInfo(model: userUnit.value.model , imageUnit: data! as NSData), forKey: userUnit.key)
+                    userUnits.updateValue(UnitInfo(model: userUnit.value.skuUnit , imageUnit: data! as NSData), forKey: userUnit.key)
                     count += 1
                     print (count)
                     if count == userUnitsTemp.count {
@@ -357,7 +357,7 @@ class MyEZViewController: UIViewController{
             print (unit.key)
             print (unit.value)
             
-            ref.child("users").child(userInformation.userId).child("units").updateChildValues([unit.key: unit.value.model])
+            ref.child("users").child(userInformation.userId).child("units").updateChildValues([unit.key: unit.value.skuUnit])
         }
         
         self.loadInfoHeader()

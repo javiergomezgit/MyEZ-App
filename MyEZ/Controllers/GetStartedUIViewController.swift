@@ -56,22 +56,16 @@ class GetStartedUIViewController: UIViewController {
     }
     
     func isLogged() -> Bool{
-    
-        let preferences = UserDefaults.standard
-        var logged = false
-
-        if preferences.object(forKey: "session") != nil && preferences.object(forKey: "session") as? String != "LoggedOut" {
-            logged = true
-        } else if preferences.object(forKey: "session") as? String == "LoggedOut" {
-            preferences.removeObject(forKey: "session")
-            preferences.synchronize()
-        } else {
-            logged = false
-        }
+//        var logged = false
+//        let user = UserSession.shared.load()
+//        if user != nil {
+//            logged = true
+//        }
+//        return logged
         
-        print (preferences.object(forKey: "session"))
-
-        return logged
+        
+        //*-- Fancier way --*//
+        return UserSession.shared.load() != nil
     }
 
     func isUpdated() -> Bool {
@@ -87,93 +81,20 @@ class GetStartedUIViewController: UIViewController {
     }
 
     func retrieveInfoFromUserDefaults() {
-        let userInformationSession = UserDefaults.standard.value(forKey: "userInformationSession") as? [String: String] ?? [:]
-        
-        userInformation.userId = userInformationSession["userId"] as? String ?? ""
-        userInformation.email = userInformationSession["emailUser"] as? String ?? ""
-        userInformation.name = userInformationSession["name"] as? String ?? ""
-        userInformation.zipCode = userInformationSession["zipCode"] as? String ?? ""
-        userInformation.website = userInformationSession["website"] as? String ?? ""
-        userInformation.companyName = userInformationSession["companyName"] as? String ?? ""
-        userInformation.phone = userInformationSession["phone"] as? String ?? ""
-        print (userInformation.zipCode)
-        
-        OperationQueue.main.addOperation {
-            self.performSegue(withIdentifier: "getstartedMain", sender: self)
+                
+        if let userInformationSession = UserSession.shared.load() {
+            userInformation.userId = String(userInformationSession.partnerID)
+            userInformation.email = userInformationSession.email
+            userInformation.name = userInformationSession.name
+            userInformation.profileImageUrl = userInformationSession.profileImageUrl ?? "https://firebasestorage.googleapis.com/v0/b/myezfirebase.appspot.com/o/myez-default-profile-image.png?alt=media&token=220f60c3-4cb2-480f-a365-f7852b229857"
+            userInformation.typeUser = userInformationSession.typeUser
+            userInformation.weight = userInformationSession.ownwedWeight
+            
+            OperationQueue.main.addOperation {
+                self.performSegue(withIdentifier: "getstartedMain", sender: self)
+                print("User already signed in: \(userInformation.name) (ID: \(userInformation.userId))")
+            }
         }
     }
 }
-
-
-//OLD FUNCTIONS
-/*
- func retrivePassword(for account: String) -> String? {
- let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
- kSecAttrAccount as String: account,
- kSecMatchLimit as String: kSecMatchLimitOne,
- kSecReturnData as String: kCFBooleanTrue]
- 
- var retrivedData: AnyObject? = nil
- let _ = SecItemCopyMatching(query as CFDictionary, &retrivedData)
- 
- guard let data = retrivedData as? Data else {return nil}
- return String(data: data, encoding: String.Encoding.utf8)
- }
- 
- 
- func saveInfoInLocalVariables() {
- 
- var ref : DatabaseReference!
- 
- ref = Database.database().reference()
- 
- userInformation.userId = (Auth.auth().currentUser?.uid)!
- userInformation.email = (Auth.auth().currentUser?.email)!
- 
- ref.child("users").child(userInformation.userId).observeSingleEvent(of: .value, with: {
- (snapshot) in
- // Get user value
- let value = snapshot.value as? NSDictionary
- 
- if snapshot.exists() {
- let account = value?["account"] as! [String:String]
- 
- if let units = value?["units"] as? NSDictionary {
- for unit in units {
- userUnits[unit.key as! String] = UnitInfo(model: unit.value as! String, imageUnit: NSData())
- }
- }
- userInformation.name = value?["name"] as? String ?? ""
- userInformation.website = value?["website"] as? String ?? ""
- userInformation.businessType = value?["businessType"] as? String ?? ""
- userInformation.companyName = value?["companyName"] as? String ?? ""
- userInformation.zipCode = value?["zipCode"] as? String ?? ""
- userInformation.about = value?["about"] as? String ?? ""
- userInformation.phone =  account["phone"] ?? ""
- userInformation.typeUser = value?["typeUser"] as? String ?? ""
- userInformation.weight = String(value?["weightOwned"] as? Int ?? 0)
- userInformation.subscribed = value?["subscribed"] as? Bool ?? false
- 
- OperationQueue.main.addOperation {
- self.performSegue(withIdentifier: "getstartedMain", sender: self)
- }
- }
- })
- {
- (error) in
- print(error.localizedDescription)
- }
- }
- 
- func newSignin(password: String) {
- Auth.auth().signIn(withEmail: userInformation.email, password: password) { (user, error) in
- if user != nil {
- print ("Welcome " + (user?.user.email)! + "\nThis is your ID: " + (user?.user.uid)!)
- self.performSegue(withIdentifier: "getstartedMain", sender: self)
- } else {
- print("Sorry wrong credentials")
- }
- }
- }
-*/
 

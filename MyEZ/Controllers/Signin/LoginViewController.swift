@@ -191,6 +191,8 @@ class LoginViewController: UIViewController, UITextFieldDelegate{
                             companyID: result["company_id"] as? Int ?? 0
                         )
                         
+                        self.downloadDataFirebase(signedUser: user)
+                        
                         // C. SUCCESS!
                         completion(.success(user))
                     } else {
@@ -281,22 +283,18 @@ class LoginViewController: UIViewController, UITextFieldDelegate{
         }.resume()
     }
     
-    
     func downloadDataFirebase(signedUser: OdooUser) {
         
         var databaseReference : DatabaseReference!
         databaseReference = Database.database().reference()
         
-        databaseReference.child("users").child(userInformation.userId).observeSingleEvent(of: .value, with: { (snapshot) in
+        databaseReference.child("users").child(String(signedUser.partnerID)).observeSingleEvent(of: .value, with: { (snapshot) in
             // Get user value
             let value = snapshot.value as? NSDictionary
             
-            if let units = value?["units"] as? NSDictionary {
-                for unit in units {
-                    userUnits[unit.key as! String] = UnitInfo(model: unit.value as! String, imageUnit: NSData())
-                }
-            }
+            //TODO: Store the units that user owned, possibly
             
+            userInformation.userId = String(signedUser.partnerID)
             userInformation.website = value?["website"] as? String ?? ""
             userInformation.companyName = value?["companyName"] as? String ?? ""
             userInformation.zipCode = value?["zipCode"] as? String ?? ""
@@ -334,6 +332,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate{
             profileImageUrl: userInformation.profileImageUrl
         )
         UserSession.shared.save(user: localUser)
+        print ("💾 User saved locally in Login")
     }
     
     @IBAction func forgotPassButton(_ sender: UIButton) {
