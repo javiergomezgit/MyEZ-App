@@ -264,50 +264,84 @@ class SignupEmailViewController: UIViewController {
     
     func didFinishRegistration(partnerID: Int, odooUID: Int, email: String, name: String) {
         
-        // Get the current date for analytics (e.g. "When did this user join?")
-        let timestamp = Date().timeIntervalSince1970
-        
-        let firebaseData: [String: Any] = [
-            "uid": odooUID,              // The Odoo User ID (for JSON-RPC calls)
-            "partner_id": partnerID,     // The Odoo Partner ID (for Invoices/Orders)
-            "name": name,                // Display name for the Home Screen
-            "email": email,              // Contact email
-            "completedSigningUp": false,
-            "typeuser": "minimumweight",
-            "owned_weight": 1,
-            "units": ["SKU": 1], //Going to store the skus of all the units that user owns and the owned quantity of each sku
-            "website": "",
-            "company_id": 25,            // We know they belong to Company 25
-            "company_name": "",
-            "createdAt": timestamp,      // Good for sorting users by "Newest"
-            "phone": "",                 // Placeholder for profile updates
-            "fcmToken": ""               // Placeholder for Push Notifications
-        ]
-        
-        // Save to Firebase
-        dbRef.child("users").child("\(partnerID)").setValue(firebaseData) { (error, ref) in
-            if let error = error {
-                print("❌ Firebase Save Error: \(error.localizedDescription)")
-            } else {
-                print("✅ User Saved to Firebase! Partner ID: \(partnerID)")
-                
-                //SAVE LOCALLY
-                let localUser = AppUser(
-                    uid: odooUID,
-                    partnerID: partnerID,
-                    name: name,
-                    email: email,
-                    typeUser: "minimumweight",
-                    ownwedWeight: 0,
-                    companyID: 25,
-                    completedSigningUp: false
-                )
-                UserSession.shared.save(user: localUser)
-                
-                self.loginAndSaveCookie(password: self.passwordText.text!, login: email) {
-                    print("🚀 Performing Segue 'loginMain'...")
-                    self.performSegue(withIdentifier: "signupMain", sender: self)
+        uploadProfileImage(partnerID: partnerID) { [weak self] imageURL in
+            guard let self = self else { return }
+            
+            let finalImageURL = imageURL ?? "https://firebasestorage.googleapis.com/v0/b/myezfirebase.appspot.com/o/myez-default-profile-image.png?alt=media&token=220f60c3-4cb2-480f-a365-f7852b229857"
+            
+            // Get the current date for analytics (e.g. "When did this user join?")
+            let timestamp = Date().timeIntervalSince1970
+            
+            let firebaseData: [String: Any] = [
+                "uid": odooUID,              // The Odoo User ID (for JSON-RPC calls)
+                "partner_id": partnerID,     // The Odoo Partner ID (for Invoices/Orders)
+                "name": name,                // Display name for the Home Screen
+                "email": email,              // Contact email
+                "completedSigningUp": false,
+                "typeuser": "minimumweight",
+                "owned_weight": 1,
+                "units": ["SKU": 1], //Going to store the skus of all the units that user owns and the owned quantity of each sku
+                "company_id": 25,            // We know they belong to Company 25
+                "company_name": "",
+                "createdAt": timestamp,      // Good for sorting users by "Newest"
+                "phone": "",                 // Placeholder for profile updates
+                "fcmToken": "",               // Placeholder for Push Notifications
+                "profile_image_url": finalImageURL
+            ]
+            
+            // Save to Firebase
+            dbRef.child("users").child("\(partnerID)").setValue(firebaseData) { (error, ref) in
+                if let error = error {
+                    print("❌ Firebase Save Error: \(error.localizedDescription)")
+                } else {
+                    print("✅ User Saved to Firebase! Partner ID: \(partnerID)")
+                    
+                    //SAVE LOCALLY
+                    let localUser = AppUser(
+                        uid: odooUID,
+                        partnerID: partnerID,
+                        name: name,
+                        email: email,
+                        typeUser: "minimumweight",
+                        ownwedWeight: 0,
+                        companyID: 25,
+                        completedSigningUp: false,
+                        profileImageUrl: finalImageURL
+                    )
+                    UserSession.shared.save(user: localUser)
+                    
+                    self.loginAndSaveCookie(password: self.passwordText.text!, login: email) {
+                        print("🚀 Performing Segue 'loginMain'...")
+                        self.performSegue(withIdentifier: "signupMain", sender: self)
+                    }
                 }
+            }
+        }
+    }
+    
+    func uploadProfileImage(partnerID: Int, completion: @escaping (String?) -> Void) {
+        
+        let storageRef = Storage.storage().reference().child("users/\(partnerID)/profile/\(partnerID)_profile_image.jpg")
+        
+        //Get Image from Assets (Ensure "default_profile_asset" exists in your Assets.xcassets)
+        guard let defaultImage = UIImage(named: "defaultProfile"),
+              let imageData = defaultImage.jpegData(compressionQuality: 0.7) else {
+            print("❌ Image Asset not found")
+            completion(nil)
+            return
+        }
+        
+        //Upload
+        storageRef.putData(imageData, metadata: nil) { (metadata, error) in
+            if let error = error {
+                print("❌ Storage Error: \(error.localizedDescription)")
+                completion(nil)
+                return
+            }
+            
+            //Retrieve URL
+            storageRef.downloadURL { (url, error) in
+                completion(url?.absoluteString)
             }
         }
     }
@@ -337,9 +371,9 @@ class SignupEmailViewController: UIViewController {
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
         
         print("🔐 Attempting Login to Capture Cookie...")
-
+        
         URLSession.shared.dataTask(with: request) { data, response, error in
-
+            
             if let httpResponse = response as? HTTPURLResponse,
                let fields = httpResponse.allHeaderFields as? [String: String],
                let url = response?.url {
@@ -361,7 +395,7 @@ class SignupEmailViewController: UIViewController {
             
             // Force the save to happen right now
             UserDefaults.standard.synchronize()
-
+            
             // 🛑 CRITICAL: Tell the main thread we are done!
             DispatchQueue.main.async {
                 completion()

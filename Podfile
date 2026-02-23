@@ -27,4 +27,5 @@ target 'MyEZ' do
   pod 'lottie-ios'
   pod 'SwiftyJSON'
   pod 'YPImagePicker'
+  pod 'Kingfisher', '~> 8.0'
 end

@@ -90,24 +90,24 @@ class LoginViewController: UIViewController, UITextFieldDelegate{
                 }
             })
         }
-
+        
     }
     
     func handleLoginSuccess(user: OdooUser) {
-            print("✅ Logged in as: \(user.name)")
-            print("🔑 Session ID: \(user.sessionID)")
-            
-            // TODO: Save to Keychain here
-            
-            // Navigate to Main App
-//             let mainVC = MainTabBarController()
-//             mainVC.modalPresentationStyle = .fullScreen
-//             self.present(mainVC, animated: true)
+        print("✅ Logged in as: \(user.name)")
+        print("🔑 Session ID: \(user.sessionID)")
+        
+        // TODO: Save to Keychain here
+        
+        // Navigate to Main App
+        //             let mainVC = MainTabBarController()
+        //             mainVC.modalPresentationStyle = .fullScreen
+        //             self.present(mainVC, animated: true)
         
         self.performSegue(withIdentifier: "loginMain", sender: self)
-            
+        
         alert(message: "Welcome", title: "Hello, \(user.name)")
-        }
+    }
     
     func signInWithOdoo(email: String, password: String, completion: @escaping (Result<OdooUser, LoginError>) -> Void) {
         
@@ -290,26 +290,27 @@ class LoginViewController: UIViewController, UITextFieldDelegate{
         databaseReference.child("users").child(userInformation.userId).observeSingleEvent(of: .value, with: { (snapshot) in
             // Get user value
             let value = snapshot.value as? NSDictionary
-                            
-                if let units = value?["units"] as? NSDictionary {
-                    for unit in units {
-                        userUnits[unit.key as! String] = UnitInfo(model: unit.value as! String, imageUnit: NSData())
-                    }
+            
+            if let units = value?["units"] as? NSDictionary {
+                for unit in units {
+                    userUnits[unit.key as! String] = UnitInfo(model: unit.value as! String, imageUnit: NSData())
                 }
+            }
+            
+            userInformation.website = value?["website"] as? String ?? ""
+            userInformation.companyName = value?["companyName"] as? String ?? ""
+            userInformation.zipCode = value?["zipCode"] as? String ?? ""
+            userInformation.phone =  value?["phone"] as? String ?? ""
+            userInformation.typeUser = value?["typeUser"] as? String ?? ""
+            userInformation.weight = value?["owned_weight"] as? Int ?? 0
+            userInformation.subscribed = value?["subscribed"] as? Bool ?? false
+            userInformation.profileImageUrl = value?["profile_image_url"] as? String ?? "https://firebasestorage.googleapis.com/v0/b/myezfirebase.appspot.com/o/myez-default-profile-image.png?alt=media&token=220f60c3-4cb2-480f-a365-f7852b229857"
+            
+            OperationQueue.main.addOperation {
+                self.saveLocally(signedOdooUser: signedUser)
+                self.performSegue(withIdentifier: "loginMain", sender: self)
                 
-                userInformation.website = value?["website"] as? String ?? ""
-                userInformation.companyName = value?["companyName"] as? String ?? ""
-                userInformation.zipCode = value?["zipCode"] as? String ?? ""
-                userInformation.phone =  value?["phone"] as? String ?? ""
-                userInformation.typeUser = value?["typeUser"] as? String ?? ""
-                userInformation.weight = value?["owned_weight"] as? Int ?? 0
-                userInformation.subscribed = value?["subscribed"] as? Bool ?? false
-                
-                OperationQueue.main.addOperation {
-                    self.saveLocally(signedOdooUser: signedUser)
-                    self.performSegue(withIdentifier: "loginMain", sender: self)
-                    
-                }
+            }
         })
         {
             (error) in
@@ -320,7 +321,7 @@ class LoginViewController: UIViewController, UITextFieldDelegate{
     }
     
     func saveLocally(signedOdooUser: OdooUser) {
-
+        
         let localUser = AppUser(
             uid: signedOdooUser.uid,
             partnerID: signedOdooUser.partnerID,
@@ -329,7 +330,8 @@ class LoginViewController: UIViewController, UITextFieldDelegate{
             typeUser: userInformation.typeUser,
             ownwedWeight: userInformation.weight,
             companyID: 25,
-            completedSigningUp: false
+            completedSigningUp: false,
+            profileImageUrl: userInformation.profileImageUrl
         )
         UserSession.shared.save(user: localUser)
     }

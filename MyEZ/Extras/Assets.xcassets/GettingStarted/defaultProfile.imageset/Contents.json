@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "myez-default-profile-image.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

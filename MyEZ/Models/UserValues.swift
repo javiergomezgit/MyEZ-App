@@ -19,7 +19,7 @@ struct UserValues {
     var phone: String
     var businessType: String
     var about: String
-    var myProfileImage: NSData
+    var profileImageUrl: String
     var typeUser: String
     var weight: Int
     var subscribed: Bool
@@ -43,10 +43,11 @@ struct AppUser: Codable {
     let typeUser: String
     let ownwedWeight: Int
     let companyID: Int
-    var completedSigningUp: Bool    
+    var completedSigningUp: Bool
+    let profileImageUrl: String?
 }
 
-var userInformation = UserValues(name: "", userId: "", email: "", zipCode: "", website: "", companyName: "", phone: "", businessType: "", about: "", myProfileImage: NSData(), typeUser: "", weight: 0, subscribed: false, showWalk: true)
+var userInformation = UserValues(name: "", userId: "", email: "", zipCode: "", website: "", companyName: "", phone: "", businessType: "", about: "", profileImageUrl: "", typeUser: "", weight: 0, subscribed: false, showWalk: true)
 
 struct UnitInfo {
     var model: String

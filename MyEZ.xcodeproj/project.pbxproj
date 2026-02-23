@@ -130,7 +130,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		2225278D2F394CAC003032EC /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		2225278D2F394CAC003032EC /* Exceptions for "MyEZ/Security" folder in "MyEZ" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -140,8 +140,29 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		220724CA2F3949BD00D68B92 /* Security */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (2225278D2F394CAC003032EC /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); name = Security; path = MyEZ/Security; sourceTree = "<group>"; };
-		22A763AD2F394F9E00403841 /* Signin */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Signin; sourceTree = "<group>"; };
+		220724CA2F3949BD00D68B92 /* MyEZ/Security */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				2225278D2F394CAC003032EC /* Exceptions for "MyEZ/Security" folder in "MyEZ" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = MyEZ/Security;
+			sourceTree = "<group>";
+		};
+		22A763AD2F394F9E00403841 /* Signin */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = Signin;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -312,7 +333,7 @@
 		3B8453031F3D07DC009EA3B8 = {
 			isa = PBXGroup;
 			children = (
-				220724CA2F3949BD00D68B92 /* Security */,
+				220724CA2F3949BD00D68B92 /* MyEZ/Security */,
 				3B84530E1F3D07DC009EA3B8 /* MyEZ */,
 				3B84530D1F3D07DC009EA3B8 /* Products */,
 				947A69AC2695BEC77772EB2B /* Frameworks */,
@@ -406,7 +427,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				220724CA2F3949BD00D68B92 /* Security */,
+				220724CA2F3949BD00D68B92 /* MyEZ/Security */,
 				22A763AD2F394F9E00403841 /* Signin */,
 			);
 			name = MyEZ;
@@ -501,13 +522,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-MyEZ/Pods-MyEZ-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-MyEZ/Pods-MyEZ-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;

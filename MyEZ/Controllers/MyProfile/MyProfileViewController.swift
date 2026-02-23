@@ -7,21 +7,19 @@
 //
 
 import UIKit
-import FirebaseAuth
 import SCLAlertView
 import MessageUI
 import YPImagePicker
 import FirebaseDatabase
-
+import Kingfisher
 
 class MyProfileViewController: UITableViewController, MFMailComposeViewControllerDelegate {
-
+    
     @IBOutlet weak var userProfileButton: UIButton!
     @IBOutlet weak var userProfileImage: UIImageView!
-
+    
     @IBOutlet weak var nameLabel: UILabel!
     @IBOutlet weak var typeUserLabel: UILabel!
-    @IBOutlet weak var websiteLabel: UILabel!
     
     @IBOutlet weak var signupButton: UIButton!
     @IBOutlet weak var signinButton: UIButton!
@@ -32,31 +30,28 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
     @IBOutlet weak var dealsSwitch: UISwitch!
     
     @IBOutlet weak var signinupTableCell: UITableViewCell!
-
+    
     override func viewWillAppear(_ animated: Bool) {
         
         navigationController?.navigationBar.isHidden = false
-
         
-        if Auth.auth().currentUser?.uid != "" {
-            print (Auth.auth().currentUser?.uid)
+        if let currentUser = UserSession.shared.load() {
+            print (currentUser.email)
             loadInformationInScreen()
             hideOrDisableControls(hideOrDisable: false)
         } else {
             hideOrDisableControls(hideOrDisable: true)
         }
-        
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-       // self.modalPresentationStyle = .overFullScreen
+        // self.modalPresentationStyle = .overFullScreen
         
         //For back button in navigation bar
         
         dealsSwitch.isOn = userInformation.subscribed
-        
     }
     
     
@@ -68,12 +63,22 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
         
         cleanData()
         
-        if Auth.auth().currentUser == nil {
-            OperationQueue.main.addOperation {
-                SCLAlertView().showSuccess("Logged Out", subTitle: "Successfully signed out. Hope to see you soon!")
-            }
+        //TODO: verify if there is no information save locally if nothing after cleaning then show the pop up
+        if UserSession.shared.load() == nil {
             
-            self.gotoFirstScreen()
+            // Use the main thread to show the UI popup
+            DispatchQueue.main.async {
+                // Show the success alert
+                SCLAlertView().showSuccess(
+                    "Logged Out",
+                    subTitle: "Successfully signed out. Hope to see you soon!"
+                )
+                
+                // Return to the login or welcome screen
+                self.gotoFirstScreen()
+            }
+        } else {
+            print("⚠️ Local data was not fully cleared.")
         }
     }
     
@@ -96,57 +101,20 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
     }
     
     func loadInformationInScreen() {
-    
+        
         if let user = UserSession.shared.load() {
             print("Welcome, \(user.name)!")
             
             self.nameLabel.text = user.name
             self.typeUserLabel.text = user.typeUser
-        }
-        
-        getImage()
-        
-        
-        
-        //load image from document files in device
-        //first download from dabase if existe then
-        
-        
-        
-        
-        
-//        UserDefaults.standard.set([
-//            "userId": userInformation.userId,
-//            "emailUser": userInformation.email,
-//            "name": userInformation.name,
-//            "zipCode": userInformation.zipCode,
-//            "website": userInformation.website,
-//            "companyName": userInformation.companyName,
-//            "phone": userInformation.phone,
-//            ], forKey: "userInformationSession")
-        
-        
-    
-    }
-    
-    func getImage(){
-        let fileManager = FileManager.default
-        let imagePAth = (self.getDirectoryPath() as NSString).appendingPathComponent("MyEZProfileImage.png")
-        
-        print (imagePAth)
-        if fileManager.fileExists(atPath: imagePAth){
-            self.userProfileImage.image = UIImage(contentsOfFile: imagePAth)
-        }else{
-            print("No Image")
+            
+            let profileURL = URL(string: user.profileImageUrl ?? "https://firebasestorage.googleapis.com/v0/b/myezfirebase.appspot.com/o/myez-default-profile-image.png?alt=media&token=220f60c3-4cb2-480f-a365-f7852b229857")
+            if let finalURL = profileURL {
+                userProfileImage.kf.setImage(with: finalURL)
+                print("Loading image from: \(finalURL)")
+            }
         }
     }
-    
-    func getDirectoryPath() -> String {
-        let paths = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)
-        let documentsDirectory = paths[0]
-        return documentsDirectory
-    }
-    
     
     func hideOrDisableControls(hideOrDisable: Bool) {
         
@@ -157,12 +125,11 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
             nameLabel.isHidden = false
             nameLabel.text = "Signin for more features"
             typeUserLabel.isHidden = true
-            websiteLabel.isHidden = true
             
             signinButton.isHidden = false
             signupButton.isHidden = false
             heightForSignupSection = 50
-
+            
             accountButton.isEnabled = false
             ordersButton.isEnabled = false
             addressesButton.isEnabled = false
@@ -171,12 +138,11 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
         } else {
             
             self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Logout", style: .done, target: self, action: #selector(signout(sender:)))
-
+            
             userProfileButton.isEnabled = true
-
+            
             nameLabel.isHidden = false
             typeUserLabel.isHidden = false
-            websiteLabel.isHidden = false
             
             signinButton.isHidden = true
             signupButton.isHidden = true
@@ -204,41 +170,34 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
     
     func cleanData() {
         
-        let preferences = UserDefaults.standard
+        // 1. DELETE LOCAL INFORMATION (UserDefaults)
+        UserDefaults.standard.removeObject(forKey: "savedUserSession")
+        print("💾 Local user data deleted.")
         
-        preferences.removeObject(forKey: "userEmail")
-        preferences.removeObject(forKey: "session")
-        preferences.removeObject(forKey: "newUser")
-        preferences.removeObject(forKey: "userInformationSession")
-        preferences.synchronize()
+        // 2. DELETE STORED COOKIES
+        let storage = HTTPCookieStorage.shared
+        if let cookies = storage.cookies {
+            for cookie in cookies {
+                storage.deleteCookie(cookie)
+            }
+        }
+        print("🍪 Cookies cleared.")
         
-        userInformation = UserValues(
-            name: "",
-            userId: "",
-            email: "",
-            zipCode: "",
-            website: "",
-            companyName: "",
-            phone: "",
-            businessType: "",
-            about: "",
-            myProfileImage: NSData(),
-            typeUser: "",
-            weight: 0,
-            subscribed: false,
-            showWalk: true
-        )
+        // 3. SIGNOUT FROM ODOO (Network Call)
+        let odooLogoutURL = URL(string: "https://ezinflatables.odoo.com/web/session/logout")!
+        var request = URLRequest(url: odooLogoutURL)
+        request.httpMethod = "GET"
         
-        userUnits.removeAll()
-        
-        print (preferences)
-        print (userInformation)
-        print (userUnits)
-        
-        try! Auth.auth().signOut()
+        URLSession.shared.dataTask(with: request) { _, _, _ in
+            print("🔌 Signed out from Odoo Server.")
+            
+            // 4. NAVIGATE TO LOGIN SCREEN
+            DispatchQueue.main.async {
+                // Add your code here to switch the root view back to Login
+            }
+        }.resume()
     }
     
-     
     
     @IBAction func isSubscribed(_ sender: UISwitch) {
         
@@ -260,7 +219,7 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
     @IBAction func reportProblem(_ sender: UIButton) {
         sendEmail(email: "javier@ezinflatables.com", name: "Javier")
     }
-        
+    
     
     @IBAction func contactTechnial(_ sender: UIButton) {
         sendEmail(email: "javier@ezinflatables.com", name: "Javier")
@@ -283,7 +242,7 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
             """
         supportEmail.presentEmailSender(from: self, to: [email], subject: "MyEZ App Contact", body: body)
     }
-        
+    
     @IBAction func openTermsOnline(_ sender: UIButton) {
         if let url = URL(string: "https://www.ezinflatables.com/pages/terms-and-conditions") {
             UIApplication.shared.open(url, options: [:])
@@ -296,12 +255,10 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
         }
     }
     
-    
     func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
         controller.dismiss(animated: true)
     }
 }
-
 
 //MARK: Photo camera/album picker
 extension MyProfileViewController {
