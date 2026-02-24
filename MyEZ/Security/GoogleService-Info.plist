@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>470577470154-876aj0bq5q3f9fcqu8g49n4bdhlou5hl.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.470577470154-876aj0bq5q3f9fcqu8g49n4bdhlou5hl</string>
+	<key>API_KEY</key>
+	<string>AIzaSyB-Ydpo6WRr6B9BeR53prZjiYwsrcAszxI</string>
+	<key>GCM_SENDER_ID</key>
+	<string>470577470154</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.jdev.myez</string>
+	<key>PROJECT_ID</key>
+	<string>myezfirebase</string>
+	<key>STORAGE_BUCKET</key>
+	<string>myezfirebase.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false/>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false/>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true/>
+	<key>IS_GCM_ENABLED</key>
+	<true/>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true/>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:470577470154:ios:da6f94a0276255fb</string>
+	<key>DATABASE_URL</key>
+	<string>https://myezfirebase.firebaseio.com</string>
+</dict>
+</plist>

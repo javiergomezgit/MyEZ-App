@@ -44,7 +44,7 @@ struct AppUser: Codable {
     let ownwedWeight: Int
     let companyID: Int
     var completedSigningUp: Bool
-    let profileImageUrl: String?
+    var profileImageUrl: String?
 }
 
 var userInformation = UserValues(name: "", userId: "", email: "", zipCode: "", website: "", companyName: "", phone: "", businessType: "", about: "", profileImageUrl: "", typeUser: "", weight: 0, subscribed: false, showWalk: true)

@@ -12,6 +12,7 @@
 		2204A1202318A0E000208256 /* ProductCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2204A11E2318A0E000208256 /* ProductCollectionViewCell.swift */; };
 		22205BAB1FBCF0400033DC0B /* ContactViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22205BAA1FBCF0400033DC0B /* ContactViewController.swift */; };
 		2224D24F27012A93004AB198 /* Walkthrough.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 2224D24E27012A93004AB198 /* Walkthrough.storyboard */; };
+		222A0FEE2F4E2D4000F9F5A4 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222A0FED2F4E2D3600F9F5A4 /* KeychainHelper.swift */; };
 		225A220B2F3E783A003EEF46 /* UserSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 225A220A2F3E7835003EEF46 /* UserSession.swift */; };
 		2270677A1F9A73BC00AE018A /* UserValues.swift in Sources */ = {isa = PBXBuildFile; fileRef = 227067791F9A73BC00AE018A /* UserValues.swift */; };
 		2270677C1F9A816000AE018A /* SpecialsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2270677B1F9A816000AE018A /* SpecialsViewController.swift */; };
@@ -69,6 +70,7 @@
 		2204A11E2318A0E000208256 /* ProductCollectionViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ProductCollectionViewCell.swift; path = MyEZ/Views/ProductCollectionViewCell.swift; sourceTree = SOURCE_ROOT; };
 		22205BAA1FBCF0400033DC0B /* ContactViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactViewController.swift; sourceTree = "<group>"; };
 		2224D24E27012A93004AB198 /* Walkthrough.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = Walkthrough.storyboard; sourceTree = "<group>"; };
+		222A0FED2F4E2D3600F9F5A4 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
 		225A220A2F3E7835003EEF46 /* UserSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSession.swift; sourceTree = "<group>"; };
 		225A98FB1F9A675900BE8ADF /* MyEZ.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = MyEZ.entitlements; sourceTree = "<group>"; };
 		227067791F9A73BC00AE018A /* UserValues.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserValues.swift; sourceTree = "<group>"; };
@@ -130,7 +132,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		2225278D2F394CAC003032EC /* Exceptions for "MyEZ/Security" folder in "MyEZ" target */ = {
+		2225278D2F394CAC003032EC /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -140,29 +142,8 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		220724CA2F3949BD00D68B92 /* MyEZ/Security */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				2225278D2F394CAC003032EC /* Exceptions for "MyEZ/Security" folder in "MyEZ" target */,
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = MyEZ/Security;
-			sourceTree = "<group>";
-		};
-		22A763AD2F394F9E00403841 /* Signin */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = Signin;
-			sourceTree = "<group>";
-		};
+		220724CA2F3949BD00D68B92 /* MyEZ/Security */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (2225278D2F394CAC003032EC /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = MyEZ/Security; sourceTree = "<group>"; };
+		22A763AD2F394F9E00403841 /* Signin */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Signin; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -251,6 +232,7 @@
 			isa = PBXGroup;
 			children = (
 				BAFE56BF2151C44A00B3B245 /* SweetAlert.swift */,
+				222A0FED2F4E2D3600F9F5A4 /* KeychainHelper.swift */,
 				225A220A2F3E7835003EEF46 /* UserSession.swift */,
 				22A608052F36770600773058 /* EmailSender.swift */,
 			);
@@ -522,9 +504,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-MyEZ/Pods-MyEZ-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-MyEZ/Pods-MyEZ-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -591,6 +577,7 @@
 				3B356DFB1F748BA600604CA9 /* GetStartedUIViewController.swift in Sources */,
 				653E84F52146244100993838 /* RulesTableViewController.swift in Sources */,
 				3B8453101F3D07DC009EA3B8 /* AppDelegate.swift in Sources */,
+				222A0FEE2F4E2D4000F9F5A4 /* KeychainHelper.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

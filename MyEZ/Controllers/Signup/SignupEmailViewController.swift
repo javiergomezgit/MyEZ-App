@@ -310,6 +310,11 @@ class SignupEmailViewController: UIViewController {
                     )
                     UserSession.shared.save(user: localUser)
                     
+                    //Save to keychain
+                    if let passwordData = self.passwordText.text!.data(using: .utf8) {
+                        KeychainHelper.shared.save(passwordData, service: "com.myez.app", account: self.emailText.text!)
+                    }
+                    
                     self.loginAndSaveCookie(password: self.passwordText.text!, login: email) {
                         print("🚀 Performing Segue 'loginMain'...")
                         self.performSegue(withIdentifier: "signupMain", sender: self)
@@ -321,7 +326,7 @@ class SignupEmailViewController: UIViewController {
     
     func uploadProfileImage(partnerID: Int, completion: @escaping (String?) -> Void) {
         
-        let storageRef = Storage.storage().reference().child("users/\(partnerID)/profile/\(partnerID)_profile_image.jpg")
+        let storageRef = Storage.storage().reference().child("users/\(partnerID)/profile/\(partnerID)_profileImage.jpg")
         
         //Get Image from Assets (Ensure "default_profile_asset" exists in your Assets.xcassets)
         guard let defaultImage = UIImage(named: "defaultProfile"),

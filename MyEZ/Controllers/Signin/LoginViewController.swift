@@ -97,8 +97,6 @@ class LoginViewController: UIViewController, UITextFieldDelegate{
         print("✅ Logged in as: \(user.name)")
         print("🔑 Session ID: \(user.sessionID)")
         
-        // TODO: Save to Keychain here
-        
         // Navigate to Main App
         //             let mainVC = MainTabBarController()
         //             mainVC.modalPresentationStyle = .fullScreen
@@ -305,6 +303,10 @@ class LoginViewController: UIViewController, UITextFieldDelegate{
             userInformation.profileImageUrl = value?["profile_image_url"] as? String ?? "https://firebasestorage.googleapis.com/v0/b/myezfirebase.appspot.com/o/myez-default-profile-image.png?alt=media&token=220f60c3-4cb2-480f-a365-f7852b229857"
             
             OperationQueue.main.addOperation {
+                //Save to keychain
+                if let passwordData = self.passText.text!.data(using: .utf8) {
+                    KeychainHelper.shared.save(passwordData, service: "com.myez.app", account: self.emailText.text!)
+                }
                 self.saveLocally(signedOdooUser: signedUser)
                 self.performSegue(withIdentifier: "loginMain", sender: self)
                 
@@ -316,6 +318,10 @@ class LoginViewController: UIViewController, UITextFieldDelegate{
             
             
         }
+    }
+    
+    func saveKeychain() {
+        
     }
     
     func saveLocally(signedOdooUser: OdooUser) {
