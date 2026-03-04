@@ -19,7 +19,7 @@ extension MyEZViewController: UICollectionViewDelegate, UICollectionViewDataSour
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return userUnits.count
+        return displayUnits.count
     }
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout,  insetForSectionAt section: Int) -> UIEdgeInsets {
@@ -38,14 +38,9 @@ extension MyEZViewController: UICollectionViewDelegate, UICollectionViewDataSour
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "UnitCell", for: indexPath) as! UnitCollectionViewCell
 
-        let value = Array(userUnits.values)[indexPath.row]
-        print (value.imageUnit.length)
-        print (userUnits.count)
-        
-        
-            _  = Array(userUnits.keys)[indexPath.row]
-            cell.nameUnit.text = value.skuUnit
-            cell.imageUnit.image = UIImage(data: value.imageUnit as Data)
+        let value = displayUnits[indexPath.row]
+        cell.nameUnit.text = value.sku
+        cell.imageUnit.image = UIImage(named: value.imageName)
 
             cell.contentView.layer.cornerRadius = 12.0
             cell.contentView.layer.borderWidth = 1.0
@@ -68,8 +63,8 @@ extension MyEZViewController: UICollectionViewDelegate, UICollectionViewDataSour
         //guard let cell = collectionView.cellForItem(at: indexPath) else { return }
   
         selectedCell = indexPath.row
-        guard let imageToShow = UIImage(data: (Array(userUnits.values)[self.selectedCell]).imageUnit as Data) else { return }
-        let unitSelected = String(Array(userUnits.values)[self.selectedCell].skuUnit)
+        let unitSelected = displayUnits[selectedCell].sku
+        guard let imageToShow = UIImage(named: displayUnits[selectedCell].imageName) else { return }
         
         
         let popOverVC = UIStoryboard(name: "MyEZ", bundle: nil).instantiateViewController(withIdentifier: "downoadMyez") as! DownloadMyezViewController
@@ -92,6 +87,20 @@ class MyEZViewController: UIViewController{
     var modelUnit = ""
     let cellIdentifier = "UnitCell"
     var selectedCell = 0
+
+    private struct UnitDisplayItem {
+        let sku: String
+        let imageName: String
+    }
+
+    // TODO: Hard coded; needs to download from a list of PNG images.
+    private let hardcodedUnits: [UnitDisplayItem] = [
+        UnitDisplayItem(sku: "WS1020-IP", imageName: "WS"),
+        UnitDisplayItem(sku: "SS3453", imageName: "SS"),
+        UnitDisplayItem(sku: "S0234-DP", imageName: "S")
+    ]
+
+    private var displayUnits: [UnitDisplayItem] = []
     
     @IBOutlet weak var imagesCollectionView: UICollectionView!
     @IBOutlet weak var ownedUnitsLabel: UILabel!
@@ -107,7 +116,7 @@ class MyEZViewController: UIViewController{
         case "showUnit":
             guard let detailViewController = segue.destination as? DownloadMyezViewController else { return }
             
-            detailViewController.imageSelected = UIImage(data: (Array(userUnits.values)[selectedCell]).imageUnit as Data)!
+            detailViewController.imageSelected = UIImage(named: displayUnits[selectedCell].imageName)!
             
         default: return
         }
@@ -164,11 +173,7 @@ class MyEZViewController: UIViewController{
 
         imagesCollectionView.register(UINib(nibName: "UnitCollectionViewCell", bundle: nil), forCellWithReuseIdentifier: cellIdentifier)
 
-        if (userUnits.count != 0) {
-            loadingIndicator.startAnimating()
-
-            downloadUnitImages()
-        }
+        loadUnitsFromFirebase()
         
         loadInfoHeader()
         
@@ -193,7 +198,8 @@ class MyEZViewController: UIViewController{
     
     var unitImagesArray = [UIImage]()
     
-    func downloadUnitImages() {
+    func downloadUnitImages() { 
+        // TODO: Pending downloading images for units.
         
         let storage = Storage.storage()
         
@@ -256,82 +262,7 @@ class MyEZViewController: UIViewController{
     }
 
     func refreshUnits(emailUer: String) {
-        
-        //old address
-        //let url = "https://spreadsheets.google.com/feeds/list/1NJcnjUVUAMErnngAsqqtDsPQHgZR7ZnicSncPZ-nAfc/od6/public/values?alt=json"
-        
-        let url = "https://spreadsheets.google.com/feeds/list/1_SzSNbdrNSpnW3WbHjh8Y0aiFwS1LbYHEYDVSW2srsQ/od6/public/values?alt=json"
-        
-        let urlObject = URL(string: url)
-        
-        var weightUpdated = 0
-        
-        if userUnits.count != 0 {
-            loadingIndicator.startAnimating()
-        }
-        
-        URLSession.shared.dataTask(with: urlObject!) {(data, response, error) in
-            do {
-                let units = try JSONSerialization.jsonObject(with: data!) as! [String : Any]
-                
-                if let feed = units["feed"] as? [String: Any]{
-                    
-                    if let entries = feed["entry"] as? [Any] {
-                        
-                        outer: for entry in entries {
-                            
-                            if let sales = entry as? [String: Any] {
-                                
-                                if let sale = sales["content"] as? [String: Any] {
-
-                                    if let contents = sale["$t"] as? String {
-                                        
-                                        let content = (contents as AnyObject).components(separatedBy: ",")
-                                        
-                                        let emailContent = content[0].components(separatedBy: " ")
-                                        
-                                        let email = emailContent[1]
-                                        
-                                        if email == userInformation.email {
-                                            let modelContent = content[1].components(separatedBy: " ")
-                                            let model = modelContent[2]
-                                            
-                                            let weightContent = content[2].components(separatedBy: ": ")
-                                            let weight = weightContent[1]
-                                            
-                                            let serialContent = content[3].components(separatedBy: ": ")
-                                            let serial = serialContent[1]
-
-                                            weightUpdated += Int(weight) ?? 0
-
-                                            userUnits[serial] = UnitInfo(model: model, imageUnit: NSData())
-                                            
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                self.updateInfo(weightUpdated: weightUpdated)
-                
-                DispatchQueue.main.async {
-                    self.downloadUnitImages()
-                    self.imagesCollectionView.reloadData()
-                }
-                
-            } catch {
-                print (error.localizedDescription)
-            }
-           
-            DispatchQueue.main.async {
-                let alert = SCLAlertView()
-                alert.showSuccess("Done!", subTitle: "Library Updated",
-                                  colorStyle: 0xc77306,
-                                  colorTextButton: 0xFFFFFF)
-            }
-        }.resume()
+        loadUnitsFromFirebase()
     }
     
     
@@ -363,5 +294,9 @@ class MyEZViewController: UIViewController{
         self.loadInfoHeader()
 
     }
-}
 
+    private func loadUnitsFromFirebase() {
+        displayUnits = hardcodedUnits
+        imagesCollectionView.reloadData()
+    }
+}

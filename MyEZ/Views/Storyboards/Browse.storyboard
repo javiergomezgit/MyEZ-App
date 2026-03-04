@@ -32,9 +32,6 @@
                     </view>
                     <tabBarItem key="tabBarItem" image="browseSelected" selectedImage="storefront" catalog="system" id="z9G-yO-TZT"/>
                     <nil key="simulatedTopBarMetrics"/>
-                    <connections>
-                        <outlet property="web" destination="cG1-ML-sbA" id="AQ0-OY-wFa"/>
-                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="FQ8-BK-p7L" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
@@ -42,7 +39,7 @@
         </scene>
     </scenes>
     <resources>
-        <image name="browseSelected" width="44" height="32.5"/>
+        <image name="browseSelected" width="128" height="128"/>
         <image name="storefront" catalog="system" width="128" height="111"/>
     </resources>
 </document>

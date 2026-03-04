@@ -43,7 +43,13 @@ class UserSession {
     }
     
     func getSessionID() -> String? {
-        return "sinetgubg:"
+        if let primary = defaults.string(forKey: "odooSessionID"), !primary.isEmpty {
+            return primary
+        }
+        if let fallback = defaults.string(forKey: "sessionID"), !fallback.isEmpty {
+            return fallback
+        }
+        return nil
     }
     
     func saveSessionID(sessionID: String) {

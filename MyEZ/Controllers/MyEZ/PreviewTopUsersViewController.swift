@@ -41,6 +41,9 @@ class PreviewTopUsersViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        view.layer.cornerRadius = 12
+        view.layer.masksToBounds = true
+
         ref = Database.database().reference()
         
         updateTopUsers()
@@ -51,7 +54,7 @@ class PreviewTopUsersViewController: UIViewController {
         ref.child("topUsers").observeSingleEvent(of: .value, with: { (snapshot) in
             
             var values = snapshot.value as! [String : Any]
-            let myId = Auth.auth().currentUser!.uid
+            let myId = String(UserSession.shared.load()!.partnerID)
             
             values.updateValue(Int(userInformation.weight), forKey: myId)
             
@@ -108,15 +111,15 @@ class PreviewTopUsersViewController: UIViewController {
             case 0:
                 self.firstTopUserLabel.textAlignment = .center
                 self.firstTopUserLabel.numberOfLines = 0
-                self.firstTopUserLabel.text = String(topFiveUser.weight) + " Lbs"
+                self.firstTopUserLabel.text = String(topFiveUser.weight) + " lb"
                 self.firstWeightLabel.text = self.zipCode[0]
                 //self.firstWeightLabel.text = String(checkTypeUser(weightUnits: topFiveUser.weight)).uppercased()
             case 1:
-                self.secondTopUserLabel.text = String(topFiveUser.weight) + " Lbs"
+                self.secondTopUserLabel.text = String(topFiveUser.weight) + " lb"
                 self.secondWeightLabel.text = self.zipCode[1]
                 //self.secondWeightLabel.text = String(checkTypeUser(weightUnits: topFiveUser.weight)).uppercased()
             case 2:
-                self.thirdTopUserLabel.text = String(topFiveUser.weight) + " Lbs"
+                self.thirdTopUserLabel.text = String(topFiveUser.weight) + " lb"
                 self.thirdWeightLabel.text = self.zipCode[2]
                 //self.thirdWeightLabel.text = String(checkTypeUser(weightUnits: topFiveUser.weight)).uppercased()
             default:

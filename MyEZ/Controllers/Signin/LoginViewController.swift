@@ -179,6 +179,10 @@ class LoginViewController: UIViewController, UITextFieldDelegate{
                         
                         // Extract Session ID from fields or response
                         let sessionID = result["session_id"] as? String ?? ""
+                        if !sessionID.isEmpty {
+                            SessionManager.shared.currentSessionID = sessionID
+                            UserDefaults.standard.set(sessionID, forKey: "odooSessionID")
+                        }
                         
                         let user = OdooUser(
                             uid: result["uid"] as? Int ?? 0,

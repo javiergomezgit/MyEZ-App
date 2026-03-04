@@ -286,7 +286,8 @@ class SignupEmailViewController: UIViewController {
                 "createdAt": timestamp,      // Good for sorting users by "Newest"
                 "phone": "",                 // Placeholder for profile updates
                 "fcmToken": "",               // Placeholder for Push Notifications
-                "profile_image_url": finalImageURL
+                "profile_image_url": finalImageURL,
+                "subscribed": false
             ]
             
             // Save to Firebase

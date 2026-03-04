@@ -62,7 +62,7 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
         
         cleanData()
         
-        //TODO: verify if there is no information save locally if nothing after cleaning then show the pop up
+        //Verify if there is no information save locally if nothing after cleaning then show the pop up
         if UserSession.shared.load() == nil {
             
             // Use the main thread to show the UI popup
@@ -311,6 +311,14 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
             self.present(safariVC, animated: true, completion: nil)
         }
     }
+
+    @IBAction func openOrderHistory(_ sender: UIButton) {
+        guard let url = URL(string: "https://ezinflatables.odoo.com/my/orders") else { return }
+
+        let vc = AuthenticatedBrowserViewController()
+        vc.configure(url: url, title: "Order History", injectShopCSS: true, showNavButtons: true)
+        navigationController?.pushViewController(vc, animated: true)
+    }
     
     func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
         controller.dismiss(animated: true)
@@ -362,4 +370,3 @@ extension MyProfileViewController {
         present(picker, animated: true, completion: nil)
     }
 }
-

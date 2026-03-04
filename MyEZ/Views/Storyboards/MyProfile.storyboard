@@ -159,6 +159,9 @@
                                                     <state key="normal" title="Order History">
                                                         <color key="titleColor" red="0.38535604620000002" green="0.33676392890000001" blue="0.66666668650000005" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                                     </state>
+                                                    <connections>
+                                                        <action selector="openOrderHistory:" destination="14t-vb-ShM" eventType="touchUpInside" id="oHo-Ok-1a2"/>
+                                                    </connections>
                                                 </button>
                                             </subviews>
                                             <constraints>
