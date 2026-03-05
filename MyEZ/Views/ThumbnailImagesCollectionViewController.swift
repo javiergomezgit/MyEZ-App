@@ -1,3 +1,4 @@
+/*
 //
 //  ThumbnailImagesCollectionViewController.swift
 //  MyEZ
@@ -29,3 +30,5 @@ class ThumbnailImagesCollectionViewController: UICollectionViewController {
     
     
 }
+
+*/

@@ -249,6 +249,16 @@ final class AuthenticatedBrowserViewController: UIViewController, WKUIDelegate {
         webView.reload()
     }
 
+    func goBack() {
+        if webView.canGoBack {
+            webView.goBack()
+        }
+    }
+
+    func refresh() {
+        webView.reload()
+    }
+
     private func setupProgressView() {
         guard let navigationBar = navigationController?.navigationBar else { return }
 

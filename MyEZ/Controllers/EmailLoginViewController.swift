@@ -1,3 +1,4 @@
+/*
 //
 //  EmailLoginViewController.swift
 //  MyEZ
@@ -50,3 +51,5 @@ class EmailLoginViewController: UIViewController {
     }
     
 }
+
+*/

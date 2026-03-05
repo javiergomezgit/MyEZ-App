@@ -1,0 +1,95 @@
+import Foundation
+import UIKit
+import FirebaseDatabase
+import FirebaseStorage
+
+final class ProfileViewModel: ObservableObject {
+    @Published var user: AppUser?
+    @Published var isSubscribed: Bool = userInformation.subscribed
+    @Published var profileImage: UIImage?
+    @Published var errorMessage: String?
+    @Published var showingTerms = false
+    @Published var showingPrivacy = false
+    
+    private lazy var dbRef: DatabaseReference = Database.database().reference()
+    
+    func refresh() {
+        user = UserSession.shared.load()
+        isSubscribed = userInformation.subscribed
+    }
+    
+    func updateSubscription(isOn: Bool) {
+        userInformation.subscribed = isOn
+        isSubscribed = isOn
+        guard !userInformation.userId.isEmpty else { return }
+        dbRef.child("users").child(userInformation.userId).updateChildValues(["subscribed": isOn])
+    }
+    
+    func updateProfileImage(newImage: UIImage) {
+        guard var user = UserSession.shared.load() else { return }
+        let storageRef = Storage.storage().reference().child("users/\(user.partnerID)/profile/\(user.partnerID)-profileImage.jpg")
+        guard let imageData = newImage.jpegData(compressionQuality: 0.7) else {
+            errorMessage = "Couldn't convert image"
+            return
+        }
+        storageRef.putData(imageData, metadata: nil) { _, error in
+            if let error = error {
+                DispatchQueue.main.async { self.errorMessage = error.localizedDescription }
+                return
+            }
+            storageRef.downloadURL { result in
+                switch result {
+                case .success(let downloadURL):
+                    let urlString = downloadURL.absoluteString
+                    self.dbRef.child("users").child("\(user.partnerID)").child("profile_image_url").setValue(urlString) { dbError, _ in
+                        if let dbError = dbError {
+                            DispatchQueue.main.async { self.errorMessage = dbError.localizedDescription }
+                        } else {
+                            user.profileImageUrl = urlString
+                            UserSession.shared.save(user: user)
+                            DispatchQueue.main.async {
+                                self.profileImage = newImage
+                                self.user = user
+                            }
+                        }
+                    }
+                case .failure(let error):
+                    DispatchQueue.main.async { self.errorMessage = error.localizedDescription }
+                }
+            }
+        }
+    }
+    
+    func logout(appState: AppState) {
+        // Clear local data
+        UserSession.shared.clear()
+        UserDefaults.standard.removeObject(forKey: "savedUserSession")
+        // Clear cookies
+        let storage = HTTPCookieStorage.shared
+        storage.cookies?.forEach { storage.deleteCookie($0) }
+        // Odoo logout
+        let odooLogoutURL = URL(string: "https://ezinflatables.odoo.com/web/session/logout")!
+        var request = URLRequest(url: odooLogoutURL)
+        request.httpMethod = "GET"
+        URLSession.shared.dataTask(with: request) { _, _, _ in
+            DispatchQueue.main.async { appState.logout() }
+        }.resume()
+    }
+    
+    func supportEmailBody() -> String {
+        let name = user?.name ?? "No name"
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+        return """
+        Hi Javier,
+        
+        I need help with:
+        
+        ---
+        User: \(name)
+        App Version: \(version)
+        iOS: \(UIDevice.current.systemVersion)
+        Device: \(UIDevice.current.model)
+        ---
+        """
+    }
+}

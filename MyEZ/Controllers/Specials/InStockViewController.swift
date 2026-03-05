@@ -1,3 +1,4 @@
+/*
 //
 //  InStockViewController.swift
 //  MyEZ
@@ -46,3 +47,5 @@ class InStockViewController: UIViewController {
     }
     
 }
+
+*/

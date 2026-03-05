@@ -1,3 +1,4 @@
+/*
 //
 //  SignupEmailViewController.swift
 //  MyEZ
@@ -424,3 +425,5 @@ class SignupEmailViewController: UIViewController {
         self.present(alertController, animated: true, completion: nil)
     }
 }
+
+*/

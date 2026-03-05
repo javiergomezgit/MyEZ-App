@@ -1,3 +1,4 @@
+/*
 //
 //  RulesTableViewController.swift
 //  MyEZ
@@ -90,3 +91,5 @@ class RulesTableViewController: UITableViewController {
     */
 
 }
+
+*/

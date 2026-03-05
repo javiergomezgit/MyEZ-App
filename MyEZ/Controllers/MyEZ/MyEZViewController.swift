@@ -1,3 +1,4 @@
+/*
 //
 //  MyEZViewController.swift
 //  MyEZ
@@ -300,3 +301,5 @@ class MyEZViewController: UIViewController{
         imagesCollectionView.reloadData()
     }
 }
+
+*/

@@ -1,3 +1,4 @@
+/*
 //
 //  EditAcountViewController.swift
 //  MyEZ
@@ -168,3 +169,5 @@ class EditAccountViewController: UIViewController {
         }
     }
 }
+
+*/

@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import SwiftUI
 import Firebase
 import FirebaseAuth
 //import FirebaseInstanceID
@@ -16,8 +17,8 @@ import UserNotifications
 import IQKeyboardManagerSwift
 
 
-@UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
+class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
+    let appState = AppState()
 
     var window: UIWindow?
     static var deviceIDToken = String()
@@ -103,12 +104,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     func setColorBars() {
 //        UITabBar.appearance().isTranslucent = false
 //        UITabBar.appearance().barTintColor = UIColor(red: 28/255, green: 34/255, blue: 39/255, alpha: 1)
-//        //UITabBar.appearance().tintColor = UIColor.white
+//        //UITabBar.appearance().tintColor = UIAppColors.light
 //
 //        UINavigationBar.appearance().barTintColor = UIColor(red: 28/255, green: 34/255, blue: 39/255, alpha: 1)
 //        //UINavigationBar.appearance().isOpaque = true
-//        UINavigationBar.appearance().tintColor = UIColor.white
-//        UINavigationBar.appearance().titleTextAttributes = [NSAttributedString.Key.foregroundColor : UIColor.white]
+//        UINavigationBar.appearance().tintColor = UIAppColors.light
+//        UINavigationBar.appearance().titleTextAttributes = [NSAttributedString.Key.foregroundColor : UIAppColors.light]
 //
 //        UIApplication.shared.statusBarStyle = .lightContent
         
@@ -209,3 +210,186 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     
 }
 
+@main
+struct MyEZApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    
+    var body: some Scene {
+        WindowGroup {
+            RootView(appState: appDelegate.appState)
+        }
+    }
+}
+
+struct RootTabView: View {
+    @ObservedObject var appState: AppState
+    @State private var selectedTab: RootTab = .browse
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            tabContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(AppColors.dark.ignoresSafeArea())
+
+            CustomTabBar(selectedTab: $selectedTab)
+        }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
+    }
+
+    @ViewBuilder
+    private var tabContent: some View {
+        switch selectedTab {
+        case .browse:
+            NavigationStack { BrowseView() }
+        case .deals:
+            NavigationStack { DealsView() }
+        case .myez:
+            NavigationStack { MyEZView() }
+        case .contact:
+            NavigationStack { ContactView() }
+        case .profile:
+            NavigationStack { ProfileView(appState: appState) }
+        }
+    }
+}
+
+struct PlaceholderView: View {
+    let title: String
+    
+    var body: some View {
+        ZStack {
+            AppColors.dark.ignoresSafeArea()
+            Text(title)
+                .font(.title2)
+                .foregroundColor(AppColors.light)
+        }
+        .navigationTitle(title)
+    }
+}
+
+struct DealsView: View {
+    var body: some View {
+        AppColors.secondary.ignoresSafeArea()
+            .navigationTitle("Deals")
+    }
+}
+
+enum RootTab: String {
+    case browse
+    case deals
+    case myez
+    case contact
+    case profile
+}
+
+struct CustomTabBar: View {
+    @Binding var selectedTab: RootTab
+
+    private let barHeight: CGFloat = 70
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .fill(AppColors.dark)
+                .frame(height: barHeight)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        .stroke(AppColors.light.opacity(0.06), lineWidth: 1)
+                )
+                .shadow(color: AppColors.dark.opacity(0.4), radius: 16, x: 0, y: 6)
+
+            HStack(spacing: 22) {
+                TabBarButton(
+                    systemImage: "storefront",
+                    tab: .browse,
+                    selectedTab: $selectedTab
+                )
+
+                TabBarButton(
+                    systemImage: "tag",
+                    tab: .deals,
+                    selectedTab: $selectedTab
+                )
+
+                MyEZTabButton(selectedTab: $selectedTab)
+
+                TabBarButton(
+                    systemImage: "ellipsis.message",
+                    tab: .contact,
+                    selectedTab: $selectedTab
+                )
+
+                TabBarButton(
+                    systemImage: "person",
+                    tab: .profile,
+                    selectedTab: $selectedTab
+                )
+            }
+            .padding(.horizontal, 10)
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 6)
+    }
+}
+
+struct TabBarButton: View {
+    let systemImage: String
+    let tab: RootTab
+    @Binding var selectedTab: RootTab
+
+    private var isSelected: Bool { selectedTab == tab }
+
+    var body: some View {
+        Button {
+            selectedTab = tab
+        } label: {
+            ZStack {
+                if isSelected {
+                    Capsule()
+                        .fill(AppColors.secondary)
+                        .frame(width: 50, height: 30)
+                }
+
+                Image(systemName: systemImage)
+                    .font(.system(size: 20, weight: .regular))
+                    .foregroundColor(isSelected ? .white : AppColors.light.opacity(0.45))
+            }
+            .frame(width: 54, height: 44)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+struct MyEZTabButton: View {
+    @Binding var selectedTab: RootTab
+
+    private var isSelected: Bool { selectedTab == .myez }
+    private let baseSize: CGFloat = 54
+
+    var body: some View {
+        Button {
+            selectedTab = .myez
+        } label: {
+            ZStack {
+                if isSelected {
+                    Circle()
+                        .fill(AppColors.primary)
+                        .frame(width: baseSize, height: baseSize)
+                } else {
+                    Circle()
+                        .stroke(AppColors.light.opacity(0.45), lineWidth: 2)
+                        .frame(width: baseSize, height: baseSize)
+                }
+
+                Image("logo")
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 24, height: 24)
+                    .foregroundColor(isSelected ? AppColors.light : AppColors.light.opacity(0.7))
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("MyEZ")
+    }
+}

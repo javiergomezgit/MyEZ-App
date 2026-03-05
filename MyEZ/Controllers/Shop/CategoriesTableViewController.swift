@@ -5,7 +5,7 @@
 //  Created by Javier Gomez on 8/27/19.
 //  Copyright © 2019 JDev. All rights reserved.
 //
-
+/*
 import UIKit
 
 class CategoriesTableViewController: UIViewController {
@@ -99,3 +99,4 @@ class Category{
         self.nameCategory = nameCategory
     }
 }
+*/

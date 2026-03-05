@@ -1,3 +1,4 @@
+/*
 //
 //  BrowseViewController.swift
 //  MyEZ
@@ -32,3 +33,5 @@ final class BrowseViewController: UIViewController {
         }
     }
 }
+
+*/

@@ -1,3 +1,4 @@
+/*
 //
 //  DealsTableViewController.swift
 //  MyEZ
@@ -178,3 +179,5 @@ extension DealsTableViewController: MFMailComposeViewControllerDelegate { // MFM
     
     
 }
+
+*/

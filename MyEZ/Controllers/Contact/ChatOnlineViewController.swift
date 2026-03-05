@@ -1,3 +1,4 @@
+/*
 //
 //  ChatOnlineViewController.swift
 //  MyEZ
@@ -78,3 +79,5 @@ class ChatOnlineViewController: UIViewController, WKUIDelegate {
         webView.load(request)
     }
 }
+
+*/

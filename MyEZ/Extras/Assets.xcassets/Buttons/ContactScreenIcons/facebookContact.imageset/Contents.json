@@ -1,13 +1,13 @@
 {
   "images" : [
     {
-      "idiom" : "iphone",
-      "filename" : "facebookContact.pdf"
+      "filename" : "facebookContact-1.pdf",
+      "idiom" : "iphone"
     }
   ],
   "info" : {
-    "version" : 1,
-    "author" : "xcode"
+    "author" : "xcode",
+    "version" : 1
   },
   "properties" : {
     "template-rendering-intent" : "original"
