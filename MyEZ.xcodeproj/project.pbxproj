@@ -22,6 +22,8 @@
 		22A9E0C9230F67A30001D87D /* AddressesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22A9E0C8230F67A30001D87D /* AddressesViewController.swift */; };
 		22A9E0CB230F67D20001D87D /* EditAccountViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22A9E0CA230F67D20001D87D /* EditAccountViewController.swift */; };
 		22A9E0CD230F67E10001D87D /* OrderHistoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22A9E0CC230F67E10001D87D /* OrderHistoryViewController.swift */; };
+		22B0AF132F5B602A00D530D5 /* PreviewTopUsersService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22B0AF122F5B602A00D530D5 /* PreviewTopUsersService.swift */; };
+		22B0AF152F5B637800D530D5 /* ZipCodeProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22B0AF142F5B637800D530D5 /* ZipCodeProvider.swift */; };
 		22D9E601231605DB00E42C1E /* CategoriesTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22D9E5FF231605DB00E42C1E /* CategoriesTableViewCell.swift */; };
 		22E0CABC1FA7DEFF008C304C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 229ADF541FA016860013240F /* Assets.xcassets */; };
 		22EC091B2327283400B90873 /* ThumbnailImagesCollectionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22EC09182327283400B90873 /* ThumbnailImagesCollectionViewController.swift */; };
@@ -60,9 +62,9 @@
 		C59C0996DAEEE6F529A27976 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73C8EB5BB682575EC87A171A /* AuthService.swift */; };
 		CA0FA5F6B8A880627DF7FFE0 /* SafariView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12DA86A78C49EA20E32684B2 /* SafariView.swift */; };
 		D3C681D06BD2AA399DAC946D /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 846A32C3BB81E3C29B621792 /* RootView.swift */; };
+		DF4071B59F97FE8E5B1717E4 /* WalkthroughView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99E81B62B3C4B07E49004AD /* WalkthroughView.swift */; };
 		F78DF0CAC5E40C02D4E518CA /* ContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBEE3772A077021721A278F6 /* ContactView.swift */; };
 		F893697B590481194F309FFE /* MyEZView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D810A485ED03241B4D419B1B /* MyEZView.swift */; };
-		DF4071B59F97FE8E5B1717E4 /* WalkthroughView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99E81B62B3C4B07E49004AD /* WalkthroughView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -84,6 +86,8 @@
 		22A9E0C8230F67A30001D87D /* AddressesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddressesViewController.swift; sourceTree = "<group>"; };
 		22A9E0CA230F67D20001D87D /* EditAccountViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditAccountViewController.swift; sourceTree = "<group>"; };
 		22A9E0CC230F67E10001D87D /* OrderHistoryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderHistoryViewController.swift; sourceTree = "<group>"; };
+		22B0AF122F5B602A00D530D5 /* PreviewTopUsersService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewTopUsersService.swift; sourceTree = "<group>"; };
+		22B0AF142F5B637800D530D5 /* ZipCodeProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZipCodeProvider.swift; sourceTree = "<group>"; };
 		22D9E5FF231605DB00E42C1E /* CategoriesTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CategoriesTableViewCell.swift; path = MyEZ/Views/CategoriesTableViewCell.swift; sourceTree = SOURCE_ROOT; };
 		22EC09182327283400B90873 /* ThumbnailImagesCollectionViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ThumbnailImagesCollectionViewController.swift; path = MyEZ/Views/ThumbnailImagesCollectionViewController.swift; sourceTree = SOURCE_ROOT; };
 		22EC09192327283400B90873 /* ThumbnailImagesCollectionViewCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ThumbnailImagesCollectionViewCell.swift; path = MyEZ/Views/ThumbnailImagesCollectionViewCell.swift; sourceTree = SOURCE_ROOT; };
@@ -124,13 +128,13 @@
 		BAE1225822E25C790079FCA2 /* InStockViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InStockViewController.swift; sourceTree = "<group>"; };
 		BAFE56BF2151C44A00B3B245 /* SweetAlert.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SweetAlert.swift; sourceTree = "<group>"; };
 		C826A6FCE48478DCB74F2134 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
+		C99E81B62B3C4B07E49004AD /* WalkthroughView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkthroughView.swift; sourceTree = "<group>"; };
 		CBEE3772A077021721A278F6 /* ContactView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactView.swift; sourceTree = "<group>"; };
 		D02E7E65C3C6A5F170B29A7B /* Pods-MyEZ.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MyEZ.debug.xcconfig"; path = "Target Support Files/Pods-MyEZ/Pods-MyEZ.debug.xcconfig"; sourceTree = "<group>"; };
 		D58E72E310275DFF6C15C0C8 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		D810A485ED03241B4D419B1B /* MyEZView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyEZView.swift; sourceTree = "<group>"; };
 		E9DF469611A11F5125227C37 /* AuthenticatedBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticatedBrowserView.swift; sourceTree = "<group>"; };
 		F79C629F87EEC1EAF8738146 /* Pods-MyEZ.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MyEZ.release.xcconfig"; path = "Target Support Files/Pods-MyEZ/Pods-MyEZ.release.xcconfig"; sourceTree = "<group>"; };
-		C99E81B62B3C4B07E49004AD /* WalkthroughView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkthroughView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -224,6 +228,7 @@
 				225A220A2F3E7835003EEF46 /* UserSession.swift */,
 				22A608052F36770600773058 /* EmailSender.swift */,
 				226E9F242F58B4620023CC61 /* AuthenticatedBrowserViewController.swift */,
+				22B0AF142F5B637800D530D5 /* ZipCodeProvider.swift */,
 			);
 			path = Support;
 			sourceTree = "<group>";
@@ -231,6 +236,7 @@
 		22BAC919284C47CE002160A0 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				22B0AF122F5B602A00D530D5 /* PreviewTopUsersService.swift */,
 				227067791F9A73BC00AE018A /* UserValues.swift */,
 			);
 			path = Models;
@@ -572,6 +578,7 @@
 				D3C681D06BD2AA399DAC946D /* RootView.swift in Sources */,
 				C59C0996DAEEE6F529A27976 /* AuthService.swift in Sources */,
 				4017F2ED6CFC7403D75E173E /* AuthViewModel.swift in Sources */,
+				22B0AF132F5B602A00D530D5 /* PreviewTopUsersService.swift in Sources */,
 				4EAEDE5FE878F78E2978AA24 /* AuthFlowView.swift in Sources */,
 				47C462DDAED16DC0CF0B9CD7 /* BrowseView.swift in Sources */,
 				F78DF0CAC5E40C02D4E518CA /* ContactView.swift in Sources */,
@@ -604,6 +611,7 @@
 				BAE1225922E25C790079FCA2 /* InStockViewController.swift in Sources */,
 				22A9E0C7230F677C0001D87D /* MyProfileViewController.swift in Sources */,
 				65D4CABF1FB415BC00453715 /* BrowseViewController.swift in Sources */,
+				22B0AF152F5B637800D530D5 /* ZipCodeProvider.swift in Sources */,
 				22A9E0C9230F67A30001D87D /* AddressesViewController.swift in Sources */,
 				BAC22ACF21A4A82D00EBF0A4 /* ChatOnlineViewController.swift in Sources */,
 				BA85875122E8E57E0064CFF8 /* DealsCustomCell.swift in Sources */,

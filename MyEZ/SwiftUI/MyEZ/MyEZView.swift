@@ -15,11 +15,7 @@ struct MyEZView: View {
                 ScrollView {
                     VStack(spacing: 18) {
                         rankHeader
-                        TopUsersCard()
-                        Text("↓ Pull down to update your EZ's")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(AppColors.light.opacity(0.55))
-                            .padding(.top, 4)
+                        TopUsersCard(topUsers: viewModel.topUsers, summaryText: viewModel.topUsersSummaryText)
                         Text("My Inflatables")
                             .font(.system(size: 22, weight: .bold))
                             .foregroundColor(AppColors.light)
@@ -37,6 +33,7 @@ struct MyEZView: View {
                     }
                     .padding(.top, 8)
                 }
+                .refreshable { viewModel.refreshAll() }
                 addUnitButton
             }
         }
@@ -54,11 +51,11 @@ struct MyEZView: View {
     
     private var rankHeader: some View {
         VStack(spacing: 6) {
-            Image("minimumweight")
+            Image(viewModel.categoryImageName.isEmpty ? "minimumweight" : viewModel.categoryImageName)
                 .resizable()
                 .scaledToFit()
                 .frame(width: 90, height: 90)
-            Text("minimumweight")
+            Text(viewModel.categoryName.isEmpty ? "MINIMUMWEIGHT" : viewModel.categoryName)
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(AppColors.light.opacity(0.6))
         }
@@ -113,6 +110,9 @@ struct UnitCard: View {
 }
 
 struct TopUsersCard: View {
+    let topUsers: [MyEZViewModel.TopUserDisplay]
+    let summaryText: String
+
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
@@ -141,25 +141,27 @@ struct TopUsersCard: View {
                         .foregroundColor(AppColors.light.opacity(0.5))
                 }
 
-                TopUserRow(place: "#1", weight: "12,450 lbs", location: "75201", medal: "🥇")
-                Divider().background(AppColors.light.opacity(0.08))
-                TopUserRow(place: "#2", weight: "10,890 lbs", location: "90210", medal: "🥈")
-                Divider().background(AppColors.light.opacity(0.08))
-                TopUserRow(place: "#3", weight: "9,340 lbs", location: "33101", medal: "🥉")
+                if topUsers.isEmpty {
+                    TopUserRow(place: "—", weight: "—", location: "—", medal: "🏅")
+                } else {
+                    ForEach(topUsers) { user in
+                        TopUserRow(
+                            place: "#\(user.place)",
+                            weight: user.weightText,
+                            location: user.locationText,
+                            medal: user.medal
+                        )
+                        if user.id != topUsers.last?.id {
+                            Divider().background(AppColors.light.opacity(0.08))
+                        }
+                    }
+                }
             }
             .padding(16)
 
             HStack {
-                (Text("Owning ")
-                    .foregroundColor(AppColors.light.opacity(0.85)) +
-                 Text("2,150 lbs")
-                    .foregroundColor(AppColors.secondary) +
-                 Text(" of inflatables, I'm in ")
-                    .foregroundColor(AppColors.light.opacity(0.85)) +
-                 Text("47th")
-                    .foregroundColor(AppColors.primary) +
-                 Text(" place.")
-                    .foregroundColor(AppColors.light.opacity(0.85)))
+                Text(summaryText.isEmpty ? "Loading your rank..." : summaryText)
+                    .foregroundColor(AppColors.light.opacity(0.85))
                 Spacer()
             }
             .font(.system(size: 15, weight: .semibold))

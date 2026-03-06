@@ -8,6 +8,7 @@ final class AuthService {
     private init() {}
     
     private lazy var dbRef: DatabaseReference = Database.database().reference()
+    private let zipCodeProvider = ZipCodeProvider()
     
     enum AuthError: LocalizedError {
         case message(String)
@@ -100,8 +101,15 @@ final class AuthService {
                             sessionID: sessionID,
                             companyID: result["company_id"] as? Int ?? 0
                         )
-                        self?.downloadDataFirebase(signedUser: user, email: email, password: password) {
-                            completion(.success(user))
+                        self?.fetchPartnerOwnedWeight(signedUser: user, password: password) { result in
+                            switch result {
+                            case .success(let ownedWeight):
+                                self?.downloadDataFirebase(signedUser: user, email: email, password: password, ownedWeight: ownedWeight) {
+                                    completion(.success(user))
+                                }
+                            case .failure(let error):
+                                completion(.failure(error))
+                            }
                         }
                     } else {
                         completion(.failure(.parsing))
@@ -123,28 +131,152 @@ final class AuthService {
         }
     }
     
-    private func downloadDataFirebase(signedUser: OdooUser, email: String, password: String, completion: @escaping () -> Void) {
-        dbRef.child("users").child(String(signedUser.partnerID)).observeSingleEvent(of: .value, with: { snapshot in
-            let value = snapshot.value as? NSDictionary
-            userInformation.userId = String(signedUser.partnerID)
-            userInformation.website = value?["website"] as? String ?? ""
-            userInformation.companyName = value?["companyName"] as? String ?? ""
-            userInformation.zipCode = value?["zipCode"] as? String ?? ""
-            userInformation.phone = value?["phone"] as? String ?? ""
-            userInformation.typeUser = value?["typeUser"] as? String ?? ""
-            userInformation.weight = value?["owned_weight"] as? Int ?? 0
-            userInformation.subscribed = value?["subscribed"] as? Bool ?? false
-            userInformation.profileImageUrl = value?["profile_image_url"] as? String ?? "https://firebasestorage.googleapis.com/v0/b/myezfirebase.appspot.com/o/myez-default-profile-image.png?alt=media&token=220f60c3-4cb2-480f-a365-f7852b229857"
-            
-            if let passwordData = password.data(using: .utf8) {
-                KeychainHelper.shared.save(passwordData, service: "com.myez.app", account: email)
+    private func downloadDataFirebase(signedUser: OdooUser, email: String, password: String, ownedWeight: Int, completion: @escaping () -> Void) {
+        let userId = String(signedUser.partnerID)
+        dbRef.child("users").child(userId).observeSingleEvent(of: .value, with: { [weak self] snapshot in
+            guard let self = self else { return }
+
+            if !snapshot.exists() {
+                let timestamp = Date().timeIntervalSince1970
+                let firebaseData: [String: Any] = [
+                    "uid": signedUser.uid,
+                    "partner_id": signedUser.partnerID,
+                    "name": signedUser.name,
+                    "email": email,
+                    "zipCode": "00000",
+                    "completedSigningUp": false,
+                    "typeuser": "minimumweight",
+                    "owned_weight": ownedWeight,
+                    "units": ["SKU": 1],
+                    "company_id": signedUser.companyID,
+                    "company_name": "",
+                    "createdAt": timestamp,
+                    "phone": "",
+                    "fcmToken": "",
+                    "profile_image_url": "https://firebasestorage.googleapis.com/v0/b/myezfirebase.appspot.com/o/myez-default-profile-image.png?alt=media&token=220f60c3-4cb2-480f-a365-f7852b229857",
+                    "subscribed": false
+                ]
+
+                self.dbRef.child("users").child(userId).setValue(firebaseData) { error, _ in
+                    if let error = error {
+                        print("❌ Firebase Create Error: \(error.localizedDescription)")
+                    } else {
+                        print("✅ Firebase User Created on Sign-In: \(userId)")
+                    }
+                    self.applyFirebaseSnapshot(userId: userId, value: firebaseData as NSDictionary, email: email, password: password, signedUser: signedUser)
+                    completion()
+                }
+                return
             }
-            self.saveLocally(signedOdooUser: signedUser, email: email)
-            completion()
+
+            self.dbRef.child("users").child(userId).updateChildValues(["owned_weight": ownedWeight]) { error, _ in
+                if let error = error {
+                    print("❌ Firebase Weight Update Error: \(error.localizedDescription)")
+                }
+
+                var value = snapshot.value as? [String: Any] ?? [:]
+                value["owned_weight"] = ownedWeight
+                self.applyFirebaseSnapshot(userId: userId, value: value as NSDictionary, email: email, password: password, signedUser: signedUser)
+                completion()
+            }
         }) { error in
             print(error.localizedDescription)
             completion()
         }
+    }
+
+    private func fetchPartnerOwnedWeight(signedUser: OdooUser, password: String, completion: @escaping (Result<Int, AuthError>) -> Void) {
+        let urlString = "\(OdooKeys.databaseURL)/jsonrpc"
+        guard let url = URL(string: urlString) else {
+            completion(.failure(.message("Bad URL")))
+            return
+        }
+
+        let params: [String: Any] = [
+            "service": "object",
+            "method": "execute_kw",
+            "args": [
+                OdooKeys.databaseName,
+                signedUser.uid,
+                password,
+                "res.partner",
+                "read",
+                [[signedUser.partnerID]],
+                ["fields": ["x_studio_owned_weight"]]
+            ]
+        ]
+        let body: [String: Any] = [
+            "jsonrpc": "2.0",
+            "method": "call",
+            "params": params,
+            "id": Int(Date().timeIntervalSince1970)
+        ]
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        } catch {
+            completion(.failure(.parsing))
+            return
+        }
+
+        URLSession.shared.dataTask(with: request) { data, _, error in
+            if let error = error {
+                completion(.failure(.network(error)))
+                return
+            }
+
+            guard let data = data else {
+                completion(.failure(.invalidResponse))
+                return
+            }
+
+            do {
+                guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                    completion(.failure(.parsing))
+                    return
+                }
+
+                if let errorDict = json["error"] as? [String: Any] {
+                    let message = errorDict["message"] as? String ?? "Failed to fetch owned weight"
+                    completion(.failure(.message(message)))
+                    return
+                }
+
+                guard
+                    let result = json["result"] as? [[String: Any]],
+                    let firstRecord = result.first
+                else {
+                    completion(.failure(.invalidResponse))
+                    return
+                }
+
+                let ownedWeight = Self.intValue(firstRecord["x_studio_owned_weight"]) ?? 0
+                completion(.success(ownedWeight))
+            } catch {
+                completion(.failure(.parsing))
+            }
+        }.resume()
+    }
+
+    private func applyFirebaseSnapshot(userId: String, value: NSDictionary?, email: String, password: String, signedUser: OdooUser) {
+        userInformation.userId = userId
+        userInformation.website = value?["website"] as? String ?? ""
+        userInformation.companyName = value?["companyName"] as? String ?? ""
+        userInformation.zipCode = value?["zipCode"] as? String ?? ""
+        userInformation.phone = value?["phone"] as? String ?? ""
+        userInformation.typeUser = value?["typeUser"] as? String ?? value?["typeuser"] as? String ?? ""
+        userInformation.weight = value?["owned_weight"] as? Int ?? value?["weightOwned"] as? Int ?? 0
+        userInformation.subscribed = value?["subscribed"] as? Bool ?? false
+        userInformation.profileImageUrl = value?["profile_image_url"] as? String ?? "https://firebasestorage.googleapis.com/v0/b/myezfirebase.appspot.com/o/myez-default-profile-image.png?alt=media&token=220f60c3-4cb2-480f-a365-f7852b229857"
+
+        if let passwordData = password.data(using: .utf8) {
+            KeychainHelper.shared.save(passwordData, service: "com.myez.app", account: email)
+        }
+        saveLocally(signedOdooUser: signedUser, email: email)
     }
     
     private func saveLocally(signedOdooUser: OdooUser, email: String) {
@@ -161,12 +293,22 @@ final class AuthService {
         )
         UserSession.shared.save(user: localUser)
     }
-    
-    func registerUser(name: String, email: String, password: String, completion: @escaping (Result<Void, AuthError>) -> Void) {
-        registerUserInOdoo(name: name, email: email, password: password, completion: completion)
+
+    private static func intValue(_ value: Any?) -> Int? {
+        if let intValue = value as? Int { return intValue }
+        if let doubleValue = value as? Double { return Int(doubleValue) }
+        if let stringValue = value as? String { return Int(stringValue) }
+        return nil
     }
     
-    private func registerUserInOdoo(name: String, email: String, password: String, completion: @escaping (Result<Void, AuthError>) -> Void) {
+    func registerUser(name: String, email: String, password: String, completion: @escaping (Result<Void, AuthError>) -> Void) {
+        zipCodeProvider.requestZipCode { [weak self] zip in
+            let safeZip = (zip?.isEmpty == false) ? zip! : "00000"
+            self?.registerUserInOdoo(name: name, email: email, password: password, zipCode: safeZip, completion: completion)
+        }
+    }
+    
+    private func registerUserInOdoo(name: String, email: String, password: String, zipCode: String, completion: @escaping (Result<Void, AuthError>) -> Void) {
         let urlString = "\(OdooKeys.databaseURL)/jsonrpc"
         let database = OdooKeys.databaseName
         let botKey = OdooKeys.apiKey
@@ -223,7 +365,7 @@ final class AuthService {
                         newUID = first
                     }
                     if let validUID = newUID {
-                        self.fetchPartnerID(uid: validUID, botLogin: "admin", botKey: botKey, name: name, email: email, password: password, completion: completion)
+                        self.fetchPartnerID(uid: validUID, botLogin: "admin", botKey: botKey, name: name, email: email, password: password, zipCode: zipCode, completion: completion)
                     } else {
                         completion(.failure(.message("Could not parse UID")))
                     }
@@ -234,7 +376,7 @@ final class AuthService {
         }.resume()
     }
     
-    private func fetchPartnerID(uid: Int, botLogin: String, botKey: String, name: String, email: String, password: String, completion: @escaping (Result<Void, AuthError>) -> Void) {
+    private func fetchPartnerID(uid: Int, botLogin: String, botKey: String, name: String, email: String, password: String, zipCode: String, completion: @escaping (Result<Void, AuthError>) -> Void) {
         let urlString = "\(OdooKeys.databaseURL)/jsonrpc"
         let database = OdooKeys.databaseName
         let params: [String: Any] = [
@@ -275,7 +417,7 @@ final class AuthService {
                         partnerID = id
                     }
                     if let finalPartnerID = partnerID {
-                        self.didFinishRegistration(partnerID: finalPartnerID, odooUID: uid, email: email, name: name, password: password, completion: completion)
+                        self.didFinishRegistration(partnerID: finalPartnerID, odooUID: uid, email: email, name: name, password: password, zipCode: zipCode, completion: completion)
                     } else {
                         completion(.failure(.message("Could not parse partner_id")))
                     }
@@ -288,7 +430,7 @@ final class AuthService {
         }.resume()
     }
     
-    private func didFinishRegistration(partnerID: Int, odooUID: Int, email: String, name: String, password: String, completion: @escaping (Result<Void, AuthError>) -> Void) {
+    private func didFinishRegistration(partnerID: Int, odooUID: Int, email: String, name: String, password: String, zipCode: String, completion: @escaping (Result<Void, AuthError>) -> Void) {
         uploadProfileImage(partnerID: partnerID) { [weak self] imageURL in
             guard let self = self else { return }
             let finalImageURL = imageURL ?? "https://firebasestorage.googleapis.com/v0/b/myezfirebase.appspot.com/o/myez-default-profile-image.png?alt=media&token=220f60c3-4cb2-480f-a365-f7852b229857"
@@ -298,6 +440,7 @@ final class AuthService {
                 "partner_id": partnerID,
                 "name": name,
                 "email": email,
+                "zipCode": zipCode,
                 "completedSigningUp": false,
                 "typeuser": "minimumweight",
                 "owned_weight": 1,

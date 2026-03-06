@@ -21,12 +21,17 @@ class SignupEmailViewController: UIViewController {
     
     var isEmpty = true
     private lazy var dbRef: DatabaseReference = Database.database().reference()
+    private let zipCodeProvider = ZipCodeProvider()
+    private var signupZipCode: String?
     
     override var prefersStatusBarHidden: Bool { return true }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         setupKeyboardDismiss()
+        zipCodeProvider.requestZipCode { [weak self] zip in
+            self?.signupZipCode = zip
+        }
     }
     
     private func setupKeyboardDismiss() {
@@ -278,6 +283,7 @@ class SignupEmailViewController: UIViewController {
                 "partner_id": partnerID,     // The Odoo Partner ID (for Invoices/Orders)
                 "name": name,                // Display name for the Home Screen
                 "email": email,              // Contact email
+                "zipCode": (self.signupZipCode?.isEmpty == false) ? self.signupZipCode! : "00000",
                 "completedSigningUp": false,
                 "typeuser": "minimumweight",
                 "owned_weight": 1,

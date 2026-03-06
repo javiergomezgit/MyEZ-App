@@ -37,7 +37,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                 completionHandler: {_, _ in })
             // For iOS 10 data message (sent via FCM
             Messaging.messaging().delegate = self
-            //Messaging.messaging().remoteMessageDelegate = self
+            //Messaging.messaging().remoteMeMy InflatablesssageDelegate = self
         } else {
             let settings: UIUserNotificationSettings =
                 UIUserNotificationSettings(types: [.alert, .badge, .sound], categories: nil)
