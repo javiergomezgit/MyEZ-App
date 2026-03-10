@@ -267,13 +267,6 @@ struct PlaceholderView: View {
     }
 }
 
-struct DealsView: View {
-    var body: some View {
-        AppColors.secondary.ignoresSafeArea()
-            .navigationTitle("Deals")
-    }
-}
-
 enum RootTab: String {
     case browse
     case deals
