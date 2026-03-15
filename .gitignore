@@ -2,6 +2,7 @@
 MyEZ/Security/info.plist
 MyEZ/Security/PrivateKeys.swift
 MyEZ/Security/GoogleService-Info.plist
+.claude
 ```
 Pods/Firebase/CoreOnly/Sources/Firebase.h
 Pods/Firebase/CoreOnly/Sources/module.modulemap

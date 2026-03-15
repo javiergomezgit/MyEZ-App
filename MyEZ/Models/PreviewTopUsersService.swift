@@ -43,6 +43,9 @@ final class PreviewTopUsersService {
         }
 
         let currentUserId = String(user.partnerID)
+        // FIXME: Reads from global mutable `userInformation.weight`, which may be stale or zero
+        // if this function is called before AuthService has fully populated the global. Use
+        // `fetchCurrentUserData` (as the summary variant does) to get a fresh value from Firebase.
         let currentUserWeight = userInformation.weight
 
         print("[TopUsers] updateAndGetTopUsers currentUserId=\(currentUserId) weight=\(currentUserWeight)")
@@ -202,7 +205,13 @@ final class PreviewTopUsersService {
             let value = snapshot.value as? [String: Any]
             let weight = value?["owned_weight"] as? Int
                 ?? value?["weightOwned"] as? Int
+                // FIXME: `"weightOwned".lowercased()` evaluates to `"weightowned"`, which is a
+                // key that does not exist in Firebase. This line never matches anything and is
+                // dead code. The intent was probably to try a third key variant, but the correct
+                // approach is to pick one canonical key name and migrate all data to it.
                 ?? value?["weightOwned".lowercased()] as? Int
+                // FIXME: Falls back to global mutable `userInformation.weight` — may be 0 if
+                // called before sign-in fully completes.
                 ?? userInformation.weight
             let zip = value?["zipCode"] as? String
             userInformation.weight = weight

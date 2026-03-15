@@ -75,6 +75,10 @@ final class AuthViewModel: ObservableObject {
     }
     
     private func isValidEmail(_ email: String) -> Bool {
+        // FIXME: Overly permissive validation. Accepts strings like "a@@b.c", "test@.com",
+        // or "test@com." because it only checks for presence of "@" and "." and a minimum
+        // length. Use NSDataDetector or a proper regex (e.g. RFC 5322 subset) to reject
+        // obviously malformed addresses before they reach the Odoo API.
         return email.contains("@") && email.contains(".") && email.count >= 6
     }
 }

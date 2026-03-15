@@ -37,6 +37,10 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                 completionHandler: {_, _ in })
             // For iOS 10 data message (sent via FCM
             Messaging.messaging().delegate = self
+            // FIXME: Garbled/corrupted comment — appears to be a copy-paste artifact from
+            // an older API (`remoteMeMy InflatablesssageDelegate`). The referenced delegate
+            // (`MessagingDelegate`) is already set above; this line serves no purpose and
+            // should be removed to avoid confusion.
             //Messaging.messaging().remoteMeMy InflatablesssageDelegate = self
         } else {
             let settings: UIUserNotificationSettings =
@@ -47,7 +51,11 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         application.registerForRemoteNotifications()
 
         FirebaseApp.configure()
-        
+
+        // FIXME: `requestAuthorization` and `registerForRemoteNotifications` are called a
+        // second time here, duplicating the calls already made in the `#available(iOS 10, *)`
+        // block above. This is harmless but wasteful and confusing. Consolidate into a single
+        // code path.
         UNUserNotificationCenter.current().requestAuthorization(options: [.badge, .alert, .sound]) { granted, error in
             if let error = error {
                 print("Notification auth error: \(error)")
@@ -65,6 +73,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         }
 
         
+        // FIXME: `Messaging.messaging().delegate` and `UNUserNotificationCenter.current().delegate`
+        // are each assigned twice — once inside the `#available` block above and again here.
+        // The second assignment is redundant; remove these two lines.
         Messaging.messaging().delegate = self
         UNUserNotificationCenter.current().delegate = self // if you handle notifications in-app
 

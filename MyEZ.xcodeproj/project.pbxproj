@@ -35,7 +35,6 @@
 		297C79BFBDABE898736A3566 /* UIViewController+TopMost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B95E909348334896A68F812 /* UIViewController+TopMost.swift */; };
 		2A0DF3DBE4D58FED8A728E7E /* AuthenticatedBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9DF469611A11F5125227C37 /* AuthenticatedBrowserView.swift */; };
 		36E8B5359309CC6273931BDB /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D58E72E310275DFF6C15C0C8 /* ProfileView.swift */; };
-		3B03ED7D1F758FC00095F31E /* circles1.png in Resources */ = {isa = PBXBuildFile; fileRef = 3B60C3D41F74BA5500A8CBAE /* circles1.png */; };
 		3B03ED831F759CFA0095F31E /* MyEZViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B03ED821F759CFA0095F31E /* MyEZViewController.swift */; };
 		3B356DFB1F748BA600604CA9 /* GetStartedUIViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B356DF91F748BA600604CA9 /* GetStartedUIViewController.swift */; };
 		3B447F1F1F63611B00F37DEA /* SignupEmailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B447F1E1F63611B00F37DEA /* SignupEmailViewController.swift */; };
@@ -103,7 +102,6 @@
 		3B356DF71F748B2200604CA9 /* Base */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Base; path = Base.lproj/MainTabBarController.swift; sourceTree = "<group>"; };
 		3B356DF91F748BA600604CA9 /* GetStartedUIViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GetStartedUIViewController.swift; sourceTree = "<group>"; };
 		3B447F1E1F63611B00F37DEA /* SignupEmailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignupEmailViewController.swift; sourceTree = "<group>"; };
-		3B60C3D41F74BA5500A8CBAE /* circles1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = circles1.png; sourceTree = "<group>"; };
 		3B84530C1F3D07DC009EA3B8 /* MyEZ.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MyEZ.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B84530F1F3D07DC009EA3B8 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		3B8453191F3D07DC009EA3B8 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
@@ -218,7 +216,6 @@
 				229ADF541FA016860013240F /* Assets.xcassets */,
 				225A98FB1F9A675900BE8ADF /* MyEZ.entitlements */,
 				3B84530F1F3D07DC009EA3B8 /* AppDelegate.swift */,
-				3B60C3D41F74BA5500A8CBAE /* circles1.png */,
 				BA0F56FE21B1FFEE008C5366 /* wave_load.json */,
 			);
 			path = Extras;
@@ -521,7 +518,6 @@
 				22E0CABC1FA7DEFF008C304C /* Assets.xcassets in Resources */,
 				BA2F23442141A77D00FB6E84 /* Ailerons-Typeface.otf in Resources */,
 				BA0F56FF21B1FFEE008C5366 /* wave_load.json in Resources */,
-				3B03ED7D1F758FC00095F31E /* circles1.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -32,6 +32,11 @@ final class ProfileViewModel: ObservableObject {
             errorMessage = "Couldn't convert image"
             return
         }
+        // FIXME: Missing `[weak self]` capture in every nested closure here. Each closure
+        // strongly captures `self` (ProfileViewModel), and the closures are passed to Firebase
+        // Storage / Database callbacks that can outlive the view. This creates a retain cycle
+        // that prevents the view model from being deallocated while the upload is in flight.
+        // Add `[weak self] in` and guard-unwrap `self` at the start of each closure.
         storageRef.putData(imageData, metadata: nil) { _, error in
             if let error = error {
                 DispatchQueue.main.async { self.errorMessage = error.localizedDescription }
@@ -68,6 +73,10 @@ final class ProfileViewModel: ObservableObject {
         let storage = HTTPCookieStorage.shared
         storage.cookies?.forEach { storage.deleteCookie($0) }
         // Odoo logout
+        // FIXME: Hardcoded URL that differs from OdooKeys.databaseURL used everywhere else.
+        // If the Odoo domain ever changes this will silently send the logout request to the
+        // wrong host. Use `URL(string: "\(OdooKeys.databaseURL)/web/session/logout")` and
+        // handle the optional gracefully instead of force-unwrapping.
         let odooLogoutURL = URL(string: "https://ezinflatables.odoo.com/web/session/logout")!
         var request = URLRequest(url: odooLogoutURL)
         request.httpMethod = "GET"

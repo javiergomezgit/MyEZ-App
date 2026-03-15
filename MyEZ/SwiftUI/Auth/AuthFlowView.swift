@@ -52,6 +52,10 @@ struct GetStartedView: View {
                         .foregroundColor(.white)
                         .cornerRadius(16)
                 }
+                // FIXME: "Skip" lets any user bypass authentication entirely and access all
+                // protected content without credentials. If the app has any user-specific or
+                // privileged content, this is a security hole. At minimum, gate sensitive
+                // tabs/actions on a separate `isGuest` flag and prompt sign-in when needed.
                 Button("Skip") {
                     appState.markAuthenticated()
                 }
@@ -156,6 +160,7 @@ struct LoginView: View {
                         .font(.system(size: 15))
                     }
                     Spacer()
+                    // FIXME: Same auth-bypass issue as in GetStartedView — see comment there.
                     Button("Skip") {
                         appState.markAuthenticated()
                     }
@@ -272,9 +277,13 @@ struct SignupView: View {
                             .cornerRadius(20)
                     }
                     .disabled(viewModel.isLoading)
+                    // FIXME: Force-unwrapping a URL literal. While this particular string is
+                    // currently valid, a typo or domain change will crash at runtime. Use
+                    // `if let url = URL(string: ...)` or a static constant instead.
                     Link("Terms and Conditions", destination: URL(string: "https://www.ezinflatables.com/pages/terms-and-conditions")!)
                         .foregroundColor(AppColors.light.opacity(0.7))
                     Spacer()
+                    // FIXME: Same auth-bypass issue as in GetStartedView — see comment there.
                     Button("Skip") {
                         appState.markAuthenticated()
                     }

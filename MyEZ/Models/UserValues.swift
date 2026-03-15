@@ -41,12 +41,18 @@ struct AppUser: Codable {
     let name: String
     let email: String
     let typeUser: String
+    // FIXME: Typo — should be `ownedWeight`. Rename here and everywhere it is used
+    // (AuthService.saveLocally, AuthService.didFinishRegistration, UserSession encode/decode).
     let ownwedWeight: Int
     let companyID: Int
     var completedSigningUp: Bool
     var profileImageUrl: String?
 }
 
+// FIXME: Global mutable state shared across AuthService, ProfileViewModel, PreviewTopUsersService,
+// and view controllers. This makes thread safety, testability, and state tracking unpredictable.
+// Should be owned by a single source of truth (e.g. a UserSession / AppState object) and
+// injected where needed rather than mutated as a global variable.
 var userInformation = UserValues(name: "", userId: "", email: "", zipCode: "", website: "", companyName: "", phone: "", businessType: "", about: "", profileImageUrl: "", typeUser: "", weight: 0, subscribed: false, showWalk: true)
 
 struct UnitInfo {
@@ -59,6 +65,7 @@ struct UnitInfo {
     }
 }
 
+// FIXME: Global mutable state — same problem as `userInformation` above.
 var userUnits = [String:UnitInfo]()
 
 
@@ -67,8 +74,10 @@ struct UserExtraInfo {
     var myez = [String]()
 }
 
+// FIXME: Global mutable state — same problem as `userInformation` above.
 var extraInfo = UserExtraInfo(completedSigningUp: false, myez : [""])
 
+// FIXME: Global mutable state — same problem as `userInformation` above.
 var topUsers = [Int:String]()
 
 func checkTypeUser(weightUnits: Int) -> String {

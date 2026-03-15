@@ -145,6 +145,10 @@ final class AuthService {
                     "email": email,
                     "zipCode": "00000",
                     "completedSigningUp": false,
+                    // FIXME: Key is "typeuser" (all lowercase) here but `applyFirebaseSnapshot`
+                    // reads "typeUser" first and falls back to "typeuser". Inconsistent casing
+                    // means a freshly-created user will never match the primary key lookup.
+                    // Pick one canonical name (prefer "typeUser" to match the Swift property).
                     "typeuser": "minimumweight",
                     "owned_weight": ownedWeight,
                     "units": ["SKU": 1],
@@ -286,6 +290,8 @@ final class AuthService {
             name: signedOdooUser.name,
             email: email,
             typeUser: userInformation.typeUser,
+            // FIXME: Using the misspelled `ownwedWeight` label — consequence of the typo in
+            // `AppUser`. When the typo is fixed in AppUser, update this label to `ownedWeight`.
             ownwedWeight: userInformation.weight,
             companyID: 25,
             completedSigningUp: false,
@@ -399,6 +405,11 @@ final class AuthService {
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
         
         URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
+            // FIXME: The guard checks `data` before checking `error`. URLSession can deliver
+            // a non-nil error alongside non-nil data in some edge cases. More importantly, the
+            // guard merges two distinct failure conditions (nil self vs nil data) into one
+            // `.invalidResponse`, making it impossible to distinguish a retain-cycle release
+            // from a genuine empty-body response. Check `error` first, then guard `data`.
             guard let self = self, let data = data else {
                 completion(.failure(.invalidResponse))
                 return
@@ -442,6 +453,7 @@ final class AuthService {
                 "email": email,
                 "zipCode": zipCode,
                 "completedSigningUp": false,
+                // FIXME: Same "typeuser" / "typeUser" inconsistency as in `downloadDataFirebase`.
                 "typeuser": "minimumweight",
                 "owned_weight": 1,
                 "units": ["SKU": 1],
@@ -465,6 +477,8 @@ final class AuthService {
                     name: name,
                     email: email,
                     typeUser: "minimumweight",
+                    // FIXME: Using the misspelled `ownwedWeight` label — same issue as in
+                    // `saveLocally`. Update when the typo in AppUser is corrected.
                     ownwedWeight: 0,
                     companyID: 25,
                     completedSigningUp: false,
