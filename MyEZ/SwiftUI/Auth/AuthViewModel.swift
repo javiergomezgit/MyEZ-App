@@ -21,6 +21,12 @@ final class AuthViewModel: ObservableObject {
                 switch result {
                 case .success:
                     appState.markAuthenticated()
+                    if let user = UserSession.shared.load() {
+                        let token = AppDelegate.deviceIDToken
+                            if !token.isEmpty {
+                                self?.registerFCMToken(partnerID: user.partnerID, token: token)
+                            }
+                    }
                 case .failure(let error):
                     self?.errorMessage = error.localizedDescription
                 }
@@ -67,11 +73,31 @@ final class AuthViewModel: ObservableObject {
                 switch result {
                 case .success:
                     appState.markAuthenticated()
+                    if let user = UserSession.shared.load() {
+                        let token = AppDelegate.deviceIDToken
+                        if !token.isEmpty {
+                            self?.registerFCMToken(partnerID: user.partnerID, token: token)
+                        }
+                    }
                 case .failure(let error):
                     self?.errorMessage = error.localizedDescription
                 }
             }
         }
+    }
+    
+    func registerFCMToken(partnerID: Int, token: String) {
+        let urlString = "https://myez-odooapi-production.up.railway.app/register-token?partner_id=\(partnerID)&token=\(token)"
+        guard let url = URL(string: urlString) else { return }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("❌ FCM token registration failed: \(error)")
+                return
+            }
+            print("✅ FCM token registered for partner \(partnerID)")
+        }.resume()
     }
     
     private func isValidEmail(_ email: String) -> Bool {

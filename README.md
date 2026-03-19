@@ -11,9 +11,11 @@ https://myez-odoo-api-production-87b0.up.railway.app
 
 - **SwiftUI** — iOS UI framework
 - **URLSession** — REST API consumption
-- **Firebase** — push notifications (planned)
+- **Firebase Realtime Database** — user data, FCM token storage, rank data
+- **Firebase Cloud Messaging** — push notifications
 - **FastAPI middleware** — backend data layer (separate repo)
 - **Odoo ERP** — source of truth for clients, orders, and rankings
+- **Google Cloud Run** — bidirectional sync between Odoo and Firebase
 
 ## Features
 
@@ -24,6 +26,23 @@ https://myez-odoo-api-production-87b0.up.railway.app
 - **Gamification** — customer rank tiers based on total inflatable weight owned
 - **Owned products** — grid view of customer's purchased inflatables
 - **Leaderboard** — top customers ranked by weight with personal placement row
+- **Push notifications** — rank-up alerts delivered via FCM
+- **Auto token registration** — FCM token registered to Firebase on login
+
+## System Flow
+```
+Odoo Invoice Confirmed
+       ↓
+Google Cloud Run (odoo-sync)
+       ↓
+Firebase Realtime Database ← owned_weight, typeuser, units
+       ↓
+Odoo res.partner ← x_studio_rank_weight (written back)
+       ↓
+Cloud Run detects rank change → calls FastAPI /notify/user/{partner_id}
+       ↓
+FCM v1 API → APNs → iPhone (instant, automatic)
+```
 
 ## Rank Tiers
 
@@ -42,6 +61,9 @@ https://myez-odoo-api-production-87b0.up.railway.app
 ## Architecture
 
 iOS (SwiftUI) → REST HTTP GET → FastAPI (Railway) → XML-RPC → Odoo ERP
+iOS (SwiftUI) → POST /register-token → FastAPI → Firebase Realtime Database
+Odoo → Cloud Run → Firebase + Odoo (bidirectional rank sync)
+FastAPI → FCM v1 API → APNs → iOS push notification
 
 See backend repo: https://github.com/javiergomezgit/myez-odoo-api
 
