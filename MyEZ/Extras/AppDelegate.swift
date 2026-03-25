@@ -138,11 +138,17 @@ struct RootTabView: View {
         case .deals:
             NavigationStack { DealsView() }
         case .myez:
-            NavigationStack { MyEZView() }
+            NavigationStack {
+                MyEZView()
+            }
         case .contact:
-            NavigationStack { ContactView() }
+            NavigationStack {
+                ContactView()
+            }
         case .profile:
-            NavigationStack { ProfileView(appState: appState) }
+            NavigationStack {
+                ProfileView(appState: appState)
+            }
         }
     }
 }
@@ -171,18 +177,22 @@ enum RootTab: String {
 
 struct CustomTabBar: View {
     @Binding var selectedTab: RootTab
-    private let barHeight: CGFloat = 70
+    private let barHeight: CGFloat = 75
 
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(AppColors.dark)
+                .fill(.ultraThinMaterial)
                 .frame(height: barHeight)
                 .overlay(
                     RoundedRectangle(cornerRadius: 28, style: .continuous)
-                        .stroke(AppColors.light.opacity(0.06), lineWidth: 1)
+                        .fill(Color.black.opacity(0.20))
                 )
-                .shadow(color: AppColors.dark.opacity(0.4), radius: 16, x: 0, y: 6)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        .stroke(Color.white.opacity(0.14), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.22), radius: 18, x: 0, y: 10)
 
             HStack(spacing: 22) {
                 TabBarButton(systemImage: "storefront", tab: .browse, selectedTab: $selectedTab)
@@ -194,7 +204,7 @@ struct CustomTabBar: View {
             .padding(.horizontal, 10)
         }
         .padding(.horizontal, 20)
-        .padding(.bottom, 6)
+        .padding(.bottom, -10)
     }
 }
 
@@ -211,14 +221,24 @@ struct TabBarButton: View {
             ZStack {
                 if isSelected {
                     Capsule()
-                        .fill(AppColors.secondary)
-                        .frame(width: 50, height: 30)
+                        .fill(
+                            LinearGradient(
+                                colors: [AppColors.sceneBlueGlow.opacity(0.95), AppColors.secondary.opacity(0.8)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .frame(width: 54, height: 40)
+                        .overlay(
+                            Capsule()
+                                .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                        )
                 }
                 Image(systemName: systemImage)
                     .font(.system(size: 20, weight: .regular))
-                    .foregroundColor(isSelected ? .white : AppColors.light.opacity(0.45))
+                    .foregroundColor(isSelected ? .white : AppColors.light.opacity(0.55))
             }
-            .frame(width: 54, height: 44)
+            .frame(width: 58, height: 50)
         }
         .buttonStyle(.plain)
     }

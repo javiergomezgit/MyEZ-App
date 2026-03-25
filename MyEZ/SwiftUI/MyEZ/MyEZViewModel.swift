@@ -48,10 +48,6 @@ final class MyEZViewModel: ObservableObject {
         loadTopUsers()
     }
     
-    func refreshUnits() {
-        loadUnitsFromFirebase()
-    }
-    
     func select(unit: UnitDisplayItem) {
         selectedUnit = unit
         fetchLinks(for: unit)

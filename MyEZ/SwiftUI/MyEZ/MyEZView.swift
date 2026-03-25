@@ -10,35 +10,52 @@ struct MyEZView: View {
     
     var body: some View {
         ZStack {
-            AppColors.dark.ignoresSafeArea()
+            SceneBackgroundView()
             VStack(spacing: 16) {
                 ScrollView {
                     VStack(spacing: 18) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("MyEZ")
+                                .font(.system(size: 30, weight: .bold))
+                                .foregroundColor(.white)
+                            Text("Your rank, owned inflatables, and downloads in the same visual system as MyProfile.")
+                                .font(.system(size: 15))
+                                .foregroundColor(.white.opacity(0.55))
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 13)
+
                         rankHeader
                         TopUsersCard(topUsers: viewModel.topUsers, summaryText: viewModel.topUsersSummaryText)
-                        Text("My Inflatables")
-                            .font(.system(size: 22, weight: .bold))
-                            .foregroundColor(AppColors.light)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.top, 8)
-                            .padding(.horizontal, 13)
-                        LazyVGrid(columns: columns, spacing: 12) {
-                            ForEach(viewModel.displayUnits) { unit in
-                                UnitCard(unit: unit)
-                                    .onTapGesture { viewModel.select(unit: unit) }
+
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text("My Inflatables")
+                                .font(.system(size: 22, weight: .bold))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+
+                            Text(viewModel.ownedUnitsText)
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(.white.opacity(0.55))
+
+                            LazyVGrid(columns: columns, spacing: 12) {
+                                ForEach(viewModel.displayUnits) { unit in
+                                    UnitCard(unit: unit)
+                                        .onTapGesture { viewModel.select(unit: unit) }
+                                }
                             }
                         }
+                        .padding(18)
+                        .sceneCard()
                         .padding(.horizontal, 13)
                         .padding(.bottom, 24)
                     }
                     .padding(.top, 8)
                 }
+                .padding(.horizontal, 5)
                 .refreshable { viewModel.refreshAll() }
-                addUnitButton
             }
         }
-        .navigationTitle("MyEZ")
-        .navigationBarTitleDisplayMode(.inline)
         .onAppear { viewModel.load() }
         .sheet(isPresented: $viewModel.showingDownload) {
             if let unit = viewModel.selectedUnit {
@@ -55,24 +72,22 @@ struct MyEZView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 90, height: 90)
+                .shadow(color: AppColors.sceneBlueGlow.opacity(0.25), radius: 18, x: 0, y: 8)
             Text(viewModel.categoryName.isEmpty ? "MINIMUMWEIGHT" : viewModel.categoryName)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(AppColors.light.opacity(0.6))
-        }
-    }
-    
-    private var addUnitButton: some View {
-        Button("Add Unit") {
-            viewModel.refreshUnits()
+                .foregroundColor(.white.opacity(0.6))
+            Text(viewModel.ownedUnitsText)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(.white.opacity(0.5))
+                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 50)
-        .background(AppColors.light.opacity(0.08))
-        .foregroundColor(AppColors.light)
-        .cornerRadius(12)
-        .padding(.horizontal, 16)
-        .padding(.bottom, 16)
+        .padding(.vertical, 24)
+        .padding(.horizontal, 18)
+        .sceneCard()
+        .padding(.horizontal, 13)
     }
+    
 }
 
 struct UnitCard: View {
@@ -81,7 +96,11 @@ struct UnitCard: View {
     var body: some View {
         VStack(spacing: 0) {
             ZStack {
-                AppColors.light
+                LinearGradient(
+                    colors: [Color.white.opacity(0.96), Color(hex: "D9E7F5")],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
                 Image(unit.imageName)
                     .resizable()
                     .scaledToFit()
@@ -90,10 +109,10 @@ struct UnitCard: View {
             .frame(height: 140)
             
             ZStack {
-                AppColors.dark
+                AppColors.sceneCard
                 Text(unit.sku)
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(AppColors.light.opacity(0.65))
+                    .foregroundColor(.white.opacity(0.7))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 12)
             }
@@ -103,9 +122,9 @@ struct UnitCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(AppColors.light.opacity(0.5), lineWidth: 1)
+                .stroke(Color.white.opacity(0.12), lineWidth: 1)
         )
-        .shadow(color: AppColors.dark.opacity(0.4), radius: 6, x: 0, y: 4)
+        .shadow(color: .black.opacity(0.35), radius: 10, x: 0, y: 8)
     }
 }
 
@@ -119,26 +138,26 @@ struct TopUsersCard: View {
                 Text("🏆")
                 Text("TOP USERS")
                     .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(AppColors.light)
+                    .foregroundColor(.white)
                 Spacer()
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
-            .background(AppColors.secondary.opacity(0.25))
+            .background(AppColors.sceneBlue.opacity(0.28))
 
             VStack(spacing: 12) {
                 HStack {
                     Text("PLACE")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(AppColors.light.opacity(0.5))
+                        .foregroundColor(.white.opacity(0.45))
                     Spacer()
                     Text("WEIGHT")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(AppColors.light.opacity(0.5))
+                        .foregroundColor(.white.opacity(0.45))
                     Spacer()
                     Text("LOCATION")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(AppColors.light.opacity(0.5))
+                        .foregroundColor(.white.opacity(0.45))
                 }
 
                 if topUsers.isEmpty {
@@ -172,20 +191,13 @@ struct TopUsersCard: View {
                     .fill(AppColors.secondary.opacity(0.15))
                     .overlay(
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(AppColors.secondary.opacity(0.35), lineWidth: 1)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
                     )
             )
             .padding(.horizontal, 12)
             .padding(.bottom, 14)
         }
-        .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(AppColors.dark.opacity(0.92))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(AppColors.light.opacity(0.18), lineWidth: 1)
-                )
-        )
+        .sceneCard()
         .padding(.horizontal, 13)
     }
 }
@@ -199,13 +211,13 @@ struct TopUserRow: View {
     var body: some View {
         HStack {
             Text("\(medal) \(place)")
-                .foregroundColor(AppColors.light)
+                .foregroundColor(.white)
             Spacer()
             Text(weight)
-                .foregroundColor(AppColors.secondary)
+                .foregroundColor(AppColors.sceneBlueGlow)
             Spacer()
             Text(location)
-                .foregroundColor(AppColors.light.opacity(0.6))
+                .foregroundColor(.white.opacity(0.6))
         }
         .font(.system(size: 16, weight: .semibold))
     }
@@ -218,7 +230,7 @@ struct DownloadUnitSheet: View {
     
     var body: some View {
         ZStack {
-            AppColors.dark.opacity(0.7).ignoresSafeArea()
+            SceneBackgroundView()
             VStack(spacing: 16) {
                 Image(unit.imageName)
                     .resizable()
@@ -232,20 +244,22 @@ struct DownloadUnitSheet: View {
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 48)
-                .background(AppColors.primary)
+                .background(AppColors.sceneBlue)
                 .foregroundColor(.white)
-                .cornerRadius(12)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 Button("Download Manual") {
                     openLink(manualLink)
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 48)
-                .background(AppColors.light.opacity(0.1))
+                .background(Color.white.opacity(0.08))
                 .foregroundColor(.white)
-                .cornerRadius(12)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 Spacer()
             }
             .padding(24)
+            .sceneCard()
+            .padding(20)
         }
     }
     

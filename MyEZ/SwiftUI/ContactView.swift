@@ -6,10 +6,22 @@ struct ContactView: View {
     
     var body: some View {
         ZStack {
-            AppColors.dark.ignoresSafeArea()
+            SceneBackgroundView()
             
             ScrollView {
                 VStack(spacing: 22) {
+                    VStack(spacing: 10) {
+                        Text("Reach the team")
+                            .font(.system(size: 30, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        Text("Same MyProfile energy, now applied to the people and channels that keep customers moving.")
+                            .font(.system(size: 15))
+                            .foregroundColor(.white.opacity(0.55))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
                     HStack(spacing: 24) {
                         ContactAvatar(
                             imageName: "ceo",
@@ -24,7 +36,10 @@ struct ContactView: View {
                             action: { sendEmail(email: "art@ezinflatables.com", name: "Art") }
                         )
                     }
-                    .padding(.top, 10)
+                    .padding(.top, 6)
+                    .padding(.vertical, 24)
+                    .frame(maxWidth: .infinity)
+                    .sceneCard()
                     
                     VStack(spacing: 10) {
                         Text("Click on them to contact them.")
@@ -37,6 +52,7 @@ struct ContactView: View {
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 12)
                     }
+                    .padding(.horizontal, 14)
                     
                     VStack(spacing: 14) {
                         SocialRow(
@@ -64,7 +80,7 @@ struct ContactView: View {
                             action: { openSocial(link: "https://tiktok.com/@ez_inflatables", app: "tiktok://user?screen_name=ez_inflatables") }
                         )
                     }
-                    .padding(.top, 12)
+                    .padding(.top, 6)
                     
                     HStack(spacing: 12) {
                         Button {
@@ -73,9 +89,10 @@ struct ContactView: View {
                             Text("Live Chat")
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
                                 .padding(.horizontal, 22)
                                 .padding(.vertical, 12)
-                                .background(Capsule().fill(AppColors.light.opacity(0.12)))
+                                .background(Capsule().fill(AppColors.sceneBlue.opacity(0.78)))
                         }
                         .buttonStyle(.plain)
                         
@@ -85,17 +102,24 @@ struct ContactView: View {
                             Text("Call")
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
                                 .padding(.horizontal, 22)
                                 .padding(.vertical, 12)
-                                .background(Capsule().fill(AppColors.light.opacity(0.12)))
+                                .background(Capsule().fill(Color.white.opacity(0.08)))
+                                .overlay(
+                                    Capsule()
+                                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                                )
                         }
                         .buttonStyle(.plain)
                     }
                     .padding(.top, 10)
                 }
                 .padding(.horizontal, 20)
+                .padding(.top, 12)
                 .padding(.bottom, 100)
             }
+            .padding(.horizontal, 5)
         }
         .sheet(isPresented: $showingChat) {
             NavigationStack {
@@ -150,23 +174,33 @@ struct ContactAvatar: View {
     let name: String
     let title: String
     let action: () -> Void
+    private let circleSize: CGFloat = 50
+    private let imageSize: CGFloat = 68
 
     var body: some View {
         Button(action: action) {
             VStack(spacing: 10) {
                 ZStack {
                     Circle()
-                        .fill(AppColors.light.opacity(0.08))
-                        .frame(width: 110, height: 110)
-                        .overlay(
-                            Circle()
-                                .stroke(AppColors.light.opacity(0.12), lineWidth: 1)
+                        .stroke(
+                            LinearGradient(
+                                colors: [AppColors.primary.opacity(0.98), Color(hex: "FF7A59"), AppColors.sceneBlue.opacity(0.78)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 4
                         )
+                        .frame(width: circleSize, height: circleSize)
+                        .background(
+                            Circle()
+                                .fill(Color.white.opacity(0.02))
+                        )
+                        .shadow(color: AppColors.primary.opacity(0.24), radius: 12, x: 0, y: 8)
 
                     Image(imageName)
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 54, height: 54)
+                        .frame(width: imageSize, height: imageSize)
                 }
 
                 Text(name)
@@ -187,18 +221,24 @@ struct SocialRow: View {
     let title: String
     let subtitle: String
     let action: () -> Void
+    private let circleSize: CGFloat = 20
+    private let iconSize: CGFloat = 23
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: 16) {
                 ZStack {
                     Circle()
-                        .fill(AppColors.light.opacity(0.08))
-                        .frame(width: 44, height: 44)
+                        .fill(Color.white.opacity(0.06))
+                        .frame(width: circleSize, height: circleSize)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                        )
                     Image(icon)
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 22, height: 22)
+                        .frame(width: iconSize, height: iconSize)
                         .foregroundColor(AppColors.light)
                 }
 
@@ -215,14 +255,7 @@ struct SocialRow: View {
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 16)
-            .background(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(AppColors.light.opacity(0.06))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .stroke(AppColors.light.opacity(0.08), lineWidth: 1)
-                    )
-            )
+            .sceneCard()
         }
         .buttonStyle(.plain)
     }

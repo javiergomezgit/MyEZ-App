@@ -6,35 +6,6 @@ struct BrowseView: View {
     var body: some View {
         AuthenticatedBrowserContainer(controller: browserController)
             .ignoresSafeArea()
-            .overlay(alignment: .top) {
-                HStack {
-                    Button {
-                        browserController.goBack()
-                    } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(AppColors.light)
-                            .frame(width: 38, height: 38)
-                            .background(Circle().fill(AppColors.dark.opacity(0.6)))
-                    }
-                    .buttonStyle(.plain)
-
-                    Spacer()
-
-                    Button {
-                        browserController.refresh()
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(AppColors.light)
-                            .frame(width: 38, height: 38)
-                            .background(Circle().fill(AppColors.dark.opacity(0.6)))
-                    }
-                    .buttonStyle(.plain)
-                }
-                .padding(.horizontal, 12)
-                .padding(.top, 8)
-            }
             .background(AppColors.dark.ignoresSafeArea())
             .navigationBarHidden(true)
     }
@@ -42,14 +13,6 @@ struct BrowseView: View {
 
 final class BrowserController: ObservableObject {
     weak var viewController: AuthenticatedBrowserViewController?
-
-    func goBack() {
-        viewController?.goBack()
-    }
-
-    func refresh() {
-        viewController?.refresh()
-    }
 }
 
 struct AuthenticatedBrowserContainer: UIViewControllerRepresentable {

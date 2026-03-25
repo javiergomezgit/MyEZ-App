@@ -8,79 +8,69 @@ struct ProfileView: View {
     @State private var showingMail = false
     @State private var showingOrders = false
     @State private var showingSafariURL: IdentifiableURL?
-    
+
     var body: some View {
         ZStack {
-            AppColors.dark.ignoresSafeArea()
-            
+            LinearGradient(
+                colors: [Color(hex: "#0F0F0F"), Color(hex: "#141414")],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+
             ScrollView {
-                VStack(spacing: 24) {
+                VStack(spacing: 20) {
                     header
-                    
                     profileCard
-                    
-                    sectionHeader("Account")
-                    ProfileRow(
-                        icon: "clock",
-                        title: "Order History",
-                        action: { showingOrders = true },
-                        isEnabled: viewModel.user != nil
-                    )
-                    ProfileRow(
-                        icon: "mappin.and.ellipse",
-                        title: "Addresses",
-                        action: { },
-                        isEnabled: viewModel.user != nil
-                    )
-                    
-                    sectionHeader("Privacy and Security")
-                    ProfileRow(
-                        icon: "doc.text",
-                        title: "Terms & Conditions",
-                        action: {
-                            if let url = URL(string: "https://www.ezinflatables.com/pages/terms-and-conditions") {
-                                showingSafariURL = IdentifiableURL(url: url)
-                            }
-                        },
-                        isEnabled: true
-                    )
-                    ProfileRow(
-                        icon: "shield",
-                        title: "Privacy",
-                        action: {
-                            if let url = URL(string: "https://www.ezinflatables.com/pages/privacy-policy") {
-                                showingSafariURL = IdentifiableURL(url: url)
-                            }
-                        },
-                        isEnabled: true
-                    )
-                    
-                    sectionHeader("Notifications")
-                    ProfileToggleRow(
-                        icon: "bell",
-                        title: "Deals in your email",
-                        isOn: Binding(get: {
-                            viewModel.isSubscribed
-                        }, set: { newValue in
-                            viewModel.updateSubscription(isOn: newValue)
-                        }),
-                        isEnabled: viewModel.user != nil
-                    )
-                    
-                    sectionHeader("Support")
-                    ProfileRow(
-                        icon: "questionmark.circle",
-                        title: "Help Center",
-                        action: { showingMail = true },
-                        isEnabled: true
-                    )
-                    
-                    Spacer(minLength: 30)
+                    profileSection("Account", rows: [
+                        ProfileRow(icon: "clock", title: "Order History",
+                            action: { showingOrders = true },
+                            isEnabled: viewModel.user != nil),
+                        ProfileRow(icon: "mappin.and.ellipse", title: "Addresses",
+                            action: { },
+                            isEnabled: viewModel.user != nil)
+                    ])
+                    profileSection("Privacy and Security", rows: [
+                        ProfileRow(icon: "doc.text", title: "Terms & Conditions",
+                            action: {
+                                if let url = URL(string: "https://www.ezinflatables.com/pages/terms-and-conditions") {
+                                    showingSafariURL = IdentifiableURL(url: url)
+                                }
+                            }, isEnabled: true),
+                        ProfileRow(icon: "shield", title: "Privacy",
+                            action: {
+                                if let url = URL(string: "https://www.ezinflatables.com/pages/privacy-policy") {
+                                    showingSafariURL = IdentifiableURL(url: url)
+                                }
+                            }, isEnabled: true)
+                    ])
+                    profileToggleSection("Notifications", rows: [
+                        ProfileToggleRow(icon: "bell", title: "Deals in your email",
+                            isOn: Binding(
+                                get: { viewModel.isSubscribed },
+                                set: { newValue in viewModel.updateSubscription(isOn: newValue) }
+                            ), isEnabled: viewModel.user != nil)
+                    ])
+                    profileSection("Support", rows: [
+                        ProfileRow(icon: "questionmark.circle", title: "Help Center",
+                            action: { showingMail = true },
+                            isEnabled: true),
+                        ProfileRow(icon: "message", title: "Contact Support",
+                            action: { showingMail = true },
+                            isEnabled: true)
+                    ])
+
+                    // Version
+                    Text("MyEZ v1.0.0")
+                        .font(.system(size: 13))
+                        .foregroundColor(.white.opacity(0.25))
+                        .padding(.top, 8)
+                        .padding(.bottom, 100)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 12)
-                .padding(.bottom, 100)
             }
+            .padding(.horizontal, 5)
         }
         .onAppear { viewModel.refresh() }
         .sheet(isPresented: $showingOrders) {
@@ -100,7 +90,10 @@ struct ProfileView: View {
         .sheet(item: $showingSafariURL) { item in
             SafariView(url: item.url)
         }
-        .alert("", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { _ in viewModel.errorMessage = nil })) {
+        .alert("", isPresented: Binding(
+            get: { viewModel.errorMessage != nil },
+            set: { _ in viewModel.errorMessage = nil }
+        )) {
             Button("OK", role: .cancel) { }
         } message: {
             Text(viewModel.errorMessage ?? "")
@@ -111,42 +104,14 @@ struct ProfileView: View {
             showingMail = false
         }
     }
-    
-    private var profileImageView: some View {
-        Group {
-            if let image = viewModel.profileImage {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
-            } else if let urlString = viewModel.user?.profileImageUrl, let url = URL(string: urlString) {
-                AsyncImage(url: url) { phase in
-                    if let image = phase.image {
-                        image.resizable().scaledToFill()
-                    } else {
-                        Image("defaultProfile").resizable().scaledToFill()
-                    }
-                }
-            } else {
-                Image("defaultProfile").resizable().scaledToFill()
-            }
-        }
-    }
-    
-    private func presentingMail() {
-        guard let topVC = UIApplication.shared.topMostViewController() else { return }
-        let body = viewModel.supportEmailBody()
-        let sender = EmailSender()
-        sender.presentEmailSender(from: topVC, to: ["javier@ezinflatables.com"], subject: "MyEZ App Contact", body: body)
-    }
 
+    // MARK: — Header
     private var header: some View {
         HStack {
             Text("MyProfile")
                 .font(.system(size: 30, weight: .bold))
                 .foregroundColor(.white)
-            
             Spacer()
-            
             Button {
                 if viewModel.user != nil {
                     viewModel.logout(appState: appState)
@@ -161,50 +126,149 @@ struct ProfileView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
-                .background(Capsule().fill(AppColors.secondary))
-                .foregroundColor(.white)
+                .background(
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                colors: [AppColors.sceneBlueGlow.opacity(0.9), AppColors.sceneBlue.opacity(0.92)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                )
+                .overlay(
+                    Capsule()
+                        .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                )
+                .foregroundColor(.white.opacity(0.92))
             }
             .buttonStyle(.plain)
         }
     }
 
+    // MARK: — Profile Card
     private var profileCard: some View {
         VStack(spacing: 14) {
             profileImageView
-                .frame(width: 120, height: 120)
+                .frame(width: 110, height: 110)
                 .clipShape(Circle())
-                .overlay(Circle().stroke(AppColors.light.opacity(0.18), lineWidth: 1))
-                .background(
-                    Circle()
-                        .fill(AppColors.light.opacity(0.08))
-                        .frame(width: 140, height: 140)
-                )
-                .shadow(color: AppColors.dark.opacity(0.7), radius: 18, x: 0, y: 10)
+                .overlay(Circle().stroke(Color.white.opacity(0.12), lineWidth: 1))
+                .shadow(color: .black.opacity(0.5), radius: 16, x: 0, y: 8)
                 .allowsHitTesting(viewModel.user != nil)
                 .onTapGesture {
                     guard viewModel.user != nil else { return }
                     showingImagePicker = true
                 }
-            
+
             Text(viewModel.user?.name ?? "Sign in for more features")
                 .font(.system(size: 22, weight: .bold))
-                .foregroundColor(AppColors.primary)
-            
+                .foregroundColor(Color(hex: "#E8272B"))
+
             if let type = viewModel.user?.typeUser, !type.isEmpty {
                 Text(type)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(AppColors.secondary)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(Color(hex: "#4A90D9"))
             }
         }
         .frame(maxWidth: .infinity)
+        .padding(.vertical, 28)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(hex: "#1C1C1E"))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.white.opacity(0.5), lineWidth: 0.3)
+                )
+        )
     }
 
-    private func sectionHeader(_ title: String) -> some View {
-        Text(title.uppercased())
-            .font(.system(size: 14, weight: .semibold))
-            .foregroundColor(AppColors.light.opacity(0.45))
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 8)
+    // MARK: — Section with rows grouped in card
+    private func profileSection(_ title: String, rows: [ProfileRow]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title.uppercased())
+                .font(.system(size: 12, weight: .semibold))
+                .tracking(1.2)
+                .foregroundColor(.white.opacity(0.4))
+                .padding(.leading, 4)
+
+            VStack(spacing: 0) {
+                ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
+                    row
+                    if index < rows.count - 1 {
+                        Divider()
+                            .background(Color(hex: "#38383A"))
+                            .padding(.leading, 52)
+                    }
+                }
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(hex: "#1C1C1E"))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color(hex: "#2C2C2E"), lineWidth: 1)
+                    )
+            )
+        }
+    }
+
+    private func profileToggleSection(_ title: String, rows: [ProfileToggleRow]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title.uppercased())
+                .font(.system(size: 12, weight: .semibold))
+                .tracking(1.2)
+                .foregroundColor(.white.opacity(0.4))
+                .padding(.leading, 4)
+
+            VStack(spacing: 0) {
+                ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
+                    row
+                    if index < rows.count - 1 {
+                        Divider()
+                            .background(Color(hex: "#38383A"))
+                            .padding(.leading, 52)
+                    }
+                }
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(hex: "#1C1C1E"))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color(hex: "#2C2C2E"), lineWidth: 1)
+                    )
+            )
+        }
+    }
+
+    // MARK: — Profile Image
+    private var profileImageView: some View {
+        Group {
+            if let image = viewModel.profileImage {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+            } else if let urlString = viewModel.user?.profileImageUrl,
+                      let url = URL(string: urlString) {
+                AsyncImage(url: url) { phase in
+                    if let image = phase.image {
+                        image.resizable().scaledToFill()
+                    } else {
+                        Image("defaultProfile").resizable().scaledToFill()
+                    }
+                }
+            } else {
+                Image("defaultProfile").resizable().scaledToFill()
+            }
+        }
+    }
+
+    private func presentingMail() {
+        guard let topVC = UIApplication.shared.topMostViewController() else { return }
+        let body = viewModel.supportEmailBody()
+        let sender = EmailSender()
+        sender.presentEmailSender(from: topVC, to: ["javier@ezinflatables.com"],
+            subject: "MyEZ App Contact", body: body)
     }
 }
 
@@ -234,14 +298,7 @@ struct ProfileRow: View {
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 16)
-            .background(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(AppColors.dark.opacity(0.85))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .stroke(AppColors.light.opacity(0.12), lineWidth: 1)
-                    )
-            )
+            // ← background removed
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)
@@ -274,14 +331,7 @@ struct ProfileToggleRow: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 14)
-        .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(AppColors.dark.opacity(0.85))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(AppColors.light.opacity(0.12), lineWidth: 1)
-                )
-        )
+        // ← background removed
         .disabled(!isEnabled)
         .opacity(isEnabled ? 1.0 : 0.5)
     }

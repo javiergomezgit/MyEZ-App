@@ -15,54 +15,114 @@ struct GetStartedView: View {
     
     var body: some View {
         ZStack {
-            AppColors.dark.ignoresSafeArea()
-            VStack(spacing: 24) {
-                Spacer()
-                Image("logoLaunch")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 96, height: 96)
-                    .padding(12)
-                    .background(AppColors.light)
-                    .cornerRadius(12)
-                Text("Welcome to MyEZ")
-                    .font(.system(size: 32, weight: .bold))
-                    .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
-                Text("Sign in or create an account to continue")
-                    .font(.system(size: 17))
-                    .foregroundColor(AppColors.light.opacity(0.7))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
-                NavigationLink { LoginView(appState: appState) } label: {
-                    Text("Sign In")
-                        .font(.system(size: 18, weight: .semibold))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(AppColors.primary)
-                        .foregroundColor(.white)
-                        .cornerRadius(18)
+            SceneBackgroundView()
+
+            VStack(spacing: 26) {
+                Spacer(minLength: 36)
+
+                VStack(spacing: 18) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 28, style: .continuous)
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.white.opacity(0.98), Color(hex: "DCE8F7")],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 118, height: 118)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                                    .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                            )
+                            .shadow(color: AppColors.sceneBlueGlow.opacity(0.2), radius: 16, x: 0, y: 10)
+
+                        Image("logoLaunch")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 88, height: 88)
+                    }
+
+                    VStack(spacing: 10) {
+                        Text("Welcome to MyEZ")
+                            .font(.system(size: 34, weight: .bold))
+                            .foregroundColor(.white)
+                            .multilineTextAlignment(.center)
+
+                        Text("Sign in or create an account to continue with the new MyEZ experience.")
+                            .font(.system(size: 17))
+                            .foregroundColor(.white.opacity(0.62))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 16)
+                    }
                 }
-                NavigationLink { SignupView(appState: appState) } label: {
-                    Text("Create Account")
-                        .font(.system(size: 16, weight: .semibold))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .background(AppColors.light.opacity(0.08))
-                        .foregroundColor(.white)
-                        .cornerRadius(16)
+
+                VStack(spacing: 16) {
+                    NavigationLink { LoginView(appState: appState) } label: {
+                        Text("Sign In")
+                            .font(.system(size: 18, weight: .bold))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 58)
+                            .background(
+                                LinearGradient(
+                                    colors: [Color(hex: "#F04A4F"), Color(hex: "#C61D22")],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .foregroundColor(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                            )
+                    }
+
+                    NavigationLink { SignupView(appState: appState) } label: {
+                        Text("Create Account")
+                            .font(.system(size: 17, weight: .semibold))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 54)
+                            .background(
+                                LinearGradient(
+                                    colors: [Color(hex: "#F04A4F").opacity(0.92), Color(hex: "#A8181C").opacity(0.92)],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .foregroundColor(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                            )
+                    }
                 }
-                // FIXME: "Skip" lets any user bypass authentication entirely and access all
-                // protected content without credentials. If the app has any user-specific or
-                // privileged content, this is a security hole. At minimum, gate sensitive
-                // tabs/actions on a separate `isGuest` flag and prompt sign-in when needed.
-                Button("Skip") {
-                    appState.markAuthenticated()
+
+                VStack(spacing: 10) {
+                    Text("Guest access is available if you just want to look around.")
+                        .font(.system(size: 14))
+                        .foregroundColor(.white.opacity(0.42))
+                        .multilineTextAlignment(.center)
+
+                    // FIXME: "Skip" lets any user bypass authentication entirely and access all
+                    // protected content without credentials. If the app has any user-specific or
+                    // privileged content, this is a security hole. At minimum, gate sensitive
+                    // tabs/actions on a separate `isGuest` flag and prompt sign-in when needed.
+                    Button("Skip") {
+                        appState.markAuthenticated()
+                    }
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.65))
                 }
-                .foregroundColor(AppColors.light.opacity(0.6))
+                .padding(.top, 4)
+
                 Spacer()
             }
             .padding(.horizontal, 28)
+            .padding(.vertical, 28)
+            .sceneCard(cornerRadius: 30, fillColor: Color.white.opacity(0.04))
+            .padding(.horizontal, 24)
         }
     }
 }
@@ -71,106 +131,164 @@ struct LoginView: View {
     @ObservedObject var appState: AppState
     @StateObject private var viewModel = AuthViewModel()
     @State private var showPassword = false
-    
+
     var body: some View {
         ZStack {
-            AppColors.dark.ignoresSafeArea()
+            // Dark gradient background
+            LinearGradient(
+                colors: [Color(hex: "#0D1B2A"), Color(hex: "#1A1A2E")],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+
             ScrollView {
-                VStack(spacing: 14) {
-                    Image("logoLaunch")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 96, height: 96)
-                        .padding(12)
-                        .background(AppColors.light)
-                        .cornerRadius(12)
-                        .padding(.top, 20)
-                    Text("Welcome Back")
-                        .font(.system(size: 34, weight: .bold))
-                        .foregroundColor(.white)
-                    Text("Sign in to your MyEZ account")
-                        .font(.system(size: 17))
-                        .foregroundColor(AppColors.light.opacity(0.7))
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Email")
-                            .font(.system(size: 15))
-                            .foregroundColor(AppColors.light.opacity(0.6))
-                        TextField("name@email.com", text: $viewModel.email)
-                            .keyboardType(.emailAddress)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
+                VStack(spacing: 0) {
+
+                    // MARK: — Header
+                    VStack(spacing: 8) {
+                        Image("logo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 72, height: 72)
+                            .padding(.top, 60)
+                            .padding(.bottom, 8)
+
+                        Text("Sign In to MyEZ")
+                            .font(.system(size: 26, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.top, 16)
+                    }
+                    .padding(.bottom, 32)
+
+                    // MARK: — Form Card
+                    VStack(alignment: .leading, spacing: 16) {
+
+                        // Email field
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Email")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(.white.opacity(0.85))
+
+                            HStack(spacing: 12) {
+                                Image(systemName: "envelope")
+                                    .foregroundColor(.white.opacity(0.4))
+                                TextField("your@email.com", text: $viewModel.email)
+                                    .keyboardType(.emailAddress)
+                                    .textInputAutocapitalization(.never)
+                                    .autocorrectionDisabled()
+                                    .foregroundColor(.white)
+                            }
                             .padding(.horizontal, 16)
                             .frame(height: 56)
-                            .background(AppColors.light.opacity(0.08))
-                            .cornerRadius(18)
-                            .foregroundColor(.white)
-                        Text("Password")
-                            .font(.system(size: 15))
-                            .foregroundColor(AppColors.light.opacity(0.6))
-                        HStack {
-                            Group {
-                                if showPassword {
-                                    TextField("Password", text: $viewModel.password)
-                                } else {
-                                    SecureField("Password", text: $viewModel.password)
-                                        .foregroundColor(.white)
+                            .background(Color.white.opacity(0.07))
+                            .cornerRadius(14)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                            )
+                        }
+
+                        // Password field
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Password")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(.white.opacity(0.85))
+
+                            HStack(spacing: 12) {
+                                Image(systemName: "lock")
+                                    .foregroundColor(.white.opacity(0.4))
+                                Group {
+                                    if showPassword {
+                                        TextField("Password", text: $viewModel.password)
+                                    } else {
+                                        SecureField("••••••••", text: $viewModel.password)
+                                    }
+                                }
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .foregroundColor(.white)
+
+                                Button {
+                                    showPassword.toggle()
+                                } label: {
+                                    Image(systemName: showPassword ? "eye.slash" : "eye")
+                                        .foregroundColor(.white.opacity(0.4))
                                 }
                             }
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                            Button {
-                                showPassword.toggle()
-                            } label: {
-                                Image(systemName: showPassword ? "eye.slash" : "eye")
-                                    .foregroundColor(AppColors.light.opacity(0.7))
+                            .padding(.horizontal, 16)
+                            .frame(height: 56)
+                            .background(Color.white.opacity(0.07))
+                            .cornerRadius(14)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                            )
+                        }
+
+                        // Sign In button
+                        Button {
+                            viewModel.login(appState: appState)
+                        } label: {
+                            Text(viewModel.isLoading ? "Signing In..." : "Sign In")
+                                .font(.system(size: 18, weight: .bold))
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 58)
+                                .background(
+                                    LinearGradient(
+                                        colors: [Color(hex: "#E8272B"), Color(hex: "#C0181C")],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .foregroundColor(.white)
+                                .cornerRadius(29)
+                                .shadow(color: Color(hex: "#E8272B").opacity(0.4), radius: 12, x: 0, y: 6)
+                        }
+                        .disabled(viewModel.isLoading)
+                        .padding(.top, 8)
+
+                    }
+                    .padding(24)
+                    .background(Color.white.opacity(0.05))
+                    .cornerRadius(24)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24)
+                            .stroke(Color.white.opacity(0.07), lineWidth: 1)
+                    )
+                    .padding(.horizontal, 4)
+
+                    // MARK: — Footer
+                    VStack(spacing: 16) {
+                        NavigationLink {
+                            SignupView(appState: appState)
+                        } label: {
+                            HStack(spacing: 4) {
+                                Text("Don't have an account?")
+                                    .foregroundColor(.white.opacity(0.6))
+                                Text("Sign Up")
+                                    .foregroundColor(Color(hex: "#E8272B"))
+                                    .fontWeight(.semibold)
                             }
+                            .font(.system(size: 15))
                         }
-                        .padding(.horizontal, 16)
-                        .frame(height: 56)
-                        .background(AppColors.light.opacity(0.08))
-                        .cornerRadius(18)
-                    }
-                    .padding(.top, 12)
-                    Button {
-                        viewModel.login(appState: appState)
-                    } label: {
-                        Text(viewModel.isLoading ? "Signing In..." : "Sign In")
-                            .font(.system(size: 18, weight: .semibold))
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 60)
-                            .background(AppColors.primary)
-                            .foregroundColor(.white)
-                            .cornerRadius(20)
-                    }
-                    .disabled(viewModel.isLoading)
-                    Button("Forgot Password?") {
-                        viewModel.sendPasswordReset()
-                    }
-                    .foregroundColor(AppColors.light.opacity(0.7))
-                    NavigationLink {
-                        SignupView(appState: appState)
-                    } label: {
-                        HStack(spacing: 6) {
-                            Text("Don't have an account?")
-                                .foregroundColor(AppColors.light.opacity(0.65))
-                            Text("Sign Up")
-                                .foregroundColor(AppColors.primary)
-                                .fontWeight(.semibold)
+
+                        Button("Skip") {
+                            appState.markAuthenticated()
                         }
-                        .font(.system(size: 15))
+                        .font(.system(size: 14))
+                        .foregroundColor(.white.opacity(0.4))
                     }
-                    Spacer()
-                    // FIXME: Same auth-bypass issue as in GetStartedView — see comment there.
-                    Button("Skip") {
-                        appState.markAuthenticated()
-                    }
-                    .foregroundColor(AppColors.light.opacity(0.6))
+                    .padding(.top, 24)
+                    .padding(.bottom, 40)
                 }
-                .padding(.horizontal, 28)
-                .padding(.bottom, 40)
+                .padding(.horizontal, 24)
             }
         }
-        .alert("", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { _ in viewModel.errorMessage = nil })) {
+        .alert("", isPresented: Binding(
+            get: { viewModel.errorMessage != nil },
+            set: { _ in viewModel.errorMessage = nil }
+        )) {
             Button("OK", role: .cancel) { }
         } message: {
             Text(viewModel.errorMessage ?? "")
@@ -184,116 +302,229 @@ struct SignupView: View {
     @StateObject private var viewModel = AuthViewModel()
     @State private var showPassword = false
     @State private var showVerify = false
-    
+
     var body: some View {
         ZStack {
-            AppColors.dark.ignoresSafeArea()
+            LinearGradient(
+                colors: [Color(hex: "#0D1B2A"), Color(hex: "#1A1A2E")],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+
             ScrollView {
-                VStack(spacing: 14) {
-                    Text("Create Account")
-                        .font(.system(size: 30, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.top, 20)
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Name")
-                            .font(.system(size: 15))
-                            .foregroundColor(AppColors.light.opacity(0.6))
-                        TextField("Your name", text: $viewModel.name)
-                            .textInputAutocapitalization(.words)
+                VStack(spacing: 0) {
+
+                    // MARK: — Header
+                    VStack(spacing: 8) {
+                        Image("logo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 72, height: 72)
+                            .padding(.top, 10)
+                            .padding(.bottom, 8)
+
+                        Text("Create Account")
+                            .font(.system(size: 26, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.top, 16)
+                    }
+                    .padding(.bottom, 32)
+
+                    // MARK: — Form Card
+                    VStack(alignment: .leading, spacing: 16) {
+
+                        // Full Name
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Full Name")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(.white.opacity(0.85))
+
+                            HStack(spacing: 12) {
+                                Image(systemName: "person")
+                                    .foregroundColor(.white.opacity(0.4))
+                                TextField("John Doe", text: $viewModel.name)
+                                    .textInputAutocapitalization(.words)
+                                    .foregroundColor(.white)
+                            }
                             .padding(.horizontal, 16)
                             .frame(height: 56)
-                            .background(AppColors.light.opacity(0.08))
-                            .cornerRadius(18)
-                            .foregroundColor(.white)
-                        Text("Email")
-                            .font(.system(size: 15))
-                            .foregroundColor(AppColors.light.opacity(0.6))
-                        TextField("name@email.com", text: $viewModel.email)
-                            .keyboardType(.emailAddress)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
+                            .background(Color.white.opacity(0.07))
+                            .cornerRadius(14)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                            )
+                        }
+
+                        // Email
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Email")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(.white.opacity(0.85))
+
+                            HStack(spacing: 12) {
+                                Image(systemName: "envelope")
+                                    .foregroundColor(.white.opacity(0.4))
+                                TextField("your@email.com", text: $viewModel.email)
+                                    .keyboardType(.emailAddress)
+                                    .textInputAutocapitalization(.never)
+                                    .autocorrectionDisabled()
+                                    .foregroundColor(.white)
+                            }
                             .padding(.horizontal, 16)
                             .frame(height: 56)
-                            .background(AppColors.light.opacity(0.08))
-                            .cornerRadius(18)
-                            .foregroundColor(.white)
-                        Text("Password")
-                            .font(.system(size: 15))
-                            .foregroundColor(AppColors.light.opacity(0.6))
-                        HStack {
-                            Group {
-                                if showPassword {
-                                    TextField("Password", text: $viewModel.password)
-                                } else {
-                                    SecureField("Password", text: $viewModel.password)
-                                        .foregroundColor(.white)
+                            .background(Color.white.opacity(0.07))
+                            .cornerRadius(14)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                            )
+                        }
+
+                        // Password
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Password")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(.white.opacity(0.85))
+
+                            HStack(spacing: 12) {
+                                Image(systemName: "lock")
+                                    .foregroundColor(.white.opacity(0.4))
+                                Group {
+                                    if showPassword {
+                                        TextField("Password", text: $viewModel.password)
+                                    } else {
+                                        SecureField("••••••••", text: $viewModel.password)
+                                    }
+                                }
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .foregroundColor(.white)
+
+                                Button {
+                                    showPassword.toggle()
+                                } label: {
+                                    Image(systemName: showPassword ? "eye.slash" : "eye")
+                                        .foregroundColor(.white.opacity(0.4))
                                 }
                             }
-                            Button {
-                                showPassword.toggle()
-                            } label: {
-                                Image(systemName: showPassword ? "eye.slash" : "eye")
-                                    .foregroundColor(AppColors.light.opacity(0.7))
-                            }
+                            .padding(.horizontal, 16)
+                            .frame(height: 56)
+                            .background(Color.white.opacity(0.07))
+                            .cornerRadius(14)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                            )
                         }
-                        .padding(.horizontal, 16)
-                        .frame(height: 56)
-                        .background(AppColors.light.opacity(0.08))
-                        .cornerRadius(18)
-                        Text("Verify Password")
-                            .font(.system(size: 15))
-                            .foregroundColor(AppColors.light.opacity(0.6))
-                        HStack {
-                            Group {
-                                if showVerify {
-                                    TextField("Verify Password", text: $viewModel.verifyPassword)
-                                } else {
-                                    SecureField("Verify Password", text: $viewModel.verifyPassword)
-                                        .foregroundColor(.white)
+
+                        // Verify Password
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Verify Password")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(.white.opacity(0.85))
+
+                            HStack(spacing: 12) {
+                                Image(systemName: "lock")
+                                    .foregroundColor(.white.opacity(0.4))
+                                Group {
+                                    if showVerify {
+                                        TextField("Verify Password", text: $viewModel.verifyPassword)
+                                    } else {
+                                        SecureField("••••••••", text: $viewModel.verifyPassword)
+                                    }
+                                }
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .foregroundColor(.white)
+
+                                Button {
+                                    showVerify.toggle()
+                                } label: {
+                                    Image(systemName: showVerify ? "eye.slash" : "eye")
+                                        .foregroundColor(.white.opacity(0.4))
                                 }
                             }
-                            Button {
-                                showVerify.toggle()
-                            } label: {
-                                Image(systemName: showVerify ? "eye.slash" : "eye")
-                                    .foregroundColor(AppColors.light.opacity(0.7))
-                            }
+                            .padding(.horizontal, 16)
+                            .frame(height: 56)
+                            .background(Color.white.opacity(0.07))
+                            .cornerRadius(14)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                            )
                         }
-                        .padding(.horizontal, 16)
-                        .frame(height: 56)
-                        .background(AppColors.light.opacity(0.08))
-                        .cornerRadius(18)
+
+                        // Create Account button
+                        Button {
+                            viewModel.signup(appState: appState)
+                        } label: {
+                            Text(viewModel.isLoading ? "Creating..." : "Create Account")
+                                .font(.system(size: 18, weight: .bold))
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 58)
+                                .background(
+                                    LinearGradient(
+                                        colors: [Color(hex: "#E8272B"), Color(hex: "#C0181C")],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .foregroundColor(.white)
+                                .cornerRadius(29)
+                                .shadow(color: Color(hex: "#E8272B").opacity(0.4), radius: 12, x: 0, y: 6)
+                        }
+                        .disabled(viewModel.isLoading)
+                        .padding(.top, 8)
+
                     }
-                    .padding(.top, 12)
-                    Button {
-                        viewModel.signup(appState: appState)
-                    } label: {
-                        Text(viewModel.isLoading ? "Creating..." : "Create Account")
-                            .font(.system(size: 18, weight: .semibold))
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 60)
-                            .background(AppColors.primary)
-                            .foregroundColor(.white)
-                            .cornerRadius(20)
+                    .padding(24)
+                    .background(Color.white.opacity(0.05))
+                    .cornerRadius(24)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24)
+                            .stroke(Color.white.opacity(0.07), lineWidth: 1)
+                    )
+                    .padding(.horizontal, 4)
+
+                    // MARK: — Footer
+                    VStack(spacing: 16) {
+                        NavigationLink {
+                            LoginView(appState: appState)
+                        } label: {
+                            HStack(spacing: 4) {
+                                Text("Already have an account?")
+                                    .foregroundColor(.white.opacity(0.6))
+                                Text("Sign In")
+                                    .foregroundColor(Color(hex: "#E8272B"))
+                                    .fontWeight(.semibold)
+                            }
+                            .font(.system(size: 15))
+                        }
+
+                        if let url = URL(string: "https://www.ezinflatables.com/pages/terms-and-conditions") {
+                            Link("Terms and Conditions", destination: url)
+                                .font(.system(size: 13))
+                                .foregroundColor(.white.opacity(0.4))
+                        }
+
+                        Button("Skip") {
+                            appState.markAuthenticated()
+                        }
+                        .font(.system(size: 14))
+                        .foregroundColor(.white.opacity(0.4))
                     }
-                    .disabled(viewModel.isLoading)
-                    // FIXME: Force-unwrapping a URL literal. While this particular string is
-                    // currently valid, a typo or domain change will crash at runtime. Use
-                    // `if let url = URL(string: ...)` or a static constant instead.
-                    Link("Terms and Conditions", destination: URL(string: "https://www.ezinflatables.com/pages/terms-and-conditions")!)
-                        .foregroundColor(AppColors.light.opacity(0.7))
-                    Spacer()
-                    // FIXME: Same auth-bypass issue as in GetStartedView — see comment there.
-                    Button("Skip") {
-                        appState.markAuthenticated()
-                    }
-                    .foregroundColor(AppColors.light.opacity(0.6))
+                    .padding(.top, 24)
+                    .padding(.bottom, 40)
                 }
-                .padding(.horizontal, 28)
-                .padding(.bottom, 40)
+                .padding(.horizontal, 24)
             }
         }
-        .alert("", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { _ in viewModel.errorMessage = nil })) {
+        .alert("", isPresented: Binding(
+            get: { viewModel.errorMessage != nil },
+            set: { _ in viewModel.errorMessage = nil }
+        )) {
             Button("OK", role: .cancel) { }
         } message: {
             Text(viewModel.errorMessage ?? "")
