@@ -11,12 +11,7 @@ struct ProfileView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [Color(hex: "#0F0F0F"), Color(hex: "#141414")],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            SceneBackgroundView()
 
             ScrollView {
                 VStack(spacing: 20) {
@@ -63,14 +58,13 @@ struct ProfileView: View {
                     // Version
                     Text("MyEZ v1.0.0")
                         .font(.system(size: 13))
-                        .foregroundColor(.white.opacity(0.25))
+                        .foregroundColor(AppColors.textMuted)
                         .padding(.top, 8)
                         .padding(.bottom, 100)
                 }
-                .padding(.horizontal, 20)
                 .padding(.top, 12)
             }
-            .padding(.horizontal, 5)
+            .padding(.horizontal, 20)
         }
         .onAppear { viewModel.refresh() }
         .sheet(isPresented: $showingOrders) {
@@ -130,7 +124,7 @@ struct ProfileView: View {
                     Capsule()
                         .fill(
                             LinearGradient(
-                                colors: [AppColors.sceneBlueGlow.opacity(0.9), AppColors.sceneBlue.opacity(0.92)],
+                                colors: [AppColors.buttonBlueStart, AppColors.buttonBlueEnd],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
@@ -138,7 +132,7 @@ struct ProfileView: View {
                 )
                 .overlay(
                     Capsule()
-                        .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                        .stroke(AppColors.borderStrong, lineWidth: 1)
                 )
                 .foregroundColor(.white.opacity(0.92))
             }
@@ -162,22 +156,22 @@ struct ProfileView: View {
 
             Text(viewModel.user?.name ?? "Sign in for more features")
                 .font(.system(size: 22, weight: .bold))
-                .foregroundColor(Color(hex: "#E8272B"))
+                .foregroundColor(AppColors.textPrimary)
 
             if let type = viewModel.user?.typeUser, !type.isEmpty {
                 Text(type)
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(Color(hex: "#4A90D9"))
+                    .foregroundColor(AppColors.accentBlue)
             }
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 28)
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color(hex: "#1C1C1E"))
+                .fill(AppColors.surfacePrimary)
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.white.opacity(0.5), lineWidth: 0.3)
+                        .stroke(AppColors.borderSubtle, lineWidth: 1)
                 )
         )
     }
@@ -188,7 +182,7 @@ struct ProfileView: View {
             Text(title.uppercased())
                 .font(.system(size: 12, weight: .semibold))
                 .tracking(1.2)
-                .foregroundColor(.white.opacity(0.4))
+                .foregroundColor(AppColors.textSecondary)
                 .padding(.leading, 4)
 
             VStack(spacing: 0) {
@@ -196,17 +190,17 @@ struct ProfileView: View {
                     row
                     if index < rows.count - 1 {
                         Divider()
-                            .background(Color(hex: "#38383A"))
+                            .background(AppColors.borderSubtle)
                             .padding(.leading, 52)
                     }
                 }
             }
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(hex: "#1C1C1E"))
+                    .fill(AppColors.surfaceSecondary)
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color(hex: "#2C2C2E"), lineWidth: 1)
+                            .stroke(AppColors.borderSubtle, lineWidth: 1)
                     )
             )
         }
@@ -217,7 +211,7 @@ struct ProfileView: View {
             Text(title.uppercased())
                 .font(.system(size: 12, weight: .semibold))
                 .tracking(1.2)
-                .foregroundColor(.white.opacity(0.4))
+                .foregroundColor(AppColors.textSecondary)
                 .padding(.leading, 4)
 
             VStack(spacing: 0) {
@@ -225,17 +219,17 @@ struct ProfileView: View {
                     row
                     if index < rows.count - 1 {
                         Divider()
-                            .background(Color(hex: "#38383A"))
+                            .background(AppColors.borderSubtle)
                             .padding(.leading, 52)
                     }
                 }
             }
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(hex: "#1C1C1E"))
+                    .fill(AppColors.surfaceSecondary)
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color(hex: "#2C2C2E"), lineWidth: 1)
+                            .stroke(AppColors.borderSubtle, lineWidth: 1)
                     )
             )
         }

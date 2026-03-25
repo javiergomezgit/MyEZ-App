@@ -15,7 +15,12 @@ struct GetStartedView: View {
     
     var body: some View {
         ZStack {
-            SceneBackgroundView()
+            LinearGradient(
+                colors: [Color(hex: "#0D1B2A"), Color(hex: "#1A1A2E")],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
 
             VStack(spacing: 26) {
                 Spacer(minLength: 36)
@@ -25,7 +30,7 @@ struct GetStartedView: View {
                         RoundedRectangle(cornerRadius: 28, style: .continuous)
                             .fill(
                                 LinearGradient(
-                                    colors: [Color.white.opacity(0.98), Color(hex: "DCE8F7")],
+                                    colors: [Color.white.opacity(0.95), Color(hex: "D7E3F5")],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 )
@@ -45,13 +50,13 @@ struct GetStartedView: View {
 
                     VStack(spacing: 10) {
                         Text("Welcome to MyEZ")
-                            .font(.system(size: 34, weight: .bold))
+                            .font(.system(size: 34, weight: .bold, design: .rounded))
                             .foregroundColor(.white)
                             .multilineTextAlignment(.center)
 
                         Text("Sign in or create an account to continue with the new MyEZ experience.")
                             .font(.system(size: 17))
-                            .foregroundColor(.white.opacity(0.62))
+                            .foregroundColor(.white.opacity(0.64))
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 16)
                     }
@@ -65,17 +70,14 @@ struct GetStartedView: View {
                             .frame(height: 58)
                             .background(
                                 LinearGradient(
-                                    colors: [Color(hex: "#F04A4F"), Color(hex: "#C61D22")],
+                                    colors: [Color(hex: "#2D8CFF"), Color(hex: "#1E63E9")],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
                             )
                             .foregroundColor(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                            .shadow(color: Color(hex: "#2D8CFF").opacity(0.28), radius: 12, x: 0, y: 6)
                     }
 
                     NavigationLink { SignupView(appState: appState) } label: {
@@ -85,7 +87,7 @@ struct GetStartedView: View {
                             .frame(height: 54)
                             .background(
                                 LinearGradient(
-                                    colors: [Color(hex: "#F04A4F").opacity(0.92), Color(hex: "#A8181C").opacity(0.92)],
+                                    colors: [Color(hex: "#E8272B"), Color(hex: "#C0181C")],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
@@ -94,8 +96,9 @@ struct GetStartedView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                    .stroke(Color.white.opacity(0.10), lineWidth: 1)
                             )
+                            .shadow(color: Color(hex: "#E8272B").opacity(0.28), radius: 12, x: 0, y: 6)
                     }
                 }
 
@@ -121,7 +124,7 @@ struct GetStartedView: View {
             }
             .padding(.horizontal, 28)
             .padding(.vertical, 28)
-            .sceneCard(cornerRadius: 30, fillColor: Color.white.opacity(0.04))
+            .sceneCard(cornerRadius: 30, fillColor: Color.white.opacity(0.05))
             .padding(.horizontal, 24)
         }
     }
@@ -236,14 +239,14 @@ struct LoginView: View {
                                 .frame(height: 58)
                                 .background(
                                     LinearGradient(
-                                        colors: [Color(hex: "#E8272B"), Color(hex: "#C0181C")],
+                                        colors: [Color(hex: "#2D8CFF"), Color(hex: "#1E63E9")],
                                         startPoint: .leading,
                                         endPoint: .trailing
                                     )
                                 )
                                 .foregroundColor(.white)
-                                .cornerRadius(29)
-                                .shadow(color: Color(hex: "#E8272B").opacity(0.4), radius: 12, x: 0, y: 6)
+                                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                                .shadow(color: Color(hex: "#2D8CFF").opacity(0.28), radius: 12, x: 0, y: 6)
                         }
                         .disabled(viewModel.isLoading)
                         .padding(.top, 8)
@@ -472,8 +475,8 @@ struct SignupView: View {
                                     )
                                 )
                                 .foregroundColor(.white)
-                                .cornerRadius(29)
-                                .shadow(color: Color(hex: "#E8272B").opacity(0.4), radius: 12, x: 0, y: 6)
+                                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                                .shadow(color: Color(hex: "#E8272B").opacity(0.28), radius: 12, x: 0, y: 6)
                         }
                         .disabled(viewModel.isLoading)
                         .padding(.top, 8)

@@ -26,10 +26,10 @@ struct DealsView: View {
                 VStack(spacing: 14) {
                     Text("Unable to load deals")
                         .font(.system(size: 22, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(AppColors.textPrimary)
                     Text(error)
                         .font(.system(size: 15))
-                        .foregroundColor(.white.opacity(0.6))
+                        .foregroundColor(AppColors.textSecondary)
                         .multilineTextAlignment(.center)
                     Button("Try Again") {
                         Task { await loadDeals() }
@@ -37,7 +37,16 @@ struct DealsView: View {
                     .font(.system(size: 15, weight: .semibold))
                     .padding(.horizontal, 18)
                     .padding(.vertical, 12)
-                    .background(Capsule().fill(AppColors.sceneBlue))
+                    .background(
+                        Capsule()
+                            .fill(
+                                LinearGradient(
+                                    colors: [AppColors.buttonBlueStart, AppColors.buttonBlueEnd],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                    )
                     .foregroundColor(.white)
                 }
                 .padding(24)
@@ -49,10 +58,10 @@ struct DealsView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Deals")
                                 .font(.system(size: 30, weight: .bold))
-                                .foregroundColor(.white)
+                                .foregroundColor(AppColors.textPrimary)
                             Text("A profile-style leaderboard view for current client rankings.")
                                 .font(.system(size: 15))
-                                .foregroundColor(.white.opacity(0.55))
+                                .foregroundColor(AppColors.textSecondary)
                         }
 
                         VStack(spacing: 12) {
@@ -99,7 +108,7 @@ private struct DealRow: View {
                 Circle()
                     .fill(
                         LinearGradient(
-                            colors: [AppColors.sceneBlue.opacity(0.95), AppColors.primary.opacity(0.7)],
+                            colors: [AppColors.buttonBlueStart, AppColors.buttonBlueEnd],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -113,15 +122,15 @@ private struct DealRow: View {
             VStack(alignment: .leading, spacing: 5) {
                 Text(client.name)
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundColor(AppColors.textPrimary)
                 Text(client.rank_weight)
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(AppColors.sceneBlueGlow)
+                    .foregroundColor(AppColors.accentBlue)
             }
 
             Spacer()
         }
         .padding(18)
-        .sceneCard()
+        .sceneCard(fillColor: AppColors.surfaceSecondary)
     }
 }

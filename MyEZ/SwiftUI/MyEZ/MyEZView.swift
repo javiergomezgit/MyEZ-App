@@ -7,54 +7,38 @@ struct MyEZView: View {
         GridItem(.flexible(), spacing: 12),
         GridItem(.flexible(), spacing: 12)
     ]
+
+    private var rankTheme: RankTheme {
+        RankTheme.forRank(viewModel.categoryImageName.isEmpty ? "minimumweight" : viewModel.categoryImageName)
+    }
     
     var body: some View {
         ZStack {
             SceneBackgroundView()
-            VStack(spacing: 16) {
-                ScrollView {
-                    VStack(spacing: 18) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("MyEZ")
-                                .font(.system(size: 30, weight: .bold))
-                                .foregroundColor(.white)
-                            Text("Your rank, owned inflatables, and downloads in the same visual system as MyProfile.")
-                                .font(.system(size: 15))
-                                .foregroundColor(.white.opacity(0.55))
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 13)
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 20) {
+                    rankHeader
+                    TopUsersCard(topUsers: viewModel.topUsers, summaryText: viewModel.topUsersSummaryText)
 
-                        rankHeader
-                        TopUsersCard(topUsers: viewModel.topUsers, summaryText: viewModel.topUsersSummaryText)
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text("Your Products")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundColor(AppColors.textPrimary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
 
-                        VStack(alignment: .leading, spacing: 14) {
-                            Text("My Inflatables")
-                                .font(.system(size: 22, weight: .bold))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-
-                            Text(viewModel.ownedUnitsText)
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(.white.opacity(0.55))
-
-                            LazyVGrid(columns: columns, spacing: 12) {
-                                ForEach(viewModel.displayUnits) { unit in
-                                    UnitCard(unit: unit)
-                                        .onTapGesture { viewModel.select(unit: unit) }
-                                }
+                        LazyVGrid(columns: columns, spacing: 12) {
+                            ForEach(viewModel.displayUnits) { unit in
+                                UnitCard(unit: unit)
+                                    .onTapGesture { viewModel.select(unit: unit) }
                             }
                         }
-                        .padding(18)
-                        .sceneCard()
-                        .padding(.horizontal, 13)
-                        .padding(.bottom, 24)
                     }
-                    .padding(.top, 8)
+                    .padding(.bottom, 100)
                 }
-                .padding(.horizontal, 5)
-                .refreshable { viewModel.refreshAll() }
+                .padding(.top, 8)
             }
+            .padding(.horizontal, 20)
+            .refreshable { viewModel.refreshAll() }
         }
         .onAppear { viewModel.load() }
         .sheet(isPresented: $viewModel.showingDownload) {
@@ -67,25 +51,32 @@ struct MyEZView: View {
     }
     
     private var rankHeader: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 14) {
             Image(viewModel.categoryImageName.isEmpty ? "minimumweight" : viewModel.categoryImageName)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 90, height: 90)
+                .frame(width: 78, height: 78)
                 .shadow(color: AppColors.sceneBlueGlow.opacity(0.25), radius: 18, x: 0, y: 8)
             Text(viewModel.categoryName.isEmpty ? "MINIMUMWEIGHT" : viewModel.categoryName)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(.white.opacity(0.6))
-            Text(viewModel.ownedUnitsText)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(.white.opacity(0.5))
-                .multilineTextAlignment(.center)
+                .font(.system(size: 24, weight: .heavy, design: .rounded))
+                .tracking(1)
+                .foregroundColor(.white)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
-        .padding(.horizontal, 18)
-        .sceneCard()
-        .padding(.horizontal, 13)
+        .padding(.vertical, 28)
+        .padding(.horizontal, 24)
+        .background(
+            LinearGradient(
+                colors: [rankTheme.base, rankTheme.accent],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 34, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 34, style: .continuous)
+                .stroke(AppColors.borderSubtle, lineWidth: 1)
+        )
     }
     
 }
@@ -94,35 +85,42 @@ struct UnitCard: View {
     let unit: MyEZViewModel.UnitDisplayItem
     
     var body: some View {
-        VStack(spacing: 0) {
-            ZStack {
-                LinearGradient(
-                    colors: [Color.white.opacity(0.96), Color(hex: "D9E7F5")],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
+        ZStack(alignment: .topLeading) {
+            LinearGradient(
+                colors: [AppColors.surfaceElevated, AppColors.surfaceSecondary],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            VStack {
+                Spacer(minLength: 0)
                 Image(unit.imageName)
                     .resizable()
                     .scaledToFit()
-                    .padding(10)
+                    .padding(14)
             }
-            .frame(height: 140)
+
+            LinearGradient(
+                colors: [Color.black.opacity(0.18), Color.clear],
+                startPoint: .top,
+                endPoint: .center
+            )
             
-            ZStack {
-                AppColors.sceneCard
+            VStack(alignment: .leading, spacing: 0) {
                 Text(unit.sku)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.7))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 12)
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .padding(.top, 12)
+                    .padding(.leading, 12)
+                Spacer()
             }
-            .frame(height: 46)
         }
         .frame(maxWidth: .infinity)
+        .frame(height: 192)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                .stroke(AppColors.borderStrong, lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.35), radius: 10, x: 0, y: 8)
     }
@@ -134,31 +132,45 @@ struct TopUsersCard: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 10) {
-                Text("🏆")
+            HStack {
                 Text("TOP USERS")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.system(size: 16, weight: .heavy, design: .rounded))
                     .foregroundColor(.white)
                 Spacer()
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(AppColors.sceneBlue.opacity(0.28))
+            .padding(.horizontal, 22)
+            .padding(.vertical, 14)
+            .background(
+                LinearGradient(
+                    colors: [AppColors.buttonBlueStart, AppColors.buttonBlueEnd],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .clipShape(
+                .rect(
+                    topLeadingRadius: 24,
+                    bottomLeadingRadius: 0,
+                    bottomTrailingRadius: 0,
+                    topTrailingRadius: 24
+                )
+            )
 
-            VStack(spacing: 12) {
+            VStack(spacing: 14) {
                 HStack {
                     Text("PLACE")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.white.opacity(0.45))
+                        .foregroundColor(AppColors.textSecondary)
                     Spacer()
                     Text("WEIGHT")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.white.opacity(0.45))
+                        .foregroundColor(AppColors.textSecondary)
                     Spacer()
                     Text("LOCATION")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.white.opacity(0.45))
+                        .foregroundColor(AppColors.textSecondary)
                 }
+                .padding(.horizontal, 6)
 
                 if topUsers.isEmpty {
                     TopUserRow(place: "—", weight: "—", location: "—", medal: "🏅")
@@ -170,35 +182,76 @@ struct TopUsersCard: View {
                             location: user.locationText,
                             medal: user.medal
                         )
-                        if user.id != topUsers.last?.id {
-                            Divider().background(AppColors.light.opacity(0.08))
-                        }
                     }
                 }
             }
-            .padding(16)
-
-            HStack {
-                Text(summaryText.isEmpty ? "Loading your rank..." : summaryText)
-                    .foregroundColor(AppColors.light.opacity(0.85))
-                Spacer()
-            }
-            .font(.system(size: 15, weight: .semibold))
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(AppColors.secondary.opacity(0.15))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                    )
-            )
             .padding(.horizontal, 12)
-            .padding(.bottom, 14)
+            .padding(.top, 18)
+
+            summaryBanner
+                .padding(.horizontal, 18)
+                .padding(.top, 18)
+                .padding(.bottom, 18)
+
+            HStack(spacing: 8) {
+                Image(systemName: "arrow.clockwise")
+                    .font(.system(size: 14, weight: .medium))
+                Text("Pull down to update your EZ's")
+                    .font(.system(size: 15, weight: .medium))
+            }
+            .foregroundColor(AppColors.textMuted)
+            .padding(.bottom, 18)
         }
-        .sceneCard()
-        .padding(.horizontal, 13)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(AppColors.surfacePrimary)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .stroke(AppColors.borderSubtle, lineWidth: 1)
+                )
+        )
+    }
+
+    private var summaryBanner: some View {
+        VStack(spacing: 4) {
+            if let parsed = SummaryParts(summaryText: summaryText) {
+                (
+                    Text("Owning ")
+                        .foregroundColor(.white.opacity(0.9))
+                    + Text(parsed.weight)
+                        .foregroundColor(AppColors.accentBlue)
+                    + Text(" of inflatables,")
+                        .foregroundColor(.white.opacity(0.9))
+                )
+                .multilineTextAlignment(.center)
+
+                (
+                    Text("I'm in ")
+                        .foregroundColor(.white.opacity(0.9))
+                    + Text(parsed.place)
+                        .foregroundColor(AppColors.accentRed)
+                    + Text(".")
+                        .foregroundColor(.white.opacity(0.9))
+                )
+                .multilineTextAlignment(.center)
+            } else {
+                Text(summaryText.isEmpty ? "Loading your rank..." : summaryText)
+                    .foregroundColor(.white.opacity(0.9))
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .font(.system(size: 15, weight: .bold, design: .rounded))
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(AppColors.surfaceSecondary)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(AppColors.borderStrong, lineWidth: 1)
+                )
+        )
     }
 }
 
@@ -210,16 +263,50 @@ struct TopUserRow: View {
 
     var body: some View {
         HStack {
-            Text("\(medal) \(place)")
+            Text("\(medal)  \(place)")
                 .foregroundColor(.white)
+                .frame(maxWidth: .infinity, alignment: .leading)
             Spacer()
             Text(weight)
-                .foregroundColor(AppColors.sceneBlueGlow)
+                .foregroundColor(AppColors.accentBlue)
+                .frame(maxWidth: .infinity, alignment: .center)
             Spacer()
             Text(location)
-                .foregroundColor(.white.opacity(0.6))
+                .foregroundColor(.white.opacity(0.88))
+                .frame(maxWidth: .infinity, alignment: .trailing)
         }
-        .font(.system(size: 16, weight: .semibold))
+        .font(.system(size: 16, weight: .bold, design: .rounded))
+        .padding(.horizontal, 14)
+        .padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(AppColors.surfaceElevated)
+        )
+    }
+}
+
+private struct SummaryParts {
+    let weight: String
+    let place: String
+
+    init?(summaryText: String) {
+        guard
+            let weightRange = summaryText.range(of: "Owning "),
+            let inflatablesRange = summaryText.range(of: " of inflatables"),
+            let placeIntroRange = summaryText.range(of: "I'm in "),
+            let placeEndRange = summaryText.range(of: " place")
+        else {
+            return nil
+        }
+
+        let weightStart = weightRange.upperBound
+        let weight = String(summaryText[weightStart..<inflatablesRange.lowerBound])
+        let placeStart = placeIntroRange.upperBound
+        let place = String(summaryText[placeStart..<placeEndRange.lowerBound])
+
+        guard !weight.isEmpty, !place.isEmpty else { return nil }
+        self.weight = weight
+        self.place = place + " Place"
     }
 }
 
@@ -244,7 +331,13 @@ struct DownloadUnitSheet: View {
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 48)
-                .background(AppColors.sceneBlue)
+                .background(
+                    LinearGradient(
+                        colors: [AppColors.buttonBlueStart, AppColors.buttonBlueEnd],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
                 .foregroundColor(.white)
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 Button("Download Manual") {
@@ -252,7 +345,7 @@ struct DownloadUnitSheet: View {
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 48)
-                .background(Color.white.opacity(0.08))
+                .background(AppColors.buttonGhostFill)
                 .foregroundColor(.white)
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 Spacer()

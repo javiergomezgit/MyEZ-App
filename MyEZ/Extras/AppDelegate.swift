@@ -141,14 +141,17 @@ struct RootTabView: View {
             NavigationStack {
                 MyEZView()
             }
+            .padding(.horizontal, 20)
         case .contact:
             NavigationStack {
                 ContactView()
             }
+            .padding(.horizontal, 20)
         case .profile:
             NavigationStack {
                 ProfileView(appState: appState)
             }
+            .padding(.horizontal, 20)
         }
     }
 }

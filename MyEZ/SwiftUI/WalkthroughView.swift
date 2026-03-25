@@ -1,68 +1,50 @@
 import SwiftUI
 
 struct WalkthroughView: View {
-    private let pages = ["walk1", "walk2", "walk3", "walk4", "walk5"]
+    private let pages = ["walk1", "walk2", "walk3", "walk4"]
     @State private var index = 0
 
     let onFinish: () -> Void
 
+    private var topActionTitle: String {
+        index == pages.count - 1 ? "Done" : "Skip"
+    }
+
     var body: some View {
-        ZStack {
+        ZStack(alignment: .topTrailing) {
             AppColors.dark.ignoresSafeArea()
 
-            ZStack {
-                Image(pages[index])
-                    .resizable()
-                    .scaledToFill()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .clipped()
-
-                VStack(spacing: 18) {
-                    Spacer()
-
-                    HStack(spacing: 16) {
-                    Button {
-                        if index > 0 { index -= 1 }
-                    } label: {
-                        Image("arrowBack")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 48, height: 48)
-                    }
-                    .buttonStyle(.plain)
-                    .opacity(index == 0 ? 0.4 : 1)
-                    .disabled(index == 0)
-
-                    Spacer()
-
-                    Button {
-                        if index < pages.count - 1 {
-                            index += 1
-                        } else {
-                            onFinish()
-                        }
-                    } label: {
-                        Image("arrowButton")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 58, height: 58)
-                    }
-                    .buttonStyle(.plain)
-                    }
-                    .padding(.horizontal, 28)
-
-                    Button {
-                        onFinish()
-                    } label: {
-                        Image("skipWalk")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 110, height: 36)
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.bottom, 20)
+            TabView(selection: $index) {
+                ForEach(Array(pages.enumerated()), id: \.offset) { offset, page in
+                    Image(page)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .clipped()
+                        .ignoresSafeArea()
+                        .tag(offset)
                 }
             }
+            .tabViewStyle(.page(indexDisplayMode: .always))
+            .indexViewStyle(.page(backgroundDisplayMode: .interactive))
+            .animation(.easeInOut(duration: 0.25), value: index)
+
+            Button(action: onFinish) {
+                Text(topActionTitle)
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Color.black.opacity(0.34))
+                    .overlay(
+                        Capsule()
+                            .stroke(Color.white.opacity(0.16), lineWidth: 1)
+                    )
+                    .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 18)
+            .padding(.trailing, 20)
         }
     }
 }

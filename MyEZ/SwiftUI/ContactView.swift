@@ -13,12 +13,12 @@ struct ContactView: View {
                     VStack(spacing: 10) {
                         Text("Reach the team")
                             .font(.system(size: 30, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(AppColors.textPrimary)
                             .frame(maxWidth: .infinity, alignment: .leading)
 
                         Text("Same MyProfile energy, now applied to the people and channels that keep customers moving.")
                             .font(.system(size: 15))
-                            .foregroundColor(.white.opacity(0.55))
+                            .foregroundColor(AppColors.textSecondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
 
@@ -44,11 +44,11 @@ struct ContactView: View {
                     VStack(spacing: 10) {
                         Text("Click on them to contact them.")
                             .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.white.opacity(0.7))
+                            .foregroundColor(AppColors.textPrimary)
                         
                         Text("Look for us in any of our social media, we love to hear from you.")
                             .font(.system(size: 16))
-                            .foregroundColor(.white.opacity(0.5))
+                            .foregroundColor(AppColors.textSecondary)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 12)
                     }
@@ -92,7 +92,16 @@ struct ContactView: View {
                                 .frame(maxWidth: .infinity)
                                 .padding(.horizontal, 22)
                                 .padding(.vertical, 12)
-                                .background(Capsule().fill(AppColors.sceneBlue.opacity(0.78)))
+                                .background(
+                                    Capsule()
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [AppColors.buttonBlueStart, AppColors.buttonBlueEnd],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                )
                         }
                         .buttonStyle(.plain)
                         
@@ -105,21 +114,20 @@ struct ContactView: View {
                                 .frame(maxWidth: .infinity)
                                 .padding(.horizontal, 22)
                                 .padding(.vertical, 12)
-                                .background(Capsule().fill(Color.white.opacity(0.08)))
+                                .background(Capsule().fill(AppColors.buttonGhostFill))
                                 .overlay(
                                     Capsule()
-                                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                                        .stroke(AppColors.borderSubtle, lineWidth: 1)
                                 )
                         }
                         .buttonStyle(.plain)
                     }
                     .padding(.top, 10)
                 }
-                .padding(.horizontal, 20)
                 .padding(.top, 12)
                 .padding(.bottom, 100)
             }
-            .padding(.horizontal, 5)
+            .padding(.horizontal, 20)
         }
         .sheet(isPresented: $showingChat) {
             NavigationStack {
@@ -184,7 +192,7 @@ struct ContactAvatar: View {
                     Circle()
                         .stroke(
                             LinearGradient(
-                                colors: [AppColors.primary.opacity(0.98), Color(hex: "FF7A59"), AppColors.sceneBlue.opacity(0.78)],
+                                colors: [AppColors.buttonRedStart, AppColors.buttonBlueStart, AppColors.accentBlue],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
@@ -193,9 +201,9 @@ struct ContactAvatar: View {
                         .frame(width: circleSize, height: circleSize)
                         .background(
                             Circle()
-                                .fill(Color.white.opacity(0.02))
+                                .fill(AppColors.buttonGhostFill)
                         )
-                        .shadow(color: AppColors.primary.opacity(0.24), radius: 12, x: 0, y: 8)
+                        .shadow(color: AppColors.buttonBlueStart.opacity(0.18), radius: 12, x: 0, y: 8)
 
                     Image(imageName)
                         .resizable()
@@ -205,11 +213,11 @@ struct ContactAvatar: View {
 
                 Text(name)
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundColor(AppColors.textPrimary)
 
                 Text(title)
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(.white.opacity(0.5))
+                    .foregroundColor(AppColors.textSecondary)
             }
         }
         .buttonStyle(.plain)
@@ -229,11 +237,11 @@ struct SocialRow: View {
             HStack(spacing: 16) {
                 ZStack {
                     Circle()
-                        .fill(Color.white.opacity(0.06))
+                        .fill(AppColors.buttonGhostFill)
                         .frame(width: circleSize, height: circleSize)
                         .overlay(
                             Circle()
-                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                                .stroke(AppColors.borderSubtle, lineWidth: 1)
                         )
                     Image(icon)
                         .resizable()
@@ -245,17 +253,17 @@ struct SocialRow: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.white)
+                        .foregroundColor(AppColors.textPrimary)
                     Text(subtitle)
                         .font(.system(size: 15))
-                        .foregroundColor(.white.opacity(0.5))
+                        .foregroundColor(AppColors.textSecondary)
                 }
 
                 Spacer()
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 16)
-            .sceneCard()
+            .sceneCard(fillColor: AppColors.surfaceSecondary)
         }
         .buttonStyle(.plain)
     }
