@@ -328,6 +328,7 @@ final class AuthService {
         let newUserOverrides: [String: Any] = [
             "name": name,
             "login": email,
+            "email": email,
             "password": password,
             "active": true,
             "company_id": 25,

@@ -135,6 +135,158 @@ struct LoginView: View {
     @StateObject private var viewModel = AuthViewModel()
     @State private var showPassword = false
 
+    private var isShowingError: Binding<Bool> {
+        Binding(
+            get: { viewModel.errorMessage != nil },
+            set: { _ in viewModel.errorMessage = nil }
+        )
+    }
+
+    private var headerSection: some View {
+        VStack(spacing: 8) {
+            Image("logo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 72, height: 72)
+                .padding(.top, 60)
+                .padding(.bottom, 8)
+
+            Text("Sign In to MyEZ")
+                .font(.system(size: 26, weight: .semibold))
+                .foregroundColor(.white)
+                .padding(.top, 16)
+        }
+        .padding(.bottom, 32)
+    }
+
+    private var emailField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Email")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(.white.opacity(0.85))
+
+            HStack(spacing: 12) {
+                Image(systemName: "envelope")
+                    .foregroundColor(.white.opacity(0.4))
+                TextField("your@email.com", text: $viewModel.email)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .foregroundColor(.white)
+            }
+            .padding(.horizontal, 16)
+            .frame(height: 56)
+            .background(Color.white.opacity(0.07))
+            .cornerRadius(14)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+            )
+        }
+    }
+
+    private var passwordField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Password")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(.white.opacity(0.85))
+
+            HStack(spacing: 12) {
+                Image(systemName: "lock")
+                    .foregroundColor(.white.opacity(0.4))
+                Group {
+                    if showPassword {
+                        TextField("Password", text: $viewModel.password)
+                    } else {
+                        SecureField("••••••••", text: $viewModel.password)
+                    }
+                }
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .foregroundColor(.white)
+
+                Button {
+                    showPassword.toggle()
+                } label: {
+                    Image(systemName: showPassword ? "eye.slash" : "eye")
+                        .foregroundColor(.white.opacity(0.4))
+                }
+            }
+            .padding(.horizontal, 16)
+            .frame(height: 56)
+            .background(Color.white.opacity(0.07))
+            .cornerRadius(14)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+            )
+        }
+    }
+
+    private var signInButton: some View {
+        Button {
+            viewModel.login(appState: appState)
+        } label: {
+            Text(viewModel.isLoading ? "Signing In..." : "Sign In")
+                .font(.system(size: 18, weight: .bold))
+                .frame(maxWidth: .infinity)
+                .frame(height: 58)
+                .background(
+                    LinearGradient(
+                        colors: [Color(hex: "#2D8CFF"), Color(hex: "#1E63E9")],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .foregroundColor(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .shadow(color: Color(hex: "#2D8CFF").opacity(0.28), radius: 12, x: 0, y: 6)
+        }
+        .disabled(viewModel.isLoading)
+        .padding(.top, 8)
+    }
+
+    private var formCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            emailField
+            passwordField
+            signInButton
+        }
+        .padding(24)
+        .background(Color.white.opacity(0.05))
+        .cornerRadius(24)
+        .overlay(
+            RoundedRectangle(cornerRadius: 24)
+                .stroke(Color.white.opacity(0.07), lineWidth: 1)
+        )
+        .padding(.horizontal, 4)
+    }
+
+    private var footerSection: some View {
+        VStack(spacing: 16) {
+            NavigationLink {
+                SignupView(appState: appState)
+            } label: {
+                HStack(spacing: 4) {
+                    Text("Don't have an account?")
+                        .foregroundColor(.white.opacity(0.6))
+                    Text("Sign Up")
+                        .foregroundColor(Color(hex: "#E8272B"))
+                        .fontWeight(.semibold)
+                }
+                .font(.system(size: 15))
+            }
+
+            Button("Skip") {
+                appState.markAuthenticated()
+            }
+            .font(.system(size: 14))
+            .foregroundColor(.white.opacity(0.4))
+        }
+        .padding(.top, 24)
+        .padding(.bottom, 40)
+    }
+
     var body: some View {
         ZStack {
             // Dark gradient background
@@ -147,151 +299,14 @@ struct LoginView: View {
 
             ScrollView {
                 VStack(spacing: 0) {
-
-                    // MARK: — Header
-                    VStack(spacing: 8) {
-                        Image("logo")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 72, height: 72)
-                            .padding(.top, 60)
-                            .padding(.bottom, 8)
-
-                        Text("Sign In to MyEZ")
-                            .font(.system(size: 26, weight: .semibold))
-                            .foregroundColor(.white)
-                            .padding(.top, 16)
-                    }
-                    .padding(.bottom, 32)
-
-                    // MARK: — Form Card
-                    VStack(alignment: .leading, spacing: 16) {
-
-                        // Email field
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Email")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(.white.opacity(0.85))
-
-                            HStack(spacing: 12) {
-                                Image(systemName: "envelope")
-                                    .foregroundColor(.white.opacity(0.4))
-                                TextField("your@email.com", text: $viewModel.email)
-                                    .keyboardType(.emailAddress)
-                                    .textInputAutocapitalization(.never)
-                                    .autocorrectionDisabled()
-                                    .foregroundColor(.white)
-                            }
-                            .padding(.horizontal, 16)
-                            .frame(height: 56)
-                            .background(Color.white.opacity(0.07))
-                            .cornerRadius(14)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                            )
-                        }
-
-                        // Password field
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Password")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(.white.opacity(0.85))
-
-                            HStack(spacing: 12) {
-                                Image(systemName: "lock")
-                                    .foregroundColor(.white.opacity(0.4))
-                                Group {
-                                    if showPassword {
-                                        TextField("Password", text: $viewModel.password)
-                                    } else {
-                                        SecureField("••••••••", text: $viewModel.password)
-                                    }
-                                }
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                                .foregroundColor(.white)
-
-                                Button {
-                                    showPassword.toggle()
-                                } label: {
-                                    Image(systemName: showPassword ? "eye.slash" : "eye")
-                                        .foregroundColor(.white.opacity(0.4))
-                                }
-                            }
-                            .padding(.horizontal, 16)
-                            .frame(height: 56)
-                            .background(Color.white.opacity(0.07))
-                            .cornerRadius(14)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                            )
-                        }
-
-                        // Sign In button
-                        Button {
-                            viewModel.login(appState: appState)
-                        } label: {
-                            Text(viewModel.isLoading ? "Signing In..." : "Sign In")
-                                .font(.system(size: 18, weight: .bold))
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 58)
-                                .background(
-                                    LinearGradient(
-                                        colors: [Color(hex: "#2D8CFF"), Color(hex: "#1E63E9")],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .foregroundColor(.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                                .shadow(color: Color(hex: "#2D8CFF").opacity(0.28), radius: 12, x: 0, y: 6)
-                        }
-                        .disabled(viewModel.isLoading)
-                        .padding(.top, 8)
-
-                    }
-                    .padding(24)
-                    .background(Color.white.opacity(0.05))
-                    .cornerRadius(24)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24)
-                            .stroke(Color.white.opacity(0.07), lineWidth: 1)
-                    )
-                    .padding(.horizontal, 4)
-
-                    // MARK: — Footer
-                    VStack(spacing: 16) {
-                        NavigationLink {
-                            SignupView(appState: appState)
-                        } label: {
-                            HStack(spacing: 4) {
-                                Text("Don't have an account?")
-                                    .foregroundColor(.white.opacity(0.6))
-                                Text("Sign Up")
-                                    .foregroundColor(Color(hex: "#E8272B"))
-                                    .fontWeight(.semibold)
-                            }
-                            .font(.system(size: 15))
-                        }
-
-                        Button("Skip") {
-                            appState.markAuthenticated()
-                        }
-                        .font(.system(size: 14))
-                        .foregroundColor(.white.opacity(0.4))
-                    }
-                    .padding(.top, 24)
-                    .padding(.bottom, 40)
+                    headerSection
+                    formCard
+                    footerSection
                 }
                 .padding(.horizontal, 24)
             }
         }
-        .alert("", isPresented: Binding(
-            get: { viewModel.errorMessage != nil },
-            set: { _ in viewModel.errorMessage = nil }
-        )) {
+        .alert("", isPresented: isShowingError) {
             Button("OK", role: .cancel) { }
         } message: {
             Text(viewModel.errorMessage ?? "")
@@ -306,6 +321,228 @@ struct SignupView: View {
     @State private var showPassword = false
     @State private var showVerify = false
 
+    private var isShowingError: Binding<Bool> {
+        Binding(
+            get: { viewModel.errorMessage != nil },
+            set: { _ in viewModel.errorMessage = nil }
+        )
+    }
+
+    private var headerSection: some View {
+        VStack(spacing: 8) {
+            Image("logo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 72, height: 72)
+                .padding(.top, 10)
+                .padding(.bottom, 8)
+
+            Text("Create Account")
+                .font(.system(size: 26, weight: .semibold))
+                .foregroundColor(.white)
+                .padding(.top, 16)
+        }
+        .padding(.bottom, 32)
+    }
+
+    private var fullNameField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Full Name")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(.white.opacity(0.85))
+
+            HStack(spacing: 12) {
+                Image(systemName: "person")
+                    .foregroundColor(.white.opacity(0.4))
+                TextField("John Doe", text: $viewModel.name)
+                    .textInputAutocapitalization(.words)
+                    .foregroundColor(.white)
+            }
+            .padding(.horizontal, 16)
+            .frame(height: 56)
+            .background(Color.white.opacity(0.07))
+            .cornerRadius(14)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+            )
+        }
+    }
+
+    private var emailField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Email")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(.white.opacity(0.85))
+
+            HStack(spacing: 12) {
+                Image(systemName: "envelope")
+                    .foregroundColor(.white.opacity(0.4))
+                TextField("your@email.com", text: $viewModel.email)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .foregroundColor(.white)
+            }
+            .padding(.horizontal, 16)
+            .frame(height: 56)
+            .background(Color.white.opacity(0.07))
+            .cornerRadius(14)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+            )
+        }
+    }
+
+    private var passwordField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Password")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(.white.opacity(0.85))
+
+            HStack(spacing: 12) {
+                Image(systemName: "lock")
+                    .foregroundColor(.white.opacity(0.4))
+                Group {
+                    if showPassword {
+                        TextField("Password", text: $viewModel.password)
+                    } else {
+                        SecureField("••••••••", text: $viewModel.password)
+                    }
+                }
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .foregroundColor(.white)
+
+                Button {
+                    showPassword.toggle()
+                } label: {
+                    Image(systemName: showPassword ? "eye.slash" : "eye")
+                        .foregroundColor(.white.opacity(0.4))
+                }
+            }
+            .padding(.horizontal, 16)
+            .frame(height: 56)
+            .background(Color.white.opacity(0.07))
+            .cornerRadius(14)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+            )
+        }
+    }
+
+    private var verifyPasswordField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Verify Password")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(.white.opacity(0.85))
+
+            HStack(spacing: 12) {
+                Image(systemName: "lock")
+                    .foregroundColor(.white.opacity(0.4))
+                Group {
+                    if showVerify {
+                        TextField("Verify Password", text: $viewModel.verifyPassword)
+                    } else {
+                        SecureField("••••••••", text: $viewModel.verifyPassword)
+                    }
+                }
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .foregroundColor(.white)
+
+                Button {
+                    showVerify.toggle()
+                } label: {
+                    Image(systemName: showVerify ? "eye.slash" : "eye")
+                        .foregroundColor(.white.opacity(0.4))
+                }
+            }
+            .padding(.horizontal, 16)
+            .frame(height: 56)
+            .background(Color.white.opacity(0.07))
+            .cornerRadius(14)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
+            )
+        }
+    }
+
+    private var createAccountButton: some View {
+        Button {
+            viewModel.signup(appState: appState)
+        } label: {
+            Text(viewModel.isLoading ? "Creating..." : "Create Account")
+                .font(.system(size: 18, weight: .bold))
+                .frame(maxWidth: .infinity)
+                .frame(height: 58)
+                .background(
+                    LinearGradient(
+                        colors: [Color(hex: "#E8272B"), Color(hex: "#C0181C")],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .foregroundColor(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .shadow(color: Color(hex: "#E8272B").opacity(0.28), radius: 12, x: 0, y: 6)
+        }
+        .disabled(viewModel.isLoading)
+        .padding(.top, 8)
+    }
+
+    private var formCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            fullNameField
+            emailField
+            passwordField
+            verifyPasswordField
+            createAccountButton
+        }
+        .padding(24)
+        .background(Color.white.opacity(0.05))
+        .cornerRadius(24)
+        .overlay(
+            RoundedRectangle(cornerRadius: 24)
+                .stroke(Color.white.opacity(0.07), lineWidth: 1)
+        )
+        .padding(.horizontal, 4)
+    }
+
+    private var footerSection: some View {
+        VStack(spacing: 16) {
+            NavigationLink {
+                LoginView(appState: appState)
+            } label: {
+                HStack(spacing: 4) {
+                    Text("Already have an account?")
+                        .foregroundColor(.white.opacity(0.6))
+                    Text("Sign In")
+                        .foregroundColor(Color(hex: "#E8272B"))
+                        .fontWeight(.semibold)
+                }
+                .font(.system(size: 15))
+            }
+
+            if let url = URL(string: "https://www.ezinflatables.com/pages/terms-and-conditions") {
+                Link("Terms and Conditions", destination: url)
+                    .font(.system(size: 13))
+                    .foregroundColor(.white.opacity(0.4))
+            }
+
+            Button("Skip") {
+                appState.markAuthenticated()
+            }
+            .font(.system(size: 14))
+            .foregroundColor(.white.opacity(0.4))
+        }
+        .padding(.top, 24)
+        .padding(.bottom, 40)
+    }
+
     var body: some View {
         ZStack {
             LinearGradient(
@@ -317,217 +554,14 @@ struct SignupView: View {
 
             ScrollView {
                 VStack(spacing: 0) {
-
-                    // MARK: — Header
-                    VStack(spacing: 8) {
-                        Image("logo")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 72, height: 72)
-                            .padding(.top, 10)
-                            .padding(.bottom, 8)
-
-                        Text("Create Account")
-                            .font(.system(size: 26, weight: .semibold))
-                            .foregroundColor(.white)
-                            .padding(.top, 16)
-                    }
-                    .padding(.bottom, 32)
-
-                    // MARK: — Form Card
-                    VStack(alignment: .leading, spacing: 16) {
-
-                        // Full Name
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Full Name")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(.white.opacity(0.85))
-
-                            HStack(spacing: 12) {
-                                Image(systemName: "person")
-                                    .foregroundColor(.white.opacity(0.4))
-                                TextField("John Doe", text: $viewModel.name)
-                                    .textInputAutocapitalization(.words)
-                                    .foregroundColor(.white)
-                            }
-                            .padding(.horizontal, 16)
-                            .frame(height: 56)
-                            .background(Color.white.opacity(0.07))
-                            .cornerRadius(14)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                            )
-                        }
-
-                        // Email
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Email")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(.white.opacity(0.85))
-
-                            HStack(spacing: 12) {
-                                Image(systemName: "envelope")
-                                    .foregroundColor(.white.opacity(0.4))
-                                TextField("your@email.com", text: $viewModel.email)
-                                    .keyboardType(.emailAddress)
-                                    .textInputAutocapitalization(.never)
-                                    .autocorrectionDisabled()
-                                    .foregroundColor(.white)
-                            }
-                            .padding(.horizontal, 16)
-                            .frame(height: 56)
-                            .background(Color.white.opacity(0.07))
-                            .cornerRadius(14)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                            )
-                        }
-
-                        // Password
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Password")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(.white.opacity(0.85))
-
-                            HStack(spacing: 12) {
-                                Image(systemName: "lock")
-                                    .foregroundColor(.white.opacity(0.4))
-                                Group {
-                                    if showPassword {
-                                        TextField("Password", text: $viewModel.password)
-                                    } else {
-                                        SecureField("••••••••", text: $viewModel.password)
-                                    }
-                                }
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                                .foregroundColor(.white)
-
-                                Button {
-                                    showPassword.toggle()
-                                } label: {
-                                    Image(systemName: showPassword ? "eye.slash" : "eye")
-                                        .foregroundColor(.white.opacity(0.4))
-                                }
-                            }
-                            .padding(.horizontal, 16)
-                            .frame(height: 56)
-                            .background(Color.white.opacity(0.07))
-                            .cornerRadius(14)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                            )
-                        }
-
-                        // Verify Password
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Verify Password")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(.white.opacity(0.85))
-
-                            HStack(spacing: 12) {
-                                Image(systemName: "lock")
-                                    .foregroundColor(.white.opacity(0.4))
-                                Group {
-                                    if showVerify {
-                                        TextField("Verify Password", text: $viewModel.verifyPassword)
-                                    } else {
-                                        SecureField("••••••••", text: $viewModel.verifyPassword)
-                                    }
-                                }
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                                .foregroundColor(.white)
-
-                                Button {
-                                    showVerify.toggle()
-                                } label: {
-                                    Image(systemName: showVerify ? "eye.slash" : "eye")
-                                        .foregroundColor(.white.opacity(0.4))
-                                }
-                            }
-                            .padding(.horizontal, 16)
-                            .frame(height: 56)
-                            .background(Color.white.opacity(0.07))
-                            .cornerRadius(14)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                            )
-                        }
-
-                        // Create Account button
-                        Button {
-                            viewModel.signup(appState: appState)
-                        } label: {
-                            Text(viewModel.isLoading ? "Creating..." : "Create Account")
-                                .font(.system(size: 18, weight: .bold))
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 58)
-                                .background(
-                                    LinearGradient(
-                                        colors: [Color(hex: "#E8272B"), Color(hex: "#C0181C")],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .foregroundColor(.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                                .shadow(color: Color(hex: "#E8272B").opacity(0.28), radius: 12, x: 0, y: 6)
-                        }
-                        .disabled(viewModel.isLoading)
-                        .padding(.top, 8)
-
-                    }
-                    .padding(24)
-                    .background(Color.white.opacity(0.05))
-                    .cornerRadius(24)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24)
-                            .stroke(Color.white.opacity(0.07), lineWidth: 1)
-                    )
-                    .padding(.horizontal, 4)
-
-                    // MARK: — Footer
-                    VStack(spacing: 16) {
-                        NavigationLink {
-                            LoginView(appState: appState)
-                        } label: {
-                            HStack(spacing: 4) {
-                                Text("Already have an account?")
-                                    .foregroundColor(.white.opacity(0.6))
-                                Text("Sign In")
-                                    .foregroundColor(Color(hex: "#E8272B"))
-                                    .fontWeight(.semibold)
-                            }
-                            .font(.system(size: 15))
-                        }
-
-                        if let url = URL(string: "https://www.ezinflatables.com/pages/terms-and-conditions") {
-                            Link("Terms and Conditions", destination: url)
-                                .font(.system(size: 13))
-                                .foregroundColor(.white.opacity(0.4))
-                        }
-
-                        Button("Skip") {
-                            appState.markAuthenticated()
-                        }
-                        .font(.system(size: 14))
-                        .foregroundColor(.white.opacity(0.4))
-                    }
-                    .padding(.top, 24)
-                    .padding(.bottom, 40)
+                    headerSection
+                    formCard
+                    footerSection
                 }
                 .padding(.horizontal, 24)
             }
         }
-        .alert("", isPresented: Binding(
-            get: { viewModel.errorMessage != nil },
-            set: { _ in viewModel.errorMessage = nil }
-        )) {
+        .alert("", isPresented: isShowingError) {
             Button("OK", role: .cancel) { }
         } message: {
             Text(viewModel.errorMessage ?? "")

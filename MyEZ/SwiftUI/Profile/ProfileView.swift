@@ -92,8 +92,8 @@ struct ProfileView: View {
         } message: {
             Text(viewModel.errorMessage ?? "")
         }
-        .onChange(of: showingMail) { isShowing in
-            guard isShowing else { return }
+        .onChange(of: showingMail, initial: false) { oldValue, newValue in
+            guard newValue else { return }
             presentingMail()
             showingMail = false
         }
