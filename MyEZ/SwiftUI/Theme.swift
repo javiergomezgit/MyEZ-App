@@ -1,66 +1,41 @@
 import SwiftUI
 
 enum AppColors {
-    /// App-wide page background gradient start. Use on all main scenes so auth, profile,
-    /// contact, deals, and MyEZ share the same deep navy base.
-    static let backgroundTop = Color(hex: "0D1B2A")
+    static let backgroundTop = Color(hex: "F8F7F5")
+    static let backgroundBottom = Color(hex: "F2F1EE")
 
-    /// App-wide page background gradient end. Pairs with `backgroundTop` for the primary
-    /// full-screen canvas.
-    static let backgroundBottom = Color(hex: "1A1A2E")
+    static let surfacePrimary = Color.white
+    static let surfaceSecondary = Color(hex: "F7F7F4")
+    static let surfaceElevated = Color(hex: "FCFBF9")
 
-    /// Default card/container fill for panels that hold a whole section of content.
-    static let surfacePrimary = Color(hex: "162133")
+    static let borderSubtle = Color(hex: "E7E5E1")
+    static let borderStrong = Color(hex: "D8D5CF")
 
-    /// Secondary card fill for grouped rows, inner modules, and darker subsections.
-    static let surfaceSecondary = Color(hex: "1D2940")
+    static let textPrimary = Color(hex: "2E3440")
+    static let textSecondary = Color(hex: "7C8594")
+    static let textMuted = Color(hex: "A0A8B4")
 
-    /// Elevated fill for individual rows, tiles, and highlighted content inside cards.
-    static let surfaceElevated = Color(hex: "273652")
+    static let accentBlue = Color(hex: "4F6FD9")
+    static let buttonBlueStart = Color(hex: "536ED7")
+    static let buttonBlueEnd = Color(hex: "3F56B3")
 
-    /// Subtle stroke used on cards, row outlines, and control borders.
-    static let borderSubtle = Color.white.opacity(0.08)
+    static let accentRed = Color(hex: "DE4B43")
+    static let buttonRedStart = Color(hex: "E24E45")
+    static let buttonRedEnd = Color(hex: "D63B32")
 
-    /// Slightly stronger stroke used when a control needs more separation.
-    static let borderStrong = Color.white.opacity(0.12)
+    static let accentGreen = Color(hex: "58BB7B")
+    static let accentYellow = Color(hex: "F2BF55")
+    static let accentPurple = Color(hex: "A56BFF")
+    static let accentSky = Color(hex: "70CDE7")
 
-    /// Primary text color for titles and important labels.
-    static let textPrimary = Color(hex: "F0F4FA")
-
-    /// Secondary text color for descriptions and supporting copy.
-    static let textSecondary = Color(hex: "A8B4C6")
-
-    /// Muted icon/text color for tertiary UI like hints and inactive affordances.
-    static let textMuted = Color(hex: "7E8A9D")
-
-    /// Main blue accent pulled from the auth/welcome views. Use for primary buttons,
-    /// informative highlights, and emphasized secondary accents.
-    static let accentBlue = Color(hex: "4A90D9")
-
-    /// Blue primary CTA gradient start. Use for Sign In, chat, refresh, and primary actions.
-    static let buttonBlueStart = Color(hex: "2D8CFF")
-
-    /// Blue primary CTA gradient end. Pairs with `buttonBlueStart`.
-    static let buttonBlueEnd = Color(hex: "1E63E9")
-
-    /// Main red brand accent. Use for branded emphasis and rank/place callouts.
-    static let accentRed = Color(hex: "E8272B")
-
-    /// Red branded CTA gradient start. Use for Create Account and other brand-forward actions.
-    static let buttonRedStart = Color(hex: "E8272B")
-
-    /// Red branded CTA gradient end. Pairs with `buttonRedStart`.
-    static let buttonRedEnd = Color(hex: "C0181C")
-
-    /// Soft ghost fill used for secondary buttons on dark surfaces.
-    static let buttonGhostFill = Color.white.opacity(0.06)
+    static let buttonGhostFill = Color(hex: "F3F2EF")
 
     /// Legacy aliases kept to minimize churn while views migrate to the new names.
     static let primary = accentRed
     static let secondary = buttonBlueEnd
     static let accent = Color(hex: "DAE401")
     static let light = textPrimary
-    static let dark = Color.black
+    static let dark = textPrimary
     static let sceneBackgroundTop = backgroundTop
     static let sceneBackgroundBottom = backgroundBottom
     static let sceneCard = surfacePrimary
@@ -103,16 +78,16 @@ struct SceneBackgroundView: View {
             )
 
             Circle()
-                .fill(AppColors.buttonBlueStart.opacity(0.18))
-                .frame(width: 300, height: 300)
-                .blur(radius: 52)
-                .offset(x: -130, y: -250)
+                .fill(AppColors.buttonBlueStart.opacity(0.05))
+                .frame(width: 280, height: 280)
+                .blur(radius: 56)
+                .offset(x: -140, y: -240)
 
             Circle()
-                .fill(AppColors.buttonRedStart.opacity(0.12))
-                .frame(width: 240, height: 240)
-                .blur(radius: 42)
-                .offset(x: 145, y: -165)
+                .fill(AppColors.buttonRedStart.opacity(0.05))
+                .frame(width: 220, height: 220)
+                .blur(radius: 48)
+                .offset(x: 150, y: -150)
         }
         .ignoresSafeArea()
     }
@@ -132,7 +107,7 @@ struct SceneCardModifier: ViewModifier {
                             .stroke(AppColors.borderSubtle, lineWidth: 0.7)
                     )
             )
-            .shadow(color: .black.opacity(0.24), radius: 20, x: 0, y: 10)
+            .shadow(color: Color.black.opacity(0.06), radius: 16, x: 0, y: 6)
     }
 }
 

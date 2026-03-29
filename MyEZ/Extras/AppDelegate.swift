@@ -52,6 +52,22 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     }
 
     func setColorBars() {
+        let appearance = UITabBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = UIColor(AppColors.surfacePrimary)
+        appearance.shadowColor = UIColor(AppColors.borderSubtle)
+
+        let normalColor = UIColor(AppColors.textMuted)
+        let selectedColor = UIColor(AppColors.buttonBlueEnd)
+        appearance.stackedLayoutAppearance.normal.iconColor = normalColor
+        appearance.stackedLayoutAppearance.normal.titleTextAttributes = [.foregroundColor: normalColor]
+        appearance.stackedLayoutAppearance.selected.iconColor = selectedColor
+        appearance.stackedLayoutAppearance.selected.titleTextAttributes = [.foregroundColor: selectedColor]
+
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+        UITabBar.appearance().tintColor = selectedColor
+        UITabBar.appearance().unselectedItemTintColor = normalColor
         UITabBar.appearance().layer.borderColor = UIColor.clear.cgColor
         UITabBar.appearance().layer.borderWidth = 0.5
         UITabBar.appearance().clipsToBounds = true
@@ -123,7 +139,7 @@ struct RootTabView: View {
         ZStack(alignment: .bottom) {
             tabContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(AppColors.dark.ignoresSafeArea())
+                .background(AppColors.backgroundBottom.ignoresSafeArea())
 
             CustomTabBar(selectedTab: $selectedTab)
         }
@@ -185,17 +201,13 @@ struct CustomTabBar: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(.ultraThinMaterial)
+                .fill(Color.white.opacity(0.97))
                 .frame(height: barHeight)
                 .overlay(
                     RoundedRectangle(cornerRadius: 28, style: .continuous)
-                        .fill(Color.black.opacity(0.20))
+                        .stroke(AppColors.borderSubtle, lineWidth: 1)
                 )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 28, style: .continuous)
-                        .stroke(Color.white.opacity(0.14), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.22), radius: 18, x: 0, y: 10)
+                .shadow(color: Color.black.opacity(0.08), radius: 16, x: 0, y: 8)
 
             HStack(spacing: 22) {
                 TabBarButton(systemImage: "storefront", tab: .browse, selectedTab: $selectedTab)
@@ -239,7 +251,7 @@ struct TabBarButton: View {
                 }
                 Image(systemName: systemImage)
                     .font(.system(size: 20, weight: .regular))
-                    .foregroundColor(isSelected ? .white : AppColors.light.opacity(0.55))
+                    .foregroundColor(isSelected ? .white : AppColors.textMuted)
             }
             .frame(width: 58, height: 50)
         }
@@ -259,19 +271,27 @@ struct MyEZTabButton: View {
             ZStack {
                 if isSelected {
                     Circle()
-                        .fill(AppColors.primary)
+                        .fill(AppColors.accentRed)
                         .frame(width: baseSize, height: baseSize)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                        )
                 } else {
                     Circle()
-                        .stroke(AppColors.light.opacity(0.45), lineWidth: 2)
+                        .fill(Color.white)
+                        .overlay(
+                            Circle()
+                                .stroke(AppColors.borderSubtle, lineWidth: 1)
+                        )
                         .frame(width: baseSize, height: baseSize)
                 }
                 Image("logo")
                     .renderingMode(.template)
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 24, height: 24)
-                    .foregroundColor(isSelected ? AppColors.light : AppColors.light.opacity(0.7))
+                    .frame(width: 29, height: 29)
+                    .foregroundColor(isSelected ? .white : AppColors.buttonBlueEnd)
             }
         }
         .buttonStyle(.plain)

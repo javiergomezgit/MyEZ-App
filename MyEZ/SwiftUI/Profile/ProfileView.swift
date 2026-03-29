@@ -13,54 +13,49 @@ struct ProfileView: View {
         ZStack {
             SceneBackgroundView()
 
-            ScrollView {
-                VStack(spacing: 20) {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 22) {
                     header
                     profileCard
+
                     profileSection("Account", rows: [
-                        ProfileRow(icon: "clock", title: "Order History",
+                        ProfileRow(icon: "person.text.rectangle", title: "My Information", tint: AppColors.accentRed,
+                            action: { },
+                            isEnabled: viewModel.user != nil),
+                        ProfileRow(icon: "clock", title: "Order History", tint: AppColors.accentBlue,
                             action: { showingOrders = true },
                             isEnabled: viewModel.user != nil),
-                        ProfileRow(icon: "mappin.and.ellipse", title: "Addresses",
+                        ProfileRow(icon: "mappin.and.ellipse", title: "Addresses", tint: AppColors.accentGreen,
                             action: { },
                             isEnabled: viewModel.user != nil)
                     ])
-                    profileSection("Privacy and Security", rows: [
-                        ProfileRow(icon: "doc.text", title: "Terms & Conditions",
-                            action: {
-                                if let url = URL(string: "https://www.ezinflatables.com/pages/terms-and-conditions") {
-                                    showingSafariURL = IdentifiableURL(url: url)
-                                }
-                            }, isEnabled: true),
-                        ProfileRow(icon: "shield", title: "Privacy",
-                            action: {
-                                if let url = URL(string: "https://www.ezinflatables.com/pages/privacy-policy") {
-                                    showingSafariURL = IdentifiableURL(url: url)
-                                }
-                            }, isEnabled: true)
-                    ])
+
                     profileToggleSection("Notifications", rows: [
-                        ProfileToggleRow(icon: "bell", title: "Deals in your email",
+                        ProfileToggleRow(icon: "bell", title: "Deals in your email", tint: AppColors.accentPurple,
                             isOn: Binding(
                                 get: { viewModel.isSubscribed },
                                 set: { newValue in viewModel.updateSubscription(isOn: newValue) }
                             ), isEnabled: viewModel.user != nil)
                     ])
+
                     profileSection("Support", rows: [
-                        ProfileRow(icon: "questionmark.circle", title: "Help Center",
+                        ProfileRow(icon: "questionmark.circle", title: "Help Center", tint: AppColors.accentYellow,
                             action: { showingMail = true },
                             isEnabled: true),
-                        ProfileRow(icon: "message", title: "Contact Support",
-                            action: { showingMail = true },
+                        ProfileRow(icon: "doc.text", title: "Terms & Privacy", tint: AppColors.accentSky,
+                            action: {
+                                if let url = URL(string: "https://www.ezinflatables.com/pages/privacy-policy") {
+                                    showingSafariURL = IdentifiableURL(url: url)
+                                }
+                            },
                             isEnabled: true)
                     ])
 
-                    // Version
-                    Text("MyEZ v1.0.0")
-                        .font(.system(size: 13))
+                    Text("MyEZ Version 1.0.0")
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundColor(AppColors.textMuted)
-                        .padding(.top, 8)
-                        .padding(.bottom, 100)
+                        .padding(.top, 4)
+                        .padding(.bottom, 96)
                 }
                 .padding(.top, 12)
             }
@@ -92,20 +87,21 @@ struct ProfileView: View {
         } message: {
             Text(viewModel.errorMessage ?? "")
         }
-        .onChange(of: showingMail, initial: false) { oldValue, newValue in
+        .onChange(of: showingMail, initial: false) { _, newValue in
             guard newValue else { return }
             presentingMail()
             showingMail = false
         }
     }
 
-    // MARK: — Header
     private var header: some View {
         HStack {
-            Text("MyProfile")
-                .font(.system(size: 30, weight: .bold))
-                .foregroundColor(.white)
+            Text("My Profile")
+                .font(.system(size: 22, weight: .bold))
+                .foregroundColor(AppColors.textPrimary)
+
             Spacer()
+
             Button {
                 if viewModel.user != nil {
                     viewModel.logout(appState: appState)
@@ -115,127 +111,155 @@ struct ProfileView: View {
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: viewModel.user == nil ? "arrow.right.to.line" : "rectangle.portrait.and.arrow.right")
+                        .font(.system(size: 13, weight: .semibold))
                     Text(viewModel.user == nil ? "Login" : "Logout")
-                        .fontWeight(.semibold)
+                        .font(.system(size: 15, weight: .semibold))
                 }
-                .padding(.horizontal, 16)
+                .foregroundColor(AppColors.accentRed)
+                .padding(.horizontal, 14)
                 .padding(.vertical, 10)
-                .background(
-                    Capsule()
-                        .fill(
-                            LinearGradient(
-                                colors: [AppColors.buttonBlueStart, AppColors.buttonBlueEnd],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                )
+                .background(Capsule().fill(Color.white.opacity(0.92)))
                 .overlay(
                     Capsule()
-                        .stroke(AppColors.borderStrong, lineWidth: 1)
+                        .stroke(AppColors.accentRed.opacity(0.12), lineWidth: 1)
                 )
-                .foregroundColor(.white.opacity(0.92))
             }
             .buttonStyle(.plain)
         }
     }
 
-    // MARK: — Profile Card
     private var profileCard: some View {
-        VStack(spacing: 14) {
-            profileImageView
-                .frame(width: 110, height: 110)
-                .clipShape(Circle())
-                .overlay(Circle().stroke(Color.white.opacity(0.12), lineWidth: 1))
-                .shadow(color: .black.opacity(0.5), radius: 16, x: 0, y: 8)
-                .allowsHitTesting(viewModel.user != nil)
-                .onTapGesture {
-                    guard viewModel.user != nil else { return }
-                    showingImagePicker = true
+        VStack(spacing: 20) {
+            HStack(spacing: 16) {
+                profileImageView
+                    .frame(width: 82, height: 82)
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(AppColors.borderSubtle, lineWidth: 1))
+                    .background(
+                        Circle()
+                            .fill(Color(hex: "EEF3FF"))
+                            .frame(width: 82, height: 82)
+                    )
+                    .allowsHitTesting(viewModel.user != nil)
+                    .onTapGesture {
+                        guard viewModel.user != nil else { return }
+                        showingImagePicker = true
+                    }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(viewModel.user?.name ?? "Guest User")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(AppColors.textPrimary)
+                        .lineLimit(2)
+
+                    Text(displayRankTitle)
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(AppColors.buttonBlueEnd)
+                        .textCase(.uppercase)
                 }
 
-            Text(viewModel.user?.name ?? "Sign in for more features")
+                Spacer(minLength: 0)
+            }
+
+            Divider()
+                .overlay(AppColors.borderSubtle)
+
+            HStack(spacing: 12) {
+                statCard(value: totalWeightText, label: "Total Weight (lbs)")
+                statCard(value: rankText, label: "Rank Position")
+            }
+        }
+        .padding(20)
+        .sceneCard(cornerRadius: 22, fillColor: AppColors.surfacePrimary)
+    }
+
+    private func statCard(value: String, label: String) -> some View {
+        VStack(spacing: 6) {
+            Text(value)
                 .font(.system(size: 22, weight: .bold))
                 .foregroundColor(AppColors.textPrimary)
 
-            if let type = viewModel.user?.typeUser, !type.isEmpty {
-                Text(type)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(AppColors.accentBlue)
-            }
+            Text(label)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(AppColors.textSecondary)
+                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 28)
+        .padding(.vertical, 16)
         .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(AppColors.surfacePrimary)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(AppColors.borderSubtle, lineWidth: 1)
-                )
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(AppColors.surfaceSecondary)
         )
     }
 
-    // MARK: — Section with rows grouped in card
     private func profileSection(_ title: String, rows: [ProfileRow]) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             Text(title.uppercased())
-                .font(.system(size: 12, weight: .semibold))
-                .tracking(1.2)
+                .font(.system(size: 12, weight: .bold))
+                .tracking(1.1)
                 .foregroundColor(AppColors.textSecondary)
-                .padding(.leading, 4)
+                .padding(.leading, 6)
 
             VStack(spacing: 0) {
                 ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
                     row
+
                     if index < rows.count - 1 {
                         Divider()
-                            .background(AppColors.borderSubtle)
-                            .padding(.leading, 52)
+                            .overlay(AppColors.borderSubtle)
+                            .padding(.leading, 72)
                     }
                 }
             }
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(AppColors.surfaceSecondary)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(AppColors.borderSubtle, lineWidth: 1)
-                    )
-            )
+            .sceneCard(cornerRadius: 20, fillColor: AppColors.surfacePrimary)
         }
     }
 
     private func profileToggleSection(_ title: String, rows: [ProfileToggleRow]) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             Text(title.uppercased())
-                .font(.system(size: 12, weight: .semibold))
-                .tracking(1.2)
+                .font(.system(size: 12, weight: .bold))
+                .tracking(1.1)
                 .foregroundColor(AppColors.textSecondary)
-                .padding(.leading, 4)
+                .padding(.leading, 6)
 
             VStack(spacing: 0) {
                 ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
                     row
+
                     if index < rows.count - 1 {
                         Divider()
-                            .background(AppColors.borderSubtle)
-                            .padding(.leading, 52)
+                            .overlay(AppColors.borderSubtle)
+                            .padding(.leading, 72)
                     }
                 }
             }
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(AppColors.surfaceSecondary)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(AppColors.borderSubtle, lineWidth: 1)
-                    )
-            )
+            .sceneCard(cornerRadius: 20, fillColor: AppColors.surfacePrimary)
         }
     }
 
-    // MARK: — Profile Image
+    private var totalWeightText: String {
+        let weight = userInformation.weight > 0
+            ? userInformation.weight
+            : (viewModel.currentUserWeight > 0 ? viewModel.currentUserWeight : (viewModel.user?.ownwedWeight ?? 0))
+        if weight > 0 {
+            return weight.formatted()
+        }
+        return "—"
+    }
+
+    private var rankText: String {
+        if viewModel.currentUserRank > 0 {
+            return "#\(viewModel.currentUserRank)"
+        }
+        return "#42"
+    }
+
+    private var displayRankTitle: String {
+        guard let user = viewModel.user else { return "MINIMUMWEIGHT" }
+        return user.typeUser.isEmpty ? "MINIMUMWEIGHT" : user.typeUser
+    }
+
     private var profileImageView: some View {
         Group {
             if let image = viewModel.profileImage {
@@ -269,71 +293,81 @@ struct ProfileView: View {
 struct ProfileRow: View {
     let icon: String
     let title: String
+    let tint: Color
     let action: () -> Void
     let isEnabled: Bool
-    
+
     var body: some View {
         Button(action: action) {
             HStack(spacing: 14) {
-                Image(systemName: icon)
-                    .font(.system(size: 18, weight: .regular))
-                    .foregroundColor(AppColors.light.opacity(0.55))
-                    .frame(width: 24)
-                
+                ZStack {
+                    Circle()
+                        .fill(tint.opacity(0.14))
+                        .frame(width: 40, height: 40)
+
+                    Image(systemName: icon)
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundColor(tint)
+                }
+
                 Text(title)
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(AppColors.light)
-                
+                    .foregroundColor(AppColors.textPrimary)
+
                 Spacer()
-                
+
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(AppColors.light.opacity(0.35))
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(AppColors.textMuted)
             }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 16)
-            // ← background removed
+            .padding(.horizontal, 16)
+            .padding(.vertical, 15)
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)
-        .opacity(isEnabled ? 1.0 : 0.5)
+        .opacity(isEnabled ? 1 : 0.5)
     }
 }
 
 struct ProfileToggleRow: View {
     let icon: String
     let title: String
+    let tint: Color
     @Binding var isOn: Bool
     let isEnabled: Bool
-    
+
     var body: some View {
         HStack(spacing: 14) {
-            Image(systemName: icon)
-                .font(.system(size: 18, weight: .regular))
-                .foregroundColor(AppColors.light.opacity(0.55))
-                .frame(width: 24)
-            
+            ZStack {
+                Circle()
+                    .fill(tint.opacity(0.14))
+                    .frame(width: 40, height: 40)
+
+                Image(systemName: icon)
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundColor(tint)
+            }
+
             Text(title)
                 .font(.system(size: 17, weight: .semibold))
-                .foregroundColor(AppColors.light)
-            
+                .foregroundColor(AppColors.textPrimary)
+
             Spacer()
-            
+
             Toggle("", isOn: $isOn)
                 .labelsHidden()
-                .tint(AppColors.primary)
+                .tint(AppColors.buttonBlueStart)
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 14)
-        // ← background removed
+        .padding(.horizontal, 16)
+        .padding(.vertical, 15)
         .disabled(!isEnabled)
-        .opacity(isEnabled ? 1.0 : 0.5)
+        .opacity(isEnabled ? 1 : 0.5)
     }
 }
 
 struct ProfileImagePicker: UIViewControllerRepresentable {
     let onImagePicked: (UIImage) -> Void
-    
+
     func makeUIViewController(context: Context) -> YPImagePicker {
         var config = YPImagePickerConfiguration()
         config.isScrollToChangeModesEnabled = true
@@ -354,7 +388,7 @@ struct ProfileImagePicker: UIViewControllerRepresentable {
         config.preferredStatusBarStyle = .default
         config.maxCameraZoomFactor = 1.0
         config.wordings.done = "Save"
-        
+
         let picker = YPImagePicker(configuration: config)
         picker.didFinishPicking { items, _ in
             if let photo = items.singlePhoto {
@@ -364,7 +398,7 @@ struct ProfileImagePicker: UIViewControllerRepresentable {
         }
         return picker
     }
-    
+
     func updateUIViewController(_ uiViewController: YPImagePicker, context: Context) {
     }
 }

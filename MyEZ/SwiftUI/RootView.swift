@@ -16,6 +16,6 @@ struct RootView: View {
                 AuthFlowView(appState: appState)
             }
         }
-        .preferredColorScheme(.dark)
+        .preferredColorScheme(.light)
     }
 }

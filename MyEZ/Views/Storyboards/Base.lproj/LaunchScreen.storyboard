@@ -19,16 +19,18 @@
                         <rect key="frame" x="0.0" y="0.0" width="390" height="844"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="BackgroundLaunch" translatesAutoresizingMaskIntoConstraints="NO" id="R80-6t-QRR">
-                                <rect key="frame" x="0.0" y="0.0" width="390" height="844"/>
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="logoLaunch" translatesAutoresizingMaskIntoConstraints="NO" id="z6X-Nb-uMn">
+                                <rect key="frame" x="135" y="327" width="120" height="190"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="120" id="6IB-3b-DxM"/>
+                                    <constraint firstAttribute="height" constant="120" id="v3i-NL-4sR"/>
+                                </constraints>
                             </imageView>
                         </subviews>
-                        <color key="backgroundColor" red="0.19605657458305359" green="0.19980844855308533" blue="0.21570461988449097" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                        <color key="backgroundColor" red="0.97254901960784312" green="0.96862745098039216" blue="0.96078431372549022" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
-                            <constraint firstAttribute="bottom" secondItem="R80-6t-QRR" secondAttribute="bottom" id="N1c-RX-MbA"/>
-                            <constraint firstAttribute="trailing" secondItem="R80-6t-QRR" secondAttribute="trailing" id="V0b-cj-Kqd"/>
-                            <constraint firstItem="R80-6t-QRR" firstAttribute="leading" secondItem="Ze5-6b-2t3" secondAttribute="leading" id="avW-EY-n52"/>
-                            <constraint firstItem="R80-6t-QRR" firstAttribute="top" secondItem="Ze5-6b-2t3" secondAttribute="top" id="e1g-c0-qYw"/>
+                            <constraint firstItem="z6X-Nb-uMn" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="WZh-jS-mhn"/>
+                            <constraint firstItem="z6X-Nb-uMn" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="mQr-Cf-1PI"/>
                         </constraints>
                     </view>
                 </viewController>
@@ -38,6 +40,6 @@
         </scene>
     </scenes>
     <resources>
-        <image name="BackgroundLaunch" width="1725" height="3067"/>
+        <image name="logoLaunch" width="969" height="925"/>
     </resources>
 </document>

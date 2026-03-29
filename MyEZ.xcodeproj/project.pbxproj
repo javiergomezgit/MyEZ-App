@@ -469,7 +469,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastSwiftUpdateCheck = 0830;
-				LastUpgradeCheck = 2620;
+				LastUpgradeCheck = 2640;
 				ORGANIZATIONNAME = JDev;
 				TargetAttributes = {
 					3B84530B1F3D07DC009EA3B8 = {

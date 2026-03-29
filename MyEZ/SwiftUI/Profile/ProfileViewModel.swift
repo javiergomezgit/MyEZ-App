@@ -10,12 +10,17 @@ final class ProfileViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var showingTerms = false
     @Published var showingPrivacy = false
+    @Published var currentUserWeight: Int = 0
+    @Published var currentUserRank: Int = 0
     
     private lazy var dbRef: DatabaseReference = Database.database().reference()
+    private let topUsersService = PreviewTopUsersService()
     
     func refresh() {
         user = UserSession.shared.load()
         isSubscribed = userInformation.subscribed
+        loadCurrentWeight()
+        loadRankSummary()
     }
     
     func updateSubscription(isOn: Bool) {
@@ -100,5 +105,47 @@ final class ProfileViewModel: ObservableObject {
         Device: \(UIDevice.current.model)
         ---
         """
+    }
+
+    private func loadRankSummary() {
+        topUsersService.updateAndGetTopUsersSummary { [weak self] result in
+            guard let self = self else { return }
+            switch result {
+            case .success(let summary):
+                DispatchQueue.main.async {
+                    userInformation.weight = summary.currentUserWeight
+                    self.currentUserWeight = summary.currentUserWeight
+                    self.currentUserRank = summary.currentUserRank
+                }
+            case .failure:
+                DispatchQueue.main.async {
+                    self.currentUserWeight = self.user?.ownwedWeight ?? userInformation.weight
+                    self.currentUserRank = 0
+                }
+            }
+        }
+    }
+
+    private func loadCurrentWeight() {
+        guard let user = UserSession.shared.load() else { return }
+        dbRef.child("users").child(String(user.partnerID)).observeSingleEvent(of: .value) { [weak self] snapshot in
+            guard let self = self else { return }
+            let value = snapshot.value as? [String: Any]
+            let weight = Self.intValue(value?["owned_weight"])
+                ?? Self.intValue(value?["weightOwned"])
+                ?? userInformation.weight
+
+            DispatchQueue.main.async {
+                userInformation.weight = weight
+                self.currentUserWeight = weight
+            }
+        }
+    }
+
+    private static func intValue(_ value: Any?) -> Int? {
+        if let intValue = value as? Int { return intValue }
+        if let doubleValue = value as? Double { return Int(doubleValue) }
+        if let stringValue = value as? String { return Int(stringValue) }
+        return nil
     }
 }

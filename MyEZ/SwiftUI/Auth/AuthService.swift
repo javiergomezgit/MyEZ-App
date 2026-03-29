@@ -330,6 +330,7 @@ final class AuthService {
             "login": email,
             "email": email,
             "password": password,
+            "zip": zipCode,
             "active": true,
             "company_id": 25,
             "company_ids": [[6, 0, [25]]]

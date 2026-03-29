@@ -31,8 +31,8 @@ final class MyEZViewModel: ObservableObject {
     private lazy var dbRef: DatabaseReference = Database.database().reference()
     private let topUsersService = PreviewTopUsersService()
     
-    private let hardcodedUnits: [UnitDisplayItem] = [
-        UnitDisplayItem(sku: "WS1020-IP", imageName: "WS"),
+    public let hardcodedUnits: [UnitDisplayItem] = [
+        UnitDisplayItem(sku: "G1195", imageName: "WS"),
         UnitDisplayItem(sku: "SS3453", imageName: "SS"),
         UnitDisplayItem(sku: "S0234-DP", imageName: "S")
     ]

@@ -1,131 +1,48 @@
 import SwiftUI
 
 struct ContactView: View {
-    @State private var showingMail = false
     @State private var showingChat = false
-    
+
+    private let socialLinks: [SocialTileItem] = [
+        .init(icon: "facebookContact", title: "Facebook", subtitle: "@EZInflatables", tint: AppColors.accentBlue,
+              link: "https://www.facebook.com/209605312428497", app: "fb://profile/209605312428497"),
+        .init(icon: "instaContact", title: "Instagram", subtitle: "@ez_inflatables", tint: AppColors.accentRed,
+              link: "http://instagram.com/ez_inflatables", app: "instagram://user?username=ez_inflatables"),
+        .init(icon: "youtubeContact", title: "YouTube", subtitle: "EZ Inflatables", tint: AppColors.accentSky,
+              link: "https://youtube.com/channel/UCYG_F4nyo3UCXv3cO-X6iAw", app: "youtube://www.youtube.com/channel/UCYG_F4nyo3UCXv3cO-X6iAw"),
+        .init(icon: "tiktokContact", title: "TikTok", subtitle: "@ezinflatables", tint: AppColors.accentPurple,
+              link: "https://tiktok.com/@ez_inflatables", app: "tiktok://user?screen_name=ez_inflatables")
+    ]
+
+    private let socialColumns = [
+        GridItem(.flexible(), spacing: 14),
+        GridItem(.flexible(), spacing: 14)
+    ]
+
     var body: some View {
         ZStack {
             SceneBackgroundView()
-            
-            ScrollView {
-                VStack(spacing: 22) {
-                    VStack(spacing: 10) {
-                        Text("Reach the team")
-                            .font(.system(size: 30, weight: .bold))
-                            .foregroundColor(AppColors.textPrimary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
 
-                        Text("Same MyProfile energy, now applied to the people and channels that keep customers moving.")
-                            .font(.system(size: 15))
-                            .foregroundColor(AppColors.textSecondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 28) {
+                    contactMethodsCard
+
+                    VStack(spacing: 8) {
+                        Text("Follow us on social media")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(AppColors.textPrimary)
                     }
 
-                    HStack(spacing: 24) {
-                        ContactAvatar(
-                            imageName: "ceo",
-                            name: "Eddie",
-                            title: "CEO",
-                            action: { sendEmail(email: "eddie@ezinflatables.com", name: "Eddie") }
-                        )
-                        ContactAvatar(
-                            imageName: "coo",
-                            name: "Art",
-                            title: "COO",
-                            action: { sendEmail(email: "art@ezinflatables.com", name: "Art") }
-                        )
-                    }
-                    .padding(.top, 6)
-                    .padding(.vertical, 24)
-                    .frame(maxWidth: .infinity)
-                    .sceneCard()
-                    
-                    VStack(spacing: 10) {
-                        Text("Click on them to contact them.")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(AppColors.textPrimary)
-                        
-                        Text("Look for us in any of our social media, we love to hear from you.")
-                            .font(.system(size: 16))
-                            .foregroundColor(AppColors.textSecondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 12)
-                    }
-                    .padding(.horizontal, 14)
-                    
-                    VStack(spacing: 14) {
-                        SocialRow(
-                            icon: "facebookContact",
-                            title: "Facebook",
-                            subtitle: "@ezinflatablesinc",
-                            action: { openSocial(link: "https://www.facebook.com/209605312428497", app: "fb://profile/209605312428497") }
-                        )
-                        SocialRow(
-                            icon: "instaContact",
-                            title: "Instagram",
-                            subtitle: "@ez_Inflatables",
-                            action: { openSocial(link: "http://instagram.com/ez_inflatables", app: "instagram://user?username=ez_inflatables") }
-                        )
-                        SocialRow(
-                            icon: "youtubeContact",
-                            title: "YouTube",
-                            subtitle: "ezinflatables",
-                            action: { openSocial(link: "https://youtube.com/channel/UCYG_F4nyo3UCXv3cO-X6iAw", app: "youtube://www.youtube.com/channel/UCYG_F4nyo3UCXv3cO-X6iAw") }
-                        )
-                        SocialRow(
-                            icon: "tiktokContact",
-                            title: "TikTok",
-                            subtitle: "@ez_inflatables",
-                            action: { openSocial(link: "https://tiktok.com/@ez_inflatables", app: "tiktok://user?screen_name=ez_inflatables") }
-                        )
-                    }
-                    .padding(.top, 6)
-                    
-                    HStack(spacing: 12) {
-                        Button {
-                            showingChat = true
-                        } label: {
-                            Text("Live Chat")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.horizontal, 22)
-                                .padding(.vertical, 12)
-                                .background(
-                                    Capsule()
-                                        .fill(
-                                            LinearGradient(
-                                                colors: [AppColors.buttonBlueStart, AppColors.buttonBlueEnd],
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            )
-                                        )
-                                )
+                    LazyVGrid(columns: socialColumns, spacing: 14) {
+                        ForEach(socialLinks) { item in
+                            SocialTile(item: item) {
+                                openSocial(link: item.link, app: item.app)
+                            }
                         }
-                        .buttonStyle(.plain)
-                        
-                        Button {
-                            callUs()
-                        } label: {
-                            Text("Call")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.horizontal, 22)
-                                .padding(.vertical, 12)
-                                .background(Capsule().fill(AppColors.buttonGhostFill))
-                                .overlay(
-                                    Capsule()
-                                        .stroke(AppColors.borderSubtle, lineWidth: 1)
-                                )
-                        }
-                        .buttonStyle(.plain)
                     }
-                    .padding(.top, 10)
+                    .padding(.bottom, 96)
                 }
-                .padding(.top, 12)
-                .padding(.bottom, 100)
+                .padding(.top, 18)
             }
             .padding(.horizontal, 20)
         }
@@ -137,14 +54,48 @@ struct ContactView: View {
             }
         }
     }
-    
+
+    private var contactMethodsCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Contact Methods")
+                .font(.system(size: 22, weight: .bold))
+                .foregroundColor(AppColors.textPrimary)
+
+            ContactMethodRow(
+                iconName: "phone",
+                iconTint: AppColors.accentGreen,
+                title: "Phone",
+                subtitle: "(123) 456-7890",
+                action: callUs
+            )
+
+            ContactMethodRow(
+                iconName: "envelope",
+                iconTint: AppColors.accentBlue,
+                title: "Email",
+                subtitle: "info@ezinflatables.com",
+                action: { sendEmail(email: "info@ezinflatables.com", name: "EZ Inflatables") }
+            )
+
+            ContactMethodRow(
+                iconName: "message",
+                iconTint: AppColors.accentPurple,
+                title: "Live Chat",
+                subtitle: "Start a conversation",
+                action: { showingChat = true }
+            )
+        }
+        .padding(20)
+        .sceneCard(cornerRadius: 24, fillColor: AppColors.surfacePrimary)
+    }
+
     private func sendEmail(email: String, name: String) {
         guard let topVC = UIApplication.shared.topMostViewController() else { return }
         let body = """
         Hi \(name),
-        
+
         I need help with:
-        
+
         ---
         App Version: \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?")
         iOS: \(UIDevice.current.systemVersion)
@@ -154,13 +105,13 @@ struct ContactView: View {
         let sender = EmailSender()
         sender.presentEmailSender(from: topVC, to: [email], subject: "MyEZ App Contact", body: body)
     }
-    
+
     private func callUs() {
         if let url = URL(string: "tel://+18883445867"), UIApplication.shared.canOpenURL(url) {
             UIApplication.shared.open(url)
         }
     }
-    
+
     private func openSocial(link: String, app: String) {
         if let appURL = URL(string: app), UIApplication.shared.canOpenURL(appURL) {
             UIApplication.shared.open(appURL)
@@ -177,93 +128,89 @@ struct ChatWebView: View {
     }
 }
 
-struct ContactAvatar: View {
-    let imageName: String
-    let name: String
+private struct ContactMethodRow: View {
+    let iconName: String
+    let iconTint: Color
     let title: String
+    let subtitle: String
     let action: () -> Void
-    private let circleSize: CGFloat = 50
-    private let imageSize: CGFloat = 68
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 10) {
+            HStack(spacing: 14) {
                 ZStack {
                     Circle()
-                        .stroke(
-                            LinearGradient(
-                                colors: [AppColors.buttonRedStart, AppColors.buttonBlueStart, AppColors.accentBlue],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 4
-                        )
-                        .frame(width: circleSize, height: circleSize)
-                        .background(
-                            Circle()
-                                .fill(AppColors.buttonGhostFill)
-                        )
-                        .shadow(color: AppColors.buttonBlueStart.opacity(0.18), radius: 12, x: 0, y: 8)
+                        .fill(iconTint.opacity(0.14))
+                        .frame(width: 44, height: 44)
 
-                    Image(imageName)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: imageSize, height: imageSize)
+                    Image(systemName: iconName)
+                        .font(.system(size: 19, weight: .medium))
+                        .foregroundColor(iconTint)
                 }
 
-                Text(name)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(AppColors.textPrimary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(AppColors.textSecondary)
 
-                Text(title)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(AppColors.textSecondary)
+                    Text(subtitle)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(AppColors.textPrimary)
+                }
+
+                Spacer()
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 18)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(AppColors.surfaceSecondary)
+            )
         }
         .buttonStyle(.plain)
     }
 }
 
-struct SocialRow: View {
+private struct SocialTileItem: Identifiable {
+    let id = UUID()
     let icon: String
     let title: String
     let subtitle: String
+    let tint: Color
+    let link: String
+    let app: String
+}
+
+private struct SocialTile: View {
+    let item: SocialTileItem
     let action: () -> Void
-    private let circleSize: CGFloat = 20
-    private let iconSize: CGFloat = 23
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 16) {
+            VStack(spacing: 12) {
                 ZStack {
-                    Circle()
-                        .fill(AppColors.buttonGhostFill)
-                        .frame(width: circleSize, height: circleSize)
-                        .overlay(
-                            Circle()
-                                .stroke(AppColors.borderSubtle, lineWidth: 1)
-                        )
-                    Image(icon)
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(item.tint.opacity(0.10))
+                        .frame(width: 54, height: 54)
+
+                    Image(item.icon)
                         .resizable()
                         .scaledToFit()
-                        .frame(width: iconSize, height: iconSize)
-                        .foregroundColor(AppColors.light)
+                        .frame(width: 28, height: 28)
                 }
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(AppColors.textPrimary)
-                    Text(subtitle)
-                        .font(.system(size: 15))
-                        .foregroundColor(AppColors.textSecondary)
-                }
+                Text(item.title)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(AppColors.textPrimary)
 
-                Spacer()
+                Text(item.subtitle)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(AppColors.textSecondary)
+                    .multilineTextAlignment(.center)
             }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 16)
-            .sceneCard(fillColor: AppColors.surfaceSecondary)
+            .frame(maxWidth: .infinity, minHeight: 148)
+            .padding(.horizontal, 12)
+            .sceneCard(cornerRadius: 20, fillColor: AppColors.surfacePrimary)
         }
         .buttonStyle(.plain)
     }
