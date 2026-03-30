@@ -65,7 +65,7 @@ struct ContactView: View {
                 iconName: "phone",
                 iconTint: AppColors.accentGreen,
                 title: "Phone",
-                subtitle: "(123) 456-7890",
+                subtitle: "(888) 344-5867",
                 action: callUs
             )
 

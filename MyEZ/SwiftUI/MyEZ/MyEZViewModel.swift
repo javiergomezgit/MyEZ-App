@@ -19,6 +19,7 @@ final class MyEZViewModel: ObservableObject {
     }
 
     @Published var displayUnits: [UnitDisplayItem] = []
+    @Published var isAuthenticated: Bool = false
     @Published var categoryName: String = userInformation.typeUser
     @Published var categoryImageName: String = userInformation.typeUser
     @Published var ownedUnitsText: String = "You own \(userInformation.weight) Pounds of inflatable"
@@ -33,12 +34,14 @@ final class MyEZViewModel: ObservableObject {
     private let topUsersService = PreviewTopUsersService()
     
     func load() {
+        syncAuthenticationState()
         loadUnitsFromFirebase()
         loadInfoHeader()
         loadTopUsers()
     }
 
     func refreshAll() {
+        syncAuthenticationState()
         loadUnitsFromFirebase()
         loadInfoHeader()
         loadTopUsers()
@@ -50,9 +53,9 @@ final class MyEZViewModel: ObservableObject {
     }
     
     private func loadUnitsFromFirebase() {
-        guard !userInformation.userId.isEmpty else {
+        guard isAuthenticated, !userInformation.userId.isEmpty else {
             displayUnits = []
-            print("⚠️ MyEZ units fetch skipped: missing user ID")
+            print("⚠️ MyEZ units fetch skipped: user is not signed in")
             return
         }
 
@@ -87,6 +90,12 @@ final class MyEZViewModel: ObservableObject {
             }
             print("❌ Failed to fetch units from Firebase: \(error.localizedDescription)")
         }
+    }
+
+    private func syncAuthenticationState() {
+        let savedUser = UserSession.shared.load()
+        let resolvedUserId = savedUser.map { String($0.partnerID) } ?? userInformation.userId
+        isAuthenticated = savedUser != nil && !resolvedUserId.isEmpty
     }
     
     private func loadInfoHeader() {

@@ -27,10 +27,20 @@ struct MyEZView: View {
                             .foregroundColor(AppColors.textPrimary)
                             .frame(maxWidth: .infinity, alignment: .leading)
 
-                        LazyVGrid(columns: columns, spacing: 14) {
-                            ForEach(viewModel.displayUnits) { unit in
-                                UnitCard(unit: unit)
-                                    .onTapGesture { viewModel.select(unit: unit) }
+                        if viewModel.isAuthenticated {
+                            LazyVGrid(columns: columns, spacing: 14) {
+                                ForEach(viewModel.displayUnits) { unit in
+                                    UnitCard(unit: unit)
+                                        .onTapGesture { viewModel.select(unit: unit) }
+                                }
+                            }
+                        } else {
+                            SignedOutProductsMessage()
+
+                            LazyVGrid(columns: columns, spacing: 14) {
+                                ForEach(0..<3, id: \.self) { _ in
+                                    PlaceholderUnitCard()
+                                }
                             }
                         }
                     }
@@ -79,6 +89,15 @@ struct MyEZView: View {
     }
 }
 
+struct SignedOutProductsMessage: View {
+    var body: some View {
+        Text("Sign in to download your inflatables photos.")
+            .font(.system(size: 14, weight: .medium))
+            .foregroundColor(AppColors.textSecondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
 struct UnitCard: View {
     let unit: MyEZViewModel.UnitDisplayItem
 
@@ -119,6 +138,30 @@ struct UnitCard: View {
             Text(unit.sku)
                 .font(.system(size: 16, weight: .bold))
                 .foregroundColor(AppColors.textPrimary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+        }
+        .sceneCard(cornerRadius: 18, fillColor: AppColors.surfacePrimary)
+    }
+}
+
+struct PlaceholderUnitCard: View {
+    var body: some View {
+        VStack(spacing: 0) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(AppColors.surfaceSecondary)
+
+                Image("logoLaunch")
+                    .resizable()
+                    .scaledToFit()
+                    .padding(20)
+            }
+            .frame(height: 158)
+
+            Text("Sign In To View")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(AppColors.textSecondary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
         }
