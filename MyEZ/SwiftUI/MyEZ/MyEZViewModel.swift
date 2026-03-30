@@ -6,7 +6,8 @@ final class MyEZViewModel: ObservableObject {
     struct UnitDisplayItem: Identifiable {
         let id = UUID()
         let sku: String
-        let imageName: String
+        let productID: String
+        let imageURL: URL?
     }
     
     struct TopUserDisplay: Identifiable {
@@ -31,12 +32,6 @@ final class MyEZViewModel: ObservableObject {
     private lazy var dbRef: DatabaseReference = Database.database().reference()
     private let topUsersService = PreviewTopUsersService()
     
-    public let hardcodedUnits: [UnitDisplayItem] = [
-        UnitDisplayItem(sku: "G1195", imageName: "WS"),
-        UnitDisplayItem(sku: "SS3453", imageName: "SS"),
-        UnitDisplayItem(sku: "S0234-DP", imageName: "S")
-    ]
-    
     func load() {
         loadUnitsFromFirebase()
         loadInfoHeader()
@@ -44,6 +39,7 @@ final class MyEZViewModel: ObservableObject {
     }
 
     func refreshAll() {
+        loadUnitsFromFirebase()
         loadInfoHeader()
         loadTopUsers()
     }
@@ -54,7 +50,43 @@ final class MyEZViewModel: ObservableObject {
     }
     
     private func loadUnitsFromFirebase() {
-        displayUnits = hardcodedUnits
+        guard !userInformation.userId.isEmpty else {
+            displayUnits = []
+            print("⚠️ MyEZ units fetch skipped: missing user ID")
+            return
+        }
+
+        dbRef.child("users").child(userInformation.userId).child("units").observeSingleEvent(of: .value) { [weak self] snapshot in
+            guard let self = self else { return }
+
+            guard snapshot.exists() else {
+                DispatchQueue.main.async {
+                    self.displayUnits = []
+                }
+                print("⚠️ No units found for user \(userInformation.userId).")
+                return
+            }
+
+            let childSnapshots = snapshot.children.allObjects.compactMap { $0 as? DataSnapshot }
+            let units = childSnapshots.compactMap(Self.extractUnitDisplayItem(from:))
+
+            if units.isEmpty {
+                DispatchQueue.main.async {
+                    self.displayUnits = []
+                }
+                print("⚠️ Units found but no valid SKU/product_id values were available.")
+                return
+            }
+
+            DispatchQueue.main.async {
+                self.displayUnits = units
+            }
+        } withCancel: { error in
+            DispatchQueue.main.async {
+                self.displayUnits = []
+            }
+            print("❌ Failed to fetch units from Firebase: \(error.localizedDescription)")
+        }
     }
     
     private func loadInfoHeader() {
@@ -129,5 +161,74 @@ final class MyEZViewModel: ObservableObject {
             self.unitLink = value?[unit.sku] as? String ?? ""
             DispatchQueue.main.async { self.showingDownload = true }
         }
+    }
+
+    private static func extractUnitDisplayItem(from snapshot: DataSnapshot) -> UnitDisplayItem? {
+        let rawValue = snapshot.value
+        print("📦 unit snapshot [\(snapshot.key)]: \(String(describing: rawValue))")
+
+        guard let dictionary = rawValue as? [String: Any] else {
+            return nil
+        }
+
+        guard let productID = firstNonEmptyValue(
+            in: dictionary,
+            keys: ["product_id", "productId", "productID"]
+        ) else {
+            return nil
+        }
+
+        let nestedUnit = dictionary["unit"] as? [String: Any]
+        let nestedProduct = dictionary["product"] as? [String: Any]
+
+        let sku = firstNonEmptyValue(
+            in: dictionary,
+            keys: [
+                "sku",
+                "SKU",
+                "sku_unit",
+                "skuUnit",
+                "unit_sku",
+                "default_code",
+                "defaultCode",
+                "model",
+                "serial",
+                "serial_number",
+                "serialNumber"
+            ]
+        )
+        ?? nestedUnit.flatMap { firstNonEmptyValue(in: $0, keys: ["sku", "default_code", "model", "serial"]) }
+        ?? nestedProduct.flatMap { firstNonEmptyValue(in: $0, keys: ["sku", "default_code", "model"]) }
+        ?? snapshot.key
+
+        print("📦 product_id: \(productID)")
+        print("🏷️ sku text: \(sku)")
+
+        return UnitDisplayItem(
+            sku: sku,
+            productID: productID,
+            imageURL: URL(string: "https://ezinflatables.odoo.com/web/image/product.product/\(productID)/image_1024")
+        )
+    }
+
+    private static func stringify(_ value: Any) -> String? {
+        if let stringValue = value as? String, !stringValue.isEmpty {
+            return stringValue
+        }
+
+        if let numberValue = value as? NSNumber {
+            return numberValue.stringValue
+        }
+
+        return nil
+    }
+
+    private static func firstNonEmptyValue(in dictionary: [String: Any], keys: [String]) -> String? {
+        for key in keys {
+            if let value = dictionary[key].flatMap(stringify), !value.isEmpty {
+                return value
+            }
+        }
+        return nil
     }
 }

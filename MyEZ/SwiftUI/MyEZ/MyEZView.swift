@@ -84,24 +84,35 @@ struct UnitCard: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ZStack(alignment: .topLeading) {
+            ZStack {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(AppColors.surfaceSecondary)
 
                 VStack {
                     Spacer(minLength: 0)
 
-                    Image(unit.imageName)
-                        .resizable()
-                        .scaledToFit()
+                    if let imageURL = unit.imageURL {
+                        AsyncImage(url: imageURL) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFit()
+                            default:
+                                Image("logoLaunch")
+                                    .resizable()
+                                    .scaledToFit()
+                            }
+                        }
                         .padding(14)
+                    } else {
+                        Image("logoLaunch")
+                            .resizable()
+                            .scaledToFit()
+                            .padding(14)
+                    }
                 }
 
-                Text(unit.sku)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(AppColors.textPrimary)
-                    .padding(.horizontal, 12)
-                    .padding(.top, 12)
             }
             .frame(height: 158)
 
@@ -295,30 +306,62 @@ struct DownloadUnitSheet: View {
     @State private var unitLink: String = ""
     @State private var isLoadingLink: Bool = true
     @State private var showingLinkAlert: Bool = false
+    @State private var linkErrorMessage: String?
     
     var body: some View {
         ZStack {
             SceneBackgroundView()
             
             VStack(spacing: 18) {
-                Image(unit.imageName)
-                    .resizable()
-                    .scaledToFit()
+                if let imageURL = unit.imageURL {
+                    AsyncImage(url: imageURL) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFit()
+                        default:
+                            Image("logoLaunch")
+                                .resizable()
+                                .scaledToFit()
+                        }
+                    }
                     .frame(height: 180)
+                } else {
+                    Image("logoLaunch")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 180)
+                }
                 
                 Text(unit.sku)
                     .font(.system(size: 22, weight: .bold))
                     .foregroundColor(AppColors.textPrimary)
-                
-                Button("Download Files") {
-                    showingLinkAlert = true
-                    //                    openLink(unitLink)
+
+                if isLoadingLink {
+                    ProgressView("Generating download link...")
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                } else if !unitLink.isEmpty {
+                    Button("Download Files") {
+                        showingLinkAlert = true
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(AppColors.buttonBlueStart)
+                    .foregroundColor(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                } else if let linkErrorMessage = linkErrorMessage {
+                    Text(linkErrorMessage)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(AppColors.accentRed)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 14)
+                        .background(AppColors.buttonGhostFill)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: 50)
-                .background(AppColors.buttonBlueStart)
-                .foregroundColor(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 
                 Button("Download Manual") {
                     openLink(manualLink)
@@ -354,6 +397,7 @@ struct DownloadUnitSheet: View {
     private func fetchUnitLink() async {
         guard let url = URL(string: "\(PrivateKeys.baseURLDropbox)\(unit.sku)") else {
             print("❌ Bad URL: \(PrivateKeys.baseURLDropbox)\(unit.sku)")
+            linkErrorMessage = "Try later or contact the EZ team for more information."
             isLoadingLink = false
             return
         }
@@ -361,16 +405,23 @@ struct DownloadUnitSheet: View {
         guard let (data, _) = try? await URLSession.shared.data(from: url),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             print("❌ Network or parsing failed")
+            linkErrorMessage = "Try later or contact the EZ team for more information."
             isLoadingLink = false
             return
         }
         print("📦 Response: \(json)")
         guard let urlString = json["url"] as? String else {
             print("❌ No url key in response: \(json)")
+            let apiError = json["error"] as? String
+            if let apiError, !apiError.isEmpty {
+                print("❌ Dropbox API error: \(apiError)")
+            }
+            linkErrorMessage = "Try later or contact the EZ team for more information."
             isLoadingLink = false
             return
         }
         unitLink = urlString
+        linkErrorMessage = nil
         print("✅ unitLink set: \(unitLink)")
         isLoadingLink = false
     }
