@@ -6,6 +6,8 @@ struct ProfileView: View {
     @StateObject private var viewModel = ProfileViewModel()
     @State private var showingImagePicker = false
     @State private var showingMail = false
+    @State private var showingAddresses = false
+    @State private var showingMyInformation = false
     @State private var showingOrders = false
     @State private var showingSafariURL: IdentifiableURL?
 
@@ -20,13 +22,13 @@ struct ProfileView: View {
 
                     profileSection("Account", rows: [
                         ProfileRow(icon: "person.text.rectangle", title: "My Information", tint: AppColors.accentRed,
-                            action: { },
+                            action: { showingMyInformation = true },
                             isEnabled: viewModel.user != nil),
                         ProfileRow(icon: "clock", title: "Order History", tint: AppColors.accentBlue,
                             action: { showingOrders = true },
                             isEnabled: viewModel.user != nil),
                         ProfileRow(icon: "mappin.and.ellipse", title: "Addresses", tint: AppColors.accentGreen,
-                            action: { },
+                            action: { showingAddresses = true },
                             isEnabled: viewModel.user != nil)
                     ])
 
@@ -68,6 +70,43 @@ struct ProfileView: View {
                     AuthenticatedBrowserView(url: url, title: "Order History", injectShopCSS: true, showNavButtons: true)
                         .navigationTitle("Order History")
                         .navigationBarTitleDisplayMode(.inline)
+                }
+            }
+        }
+        .sheet(isPresented: $showingMyInformation) {
+            if let url = URL(string: "https://ezinflatables.odoo.com/my/account") {
+                NavigationStack {
+                    AuthenticatedBrowserView(
+                        url: url,
+                        title: "My Information",
+                        injectShopCSS: true,
+                        showNavButtons: true,
+                        onAccountProfileSaved: { accountInfo in
+                            viewModel.syncAccountProfileFromOdoo(accountInfo) {
+                                showingMyInformation = false
+                            }
+                        }
+                    )
+                    .navigationTitle("My Information")
+                    .navigationBarTitleDisplayMode(.inline)
+                }
+            }
+        }
+        .sheet(isPresented: $showingAddresses) {
+            if let url = URL(string: "https://ezinflatables.odoo.com/my/addresses") {
+                NavigationStack {
+                    AuthenticatedBrowserView(
+                        url: url,
+                        title: "Addresses",
+                        injectShopCSS: true,
+                        showNavButtons: true,
+                        portalSavePathPrefix: "/my/addresses",
+                        onPortalSave: {
+                            showingAddresses = false
+                        }
+                    )
+                    .navigationTitle("Addresses")
+                    .navigationBarTitleDisplayMode(.inline)
                 }
             }
         }

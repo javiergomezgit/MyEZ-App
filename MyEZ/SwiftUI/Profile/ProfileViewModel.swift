@@ -19,6 +19,7 @@ final class ProfileViewModel: ObservableObject {
     func refresh() {
         user = UserSession.shared.load()
         isSubscribed = userInformation.subscribed
+        loadSubscriptionState()
         loadCurrentWeight()
         loadRankSummary()
     }
@@ -66,6 +67,78 @@ final class ProfileViewModel: ObservableObject {
                 case .failure(let error):
                     DispatchQueue.main.async { self.errorMessage = error.localizedDescription }
                 }
+            }
+        }
+    }
+
+    func syncAccountProfileFromOdoo(_ accountInfo: AccountProfileInfo, onSuccess: (() -> Void)? = nil) {
+        guard var user = UserSession.shared.load() else {
+            print("[MyEZ][AccountSync] aborting sync because no cached user session was found")
+            return
+        }
+
+        print("[MyEZ][AccountSync] syncAccountProfileFromOdoo called for partnerID=\(user.partnerID)")
+
+        let trimmedName = accountInfo.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedEmail = accountInfo.email.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedPhone = Self.normalizedPhoneNumber(from: accountInfo.phone)
+        let trimmedCompanyName = accountInfo.companyName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedZipCode = accountInfo.zipCode.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let previousEmail = user.email
+        let resolvedName = trimmedName.isEmpty ? user.name : trimmedName
+        let resolvedEmail = trimmedEmail.isEmpty ? user.email : trimmedEmail
+
+        let firebasePayload: [String: Any] = [
+            "name": resolvedName,
+            "email": resolvedEmail,
+            "phone": trimmedPhone,
+            "company_name": trimmedCompanyName,
+            "zipCode": trimmedZipCode
+        ]
+
+        print("[MyEZ][AccountSync] prepared Firebase payload: \(firebasePayload)")
+
+        dbRef.child("users").child(String(user.partnerID)).updateChildValues(firebasePayload) { [weak self] error, _ in
+            guard let self = self else { return }
+
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("[MyEZ][AccountSync] Firebase update failed: \(error.localizedDescription)")
+                    self.errorMessage = error.localizedDescription
+                    return
+                }
+
+                print("[MyEZ][AccountSync] Firebase update succeeded for partnerID=\(user.partnerID)")
+
+                userInformation.name = resolvedName
+                userInformation.email = resolvedEmail
+                userInformation.phone = trimmedPhone
+                userInformation.companyName = trimmedCompanyName
+                userInformation.zipCode = trimmedZipCode
+
+                if previousEmail != resolvedEmail,
+                   let passwordData = KeychainHelper.shared.read(service: "com.myez.app", account: previousEmail) {
+                    KeychainHelper.shared.save(passwordData, service: "com.myez.app", account: resolvedEmail)
+                    KeychainHelper.shared.delete(service: "com.myez.app", account: previousEmail)
+                }
+
+                user = AppUser(
+                    uid: user.uid,
+                    partnerID: user.partnerID,
+                    name: resolvedName,
+                    email: resolvedEmail,
+                    typeUser: user.typeUser,
+                    ownwedWeight: user.ownwedWeight,
+                    companyID: user.companyID,
+                    completedSigningUp: user.completedSigningUp,
+                    profileImageUrl: user.profileImageUrl
+                )
+
+                UserSession.shared.save(user: user)
+                self.user = user
+                print("[MyEZ][AccountSync] local session updated name='\(resolvedName)' email='\(resolvedEmail)'")
+                onSuccess?()
             }
         }
     }
@@ -142,10 +215,31 @@ final class ProfileViewModel: ObservableObject {
         }
     }
 
+    private func loadSubscriptionState() {
+        guard let user = UserSession.shared.load() else { return }
+        dbRef.child("users").child(String(user.partnerID)).observeSingleEvent(of: .value) { [weak self] snapshot in
+            guard let self = self else { return }
+            let value = snapshot.value as? [String: Any]
+            let subscribed = value?["subscribed"] as? Bool ?? false
+
+            DispatchQueue.main.async {
+                userInformation.subscribed = subscribed
+                self.isSubscribed = subscribed
+            }
+        }
+    }
+
     private static func intValue(_ value: Any?) -> Int? {
         if let intValue = value as? Int { return intValue }
         if let doubleValue = value as? Double { return Int(doubleValue) }
         if let stringValue = value as? String { return Int(stringValue) }
         return nil
+    }
+
+    private static func normalizedPhoneNumber(from value: String) -> String {
+        value.unicodeScalars
+            .filter { CharacterSet.decimalDigits.contains($0) }
+            .map(String.init)
+            .joined()
     }
 }

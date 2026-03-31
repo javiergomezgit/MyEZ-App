@@ -269,7 +269,7 @@ final class AuthService {
     private func applyFirebaseSnapshot(userId: String, value: NSDictionary?, email: String, password: String, signedUser: OdooUser) {
         userInformation.userId = userId
         userInformation.website = value?["website"] as? String ?? ""
-        userInformation.companyName = value?["companyName"] as? String ?? ""
+        userInformation.companyName = value?["company_name"] as? String ?? ""
         userInformation.zipCode = value?["zipCode"] as? String ?? ""
         userInformation.phone = value?["phone"] as? String ?? ""
         userInformation.typeUser = value?["typeUser"] as? String ?? value?["typeuser"] as? String ?? ""

@@ -39,6 +39,12 @@ https://myez-odooapi-production.up.railway.app
 - Action types: `add_to_cart`, `buy_now` → Safari | `call_now` → Phone | `email_now` → Mail | `go_to_link` → Safari
 - Managed via internal admin panel at `https://myez-admin.web.app`
 
+## Profile Data
+
+- User profile fields (name, email, phone, address) sourced from Odoo `res.partner`
+- Firebase reflects Odoo as source of truth — updates in Odoo propagate to Firebase via Cloud Run sync
+- Profile screen reads directly from Firebase — no direct Odoo calls from iOS
+
 ## Auth Flow
 
 - Login and Signup via Odoo XML-RPC (`/web/session/authenticate`)
