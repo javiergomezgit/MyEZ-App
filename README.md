@@ -20,7 +20,7 @@ https://myez-odooapi-production.up.railway.app
 
 ## Features
 
-- **DealsView** — live client ranking data fetched from Railway API
+- **DealsView** — fetches up to 5 active deals from Firebase `dealsLinks` node
 - **Pull to refresh** — triggers live re-fetch from Odoo via middleware
 - **Loading states** — skeleton UI during fetch
 - **Error handling** — graceful failure with user-facing messaging
@@ -30,6 +30,14 @@ https://myez-odooapi-production.up.railway.app
 - **Push notifications** — rank-up alerts delivered via FCM
 - **Auto token registration** — FCM token registered to Firebase on login
 - **Dropbox integration** — product image folders fetched dynamically per SKU via FastAPI
+
+## Deals Feature
+
+- **DealsView** — fetches up to 5 active deals from Firebase `dealsLinks` node
+- Deals are sorted by `sort` field and filtered by `expiresAt` timestamp client-side
+- Each deal card displays: image (1:3 cropped), emoji, name, and action button
+- Action types: `add_to_cart`, `buy_now` → Safari | `call_now` → Phone | `email_now` → Mail | `go_to_link` → Safari
+- Managed via internal admin panel at `https://myez-admin.web.app`
 
 ## Auth Flow
 
