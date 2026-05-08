@@ -318,7 +318,6 @@ final class AuthService {
         let urlString = "\(OdooKeys.databaseURL)/jsonrpc"
         let database = OdooKeys.databaseName
         let botKey = OdooKeys.apiKey
-        let templateID = 13
         
         guard let url = URL(string: urlString) else {
             completion(.failure(.message("Bad URL")))
@@ -333,13 +332,14 @@ final class AuthService {
             "zip": zipCode,
             "active": true,
             "company_id": 25,
-            "company_ids": [[6, 0, [25]]]
+            "company_ids": [[6, 0, [25]]],
+            "group_ids": [[6, 0, [10]]]
         ]
         
         let params: [String: Any] = [
             "service": "object",
             "method": "execute_kw",
-            "args": [database, 2, botKey, "res.users", "copy", [templateID, newUserOverrides]]
+            "args": [database, 2, botKey, "res.users", "create", [newUserOverrides]]
         ]
         
         let body: [String: Any] = ["jsonrpc": "2.0", "method": "call", "params": params, "id": 1]
@@ -354,6 +354,9 @@ final class AuthService {
             if let error = error {
                 completion(.failure(.network(error)))
                 return
+            }
+            if let data = data, let raw = String(data: data, encoding: .utf8) {
+                print("🔴 Odoo raw response: \(raw)") //For debugging
             }
             guard let data = data else {
                 completion(.failure(.invalidResponse))
