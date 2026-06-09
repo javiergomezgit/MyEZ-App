@@ -1,4 +1,5 @@
 import Foundation
+import FirebaseAuth
 
 final class AuthViewModel: ObservableObject {
     @Published var email = ""
@@ -7,7 +8,7 @@ final class AuthViewModel: ObservableObject {
     @Published var verifyPassword = ""
     @Published var isLoading = false
     @Published var errorMessage: String?
-    
+
     func login(appState: AppState) {
         let emailTrimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !emailTrimmed.isEmpty, !password.isEmpty else {
@@ -21,11 +22,10 @@ final class AuthViewModel: ObservableObject {
                 switch result {
                 case .success:
                     appState.markAuthenticated()
-                    if let user = UserSession.shared.load() {
-                        let token = AppDelegate.deviceIDToken
-                            if !token.isEmpty {
-                                self?.registerFCMToken(partnerID: user.partnerID, token: token)
-                            }
+                    let token = AppDelegate.deviceIDToken
+                    if !token.isEmpty, let uid = Auth.auth().currentUser?.uid {
+                        AuthService.shared.updateFCMToken(firebaseUID: uid, token: token)
+                        self?.registerFCMToken(firebaseUID: uid, token: token)
                     }
                 case .failure(let error):
                     self?.errorMessage = error.localizedDescription
@@ -33,7 +33,7 @@ final class AuthViewModel: ObservableObject {
             }
         }
     }
-    
+
     func sendPasswordReset() {
         let emailTrimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !emailTrimmed.isEmpty else {
@@ -51,7 +51,7 @@ final class AuthViewModel: ObservableObject {
             }
         }
     }
-    
+
     func signup(appState: AppState) {
         let emailTrimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty, !emailTrimmed.isEmpty, !password.isEmpty, !verifyPassword.isEmpty else {
@@ -73,11 +73,10 @@ final class AuthViewModel: ObservableObject {
                 switch result {
                 case .success:
                     appState.markAuthenticated()
-                    if let user = UserSession.shared.load() {
-                        let token = AppDelegate.deviceIDToken
-                        if !token.isEmpty {
-                            self?.registerFCMToken(partnerID: user.partnerID, token: token)
-                        }
+                    let token = AppDelegate.deviceIDToken
+                    if !token.isEmpty, let uid = Auth.auth().currentUser?.uid {
+                        AuthService.shared.updateFCMToken(firebaseUID: uid, token: token)
+                        self?.registerFCMToken(firebaseUID: uid, token: token)
                     }
                 case .failure(let error):
                     self?.errorMessage = error.localizedDescription
@@ -85,26 +84,22 @@ final class AuthViewModel: ObservableObject {
             }
         }
     }
-    
-    func registerFCMToken(partnerID: Int, token: String) {
-        let urlString = "https://myez-odooapi-production.up.railway.app/register-token?partner_id=\(partnerID)&token=\(token)"
+
+    private func registerFCMToken(firebaseUID: String, token: String) {
+        let urlString = "https://myez-odooapi-production.up.railway.app/register-token?firebase_uid=\(firebaseUID)&token=\(token)"
         guard let url = URL(string: urlString) else { return }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        URLSession.shared.dataTask(with: request) { _, _, error in
             if let error = error {
                 print("❌ FCM token registration failed: \(error)")
                 return
             }
-            print("✅ FCM token registered for partner \(partnerID)")
+            print("✅ FCM token registered for \(firebaseUID)")
         }.resume()
     }
-    
+
     private func isValidEmail(_ email: String) -> Bool {
-        // FIXME: Overly permissive validation. Accepts strings like "a@@b.c", "test@.com",
-        // or "test@com." because it only checks for presence of "@" and "." and a minimum
-        // length. Use NSDataDetector or a proper regex (e.g. RFC 5322 subset) to reject
-        // obviously malformed addresses before they reach the Odoo API.
         return email.contains("@") && email.contains(".") && email.count >= 6
     }
 }

@@ -17,15 +17,12 @@ import UserNotifications
 import IQKeyboardManagerSwift
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
-    let appState = AppState()
+    lazy var appState = AppState()
     var window: UIWindow?
     static var deviceIDToken = String()
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-
-        // Firebase must be configured before delegates or auth
         FirebaseApp.configure()
-
         // Set delegates once
         UNUserNotificationCenter.current().delegate = self
         Messaging.messaging().delegate = self
@@ -47,6 +44,17 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
         setColorBars()
         IQKeyboardManager.shared.isEnabled = true
+
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.willEnterForegroundNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            guard let uid = UserDefaults.standard.string(forKey: "firebaseUID"), !uid.isEmpty else { return }
+            Database.database().reference()
+                .child("users").child(uid).child("activeAt")
+                .setValue(Int(Date().timeIntervalSince1970))
+        }
 
         return true
     }

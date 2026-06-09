@@ -82,6 +82,7 @@ struct LoginView: View {
     @ObservedObject var appState: AppState
     @StateObject private var viewModel = AuthViewModel()
     @State private var showPassword = false
+    @State private var showForgotPassword = false
 
     private var isShowingError: Binding<Bool> {
         Binding(
@@ -123,6 +124,15 @@ struct LoginView: View {
                     showPassword.toggle()
                 })
 
+                HStack {
+                    Spacer()
+                    Button("Forgot Password?") {
+                        showForgotPassword = true
+                    }
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(AppColors.accentRed)
+                }
+
                 Button {
                     viewModel.login(appState: appState)
                 } label: {
@@ -144,6 +154,17 @@ struct LoginView: View {
             Button("OK", role: .cancel) { }
         } message: {
             Text(viewModel.errorMessage ?? "")
+        }
+        .alert("Reset Password", isPresented: $showForgotPassword) {
+            TextField("Enter your email", text: $viewModel.email)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+            Button("Send Reset Link") {
+                viewModel.sendPasswordReset()
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("We'll send a password reset link to your email.")
         }
         .navigationBarTitleDisplayMode(.inline)
     }

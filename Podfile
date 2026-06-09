@@ -1,3 +1,14 @@
+# Workaround: xcodeproj 1.27.0 is missing object version 70 (Xcode 16 beta/RC).
+require 'xcodeproj'
+module ::Xcodeproj
+  module Constants
+    patched = COMPATIBILITY_VERSION_BY_OBJECT_VERSION.dup
+    patched[70] = 'Xcode 16.0'
+    send(:remove_const, :COMPATIBILITY_VERSION_BY_OBJECT_VERSION)
+    COMPATIBILITY_VERSION_BY_OBJECT_VERSION = patched.freeze
+  end
+end
+
 # Uncomment the next line to define a global platform for your project
 platform :ios, '16.0'
 

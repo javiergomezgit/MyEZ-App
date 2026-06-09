@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		006762D97A64C785DB422C83 /* Pods_MyEZ.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0B389C68FFECC4B9A07DEED6 /* Pods_MyEZ.framework */; };
 		2204A1202318A0E000208256 /* ProductCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2204A11E2318A0E000208256 /* ProductCollectionViewCell.swift */; };
 		222A0FEE2F4E2D4000F9F5A4 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222A0FED2F4E2D3600F9F5A4 /* KeychainHelper.swift */; };
 		2236FF232F5F741F003478C4 /* OdooService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2236FF222F5F7416003478C4 /* OdooService.swift */; };
@@ -35,6 +34,7 @@
 		47C462DDAED16DC0CF0B9CD7 /* BrowseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50AF03B971722F244F58D669 /* BrowseView.swift */; };
 		4EAEDE5FE878F78E2978AA24 /* AuthFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D2CCE8038A39D5E0853964B /* AuthFlowView.swift */; };
 		6EAAC8D82F01B7210760474F /* ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F7FD633DBDDE131CA3766E4 /* ProfileViewModel.swift */; };
+		7FE96A89A5250E078CF8A1A9 /* Pods_MyEZ.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4E6E7B6A45EEAEA16803C565 /* Pods_MyEZ.framework */; };
 		9EBF778223DE7D7D7FFF863E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58DF8FB5411F777D7EA75435 /* Theme.swift */; };
 		A518F32CF21449273D7CEE9D /* MyEZViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 673BD4755D05AD7853C1F76E /* MyEZViewModel.swift */; };
 		B97706CA828BCA0385813DBA /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30877432D1026706D7E805DA /* AppState.swift */; };
@@ -54,7 +54,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		0B389C68FFECC4B9A07DEED6 /* Pods_MyEZ.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_MyEZ.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		12DA86A78C49EA20E32684B2 /* SafariView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariView.swift; sourceTree = "<group>"; };
 		2204A11E2318A0E000208256 /* ProductCollectionViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ProductCollectionViewCell.swift; path = MyEZ/Views/ProductCollectionViewCell.swift; sourceTree = SOURCE_ROOT; };
 		222A0FED2F4E2D3600F9F5A4 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
@@ -83,6 +82,7 @@
 		3B8453231F3D0C3A009EA3B8 /* FBSDKCoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = FBSDKCoreKit.framework; sourceTree = "<group>"; };
 		3B8453241F3D0C3A009EA3B8 /* FBSDKLoginKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = FBSDKLoginKit.framework; sourceTree = "<group>"; };
 		3B8453251F3D0C3A009EA3B8 /* FBSDKShareKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = FBSDKShareKit.framework; sourceTree = "<group>"; };
+		4E6E7B6A45EEAEA16803C565 /* Pods_MyEZ.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_MyEZ.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		4F7FD633DBDDE131CA3766E4 /* ProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewModel.swift; sourceTree = "<group>"; };
 		50AF03B971722F244F58D669 /* BrowseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowseView.swift; sourceTree = "<group>"; };
 		58DF8FB5411F777D7EA75435 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
@@ -100,16 +100,16 @@
 		BAFE56BF2151C44A00B3B245 /* SweetAlert.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SweetAlert.swift; sourceTree = "<group>"; };
 		C826A6FCE48478DCB74F2134 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
 		C99E81B62B3C4B07E49004AD /* WalkthroughView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkthroughView.swift; sourceTree = "<group>"; };
+		CB2E5E578D355CD9C37F239F /* Pods-MyEZ.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MyEZ.release.xcconfig"; path = "Target Support Files/Pods-MyEZ/Pods-MyEZ.release.xcconfig"; sourceTree = "<group>"; };
 		CBEE3772A077021721A278F6 /* ContactView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactView.swift; sourceTree = "<group>"; };
-		D02E7E65C3C6A5F170B29A7B /* Pods-MyEZ.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MyEZ.debug.xcconfig"; path = "Target Support Files/Pods-MyEZ/Pods-MyEZ.debug.xcconfig"; sourceTree = "<group>"; };
 		D58E72E310275DFF6C15C0C8 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		D810A485ED03241B4D419B1B /* MyEZView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyEZView.swift; sourceTree = "<group>"; };
 		E9DF469611A11F5125227C37 /* AuthenticatedBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticatedBrowserView.swift; sourceTree = "<group>"; };
-		F79C629F87EEC1EAF8738146 /* Pods-MyEZ.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MyEZ.release.xcconfig"; path = "Target Support Files/Pods-MyEZ/Pods-MyEZ.release.xcconfig"; sourceTree = "<group>"; };
+		EE8B393BABB0B54CE2CB98A5 /* Pods-MyEZ.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MyEZ.debug.xcconfig"; path = "Target Support Files/Pods-MyEZ/Pods-MyEZ.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		2225278D2F394CAC003032EC /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		2225278D2F394CAC003032EC /* Exceptions for "MyEZ/Security" folder in "MyEZ" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -119,7 +119,18 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		220724CA2F3949BD00D68B92 /* MyEZ/Security */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (2225278D2F394CAC003032EC /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = MyEZ/Security; sourceTree = "<group>"; };
+		220724CA2F3949BD00D68B92 /* MyEZ/Security */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				2225278D2F394CAC003032EC /* Exceptions for "MyEZ/Security" folder in "MyEZ" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = MyEZ/Security;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -128,7 +139,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BA3C7917225FBE2700E3D0A3 /* CloudKit.framework in Frameworks */,
-				006762D97A64C785DB422C83 /* Pods_MyEZ.framework in Frameworks */,
+				7FE96A89A5250E078CF8A1A9 /* Pods_MyEZ.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -294,7 +305,7 @@
 				3B8453231F3D0C3A009EA3B8 /* FBSDKCoreKit.framework */,
 				3B8453241F3D0C3A009EA3B8 /* FBSDKLoginKit.framework */,
 				3B8453251F3D0C3A009EA3B8 /* FBSDKShareKit.framework */,
-				0B389C68FFECC4B9A07DEED6 /* Pods_MyEZ.framework */,
+				4E6E7B6A45EEAEA16803C565 /* Pods_MyEZ.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -302,8 +313,8 @@
 		9DA3FA26015359B5D36427A2 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				D02E7E65C3C6A5F170B29A7B /* Pods-MyEZ.debug.xcconfig */,
-				F79C629F87EEC1EAF8738146 /* Pods-MyEZ.release.xcconfig */,
+				EE8B393BABB0B54CE2CB98A5 /* Pods-MyEZ.debug.xcconfig */,
+				CB2E5E578D355CD9C37F239F /* Pods-MyEZ.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -361,11 +372,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 3B84531E1F3D07DC009EA3B8 /* Build configuration list for PBXNativeTarget "MyEZ" */;
 			buildPhases = (
-				F3FDFFA6B266517565C3DC9E /* [CP] Check Pods Manifest.lock */,
+				2746B0961E7E9FD454EBDD95 /* [CP] Check Pods Manifest.lock */,
 				3B8453081F3D07DC009EA3B8 /* Sources */,
 				3B8453091F3D07DC009EA3B8 /* Frameworks */,
 				3B84530A1F3D07DC009EA3B8 /* Resources */,
-				BA2F79F9DAC0BFB1747783FB /* [CP] Embed Pods Frameworks */,
+				7D6495E11BC75ECEE5ED711D /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -441,28 +452,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		BA2F79F9DAC0BFB1747783FB /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-MyEZ/Pods-MyEZ-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			inputPaths = (
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-MyEZ/Pods-MyEZ-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-MyEZ/Pods-MyEZ-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		F3FDFFA6B266517565C3DC9E /* [CP] Check Pods Manifest.lock */ = {
+		2746B0961E7E9FD454EBDD95 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -482,6 +472,23 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		7D6495E11BC75ECEE5ED711D /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-MyEZ/Pods-MyEZ-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-MyEZ/Pods-MyEZ-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-MyEZ/Pods-MyEZ-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -678,7 +685,7 @@
 		};
 		3B84531F1F3D07DC009EA3B8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = D02E7E65C3C6A5F170B29A7B /* Pods-MyEZ.debug.xcconfig */;
+			baseConfigurationReference = EE8B393BABB0B54CE2CB98A5 /* Pods-MyEZ.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = MyEZ/Extras/MyEZ.entitlements;
@@ -718,7 +725,7 @@
 		};
 		3B8453201F3D07DC009EA3B8 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = F79C629F87EEC1EAF8738146 /* Pods-MyEZ.release.xcconfig */;
+			baseConfigurationReference = CB2E5E578D355CD9C37F239F /* Pods-MyEZ.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = MyEZ/Extras/MyEZ.entitlements;
