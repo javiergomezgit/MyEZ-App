@@ -49,8 +49,8 @@ struct AppUser: Codable {
     var profileImageUrl: String?
 }
 
-// FIXME: Global mutable state shared across AuthService, ProfileViewModel, PreviewTopUsersService,
-// and view controllers. This makes thread safety, testability, and state tracking unpredictable.
+// FIXME: Global mutable state shared across AuthService, ProfileViewModel, and view controllers.
+// This makes thread safety, testability, and state tracking unpredictable.
 // Should be owned by a single source of truth (e.g. a UserSession / AppState object) and
 // injected where needed rather than mutated as a global variable.
 var userInformation = UserValues(name: "", userId: "", email: "", zipCode: "", website: "", companyName: "", phone: "", businessType: "", about: "", profileImageUrl: "", typeUser: "", weight: 0, subscribed: false, showWalk: true)
@@ -77,8 +77,6 @@ struct UserExtraInfo {
 // FIXME: Global mutable state — same problem as `userInformation` above.
 var extraInfo = UserExtraInfo(completedSigningUp: false, myez : [""])
 
-// FIXME: Global mutable state — same problem as `userInformation` above.
-var topUsers = [Int:String]()
 
 func checkTypeUser(weightUnits: Int) -> String {
     

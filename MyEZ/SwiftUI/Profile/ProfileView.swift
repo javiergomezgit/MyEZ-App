@@ -283,10 +283,6 @@ struct MyInformationView: View {
     @ObservedObject var viewModel: ProfileViewModel
     let onDismiss: () -> Void
 
-    @State private var name: String = ""
-    @State private var phone: String = ""
-    @State private var companyName: String = ""
-    @State private var zipCode: String = ""
     @State private var isSaving = false
 
     var body: some View {
@@ -296,14 +292,19 @@ struct MyInformationView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 20) {
-                        infoField(label: "Full Name", placeholder: "John Doe", text: $name, keyboard: .default)
-                        infoField(label: "Phone", placeholder: "1234567890", text: $phone, keyboard: .phonePad)
-                        infoField(label: "Company Name", placeholder: "EZ Inflatables", text: $companyName, keyboard: .default)
-                        infoField(label: "Zip Code", placeholder: "33101", text: $zipCode, keyboard: .numbersAndPunctuation)
+                        infoField(label: "Full Name", placeholder: "John Doe", text: $viewModel.editName, keyboard: .default)
+                        infoField(label: "Phone", placeholder: "1234567890", text: $viewModel.editPhone, keyboard: .phonePad)
+                        infoField(label: "Company Name", placeholder: "EZ Inflatables", text: $viewModel.editCompanyName, keyboard: .default)
+                        infoField(label: "Zip Code", placeholder: "33101", text: $viewModel.editZipCode, keyboard: .numbersAndPunctuation)
 
                         Button {
                             isSaving = true
-                            viewModel.updateProfile(name: name, phone: phone, companyName: companyName, zipCode: zipCode) {
+                            viewModel.updateProfile(
+                                name: viewModel.editName,
+                                phone: viewModel.editPhone,
+                                companyName: viewModel.editCompanyName,
+                                zipCode: viewModel.editZipCode
+                            ) {
                                 isSaving = false
                                 onDismiss()
                             }
@@ -334,12 +335,6 @@ struct MyInformationView: View {
                         .foregroundColor(AppColors.accentRed)
                 }
             }
-        }
-        .onAppear {
-            name = userInformation.name
-            phone = userInformation.phone
-            companyName = userInformation.companyName
-            zipCode = userInformation.zipCode
         }
     }
 

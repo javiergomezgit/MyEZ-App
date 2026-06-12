@@ -18,7 +18,6 @@
 		22A608022F36723500773058 /* DownloadMyezViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22A608012F36723500773058 /* DownloadMyezViewController.swift */; };
 		22A608062F36770600773058 /* EmailSender.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22A608052F36770600773058 /* EmailSender.swift */; };
 		22A9E0C7230F677C0001D87D /* MyProfileViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22A9E0C6230F677C0001D87D /* MyProfileViewController.swift */; };
-		22B0AF132F5B602A00D530D5 /* PreviewTopUsersService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22B0AF122F5B602A00D530D5 /* PreviewTopUsersService.swift */; };
 		22B0AF152F5B637800D530D5 /* ZipCodeProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22B0AF142F5B637800D530D5 /* ZipCodeProvider.swift */; };
 		22D9E601231605DB00E42C1E /* CategoriesTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22D9E5FF231605DB00E42C1E /* CategoriesTableViewCell.swift */; };
 		22E0CABC1FA7DEFF008C304C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 229ADF541FA016860013240F /* Assets.xcassets */; };
@@ -68,7 +67,6 @@
 		22A608012F36723500773058 /* DownloadMyezViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadMyezViewController.swift; sourceTree = "<group>"; };
 		22A608052F36770600773058 /* EmailSender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailSender.swift; sourceTree = "<group>"; };
 		22A9E0C6230F677C0001D87D /* MyProfileViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyProfileViewController.swift; sourceTree = "<group>"; };
-		22B0AF122F5B602A00D530D5 /* PreviewTopUsersService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewTopUsersService.swift; sourceTree = "<group>"; };
 		22B0AF142F5B637800D530D5 /* ZipCodeProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZipCodeProvider.swift; sourceTree = "<group>"; };
 		22D9E5FF231605DB00E42C1E /* CategoriesTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CategoriesTableViewCell.swift; path = MyEZ/Views/CategoriesTableViewCell.swift; sourceTree = SOURCE_ROOT; };
 		22EC09192327283400B90873 /* ThumbnailImagesCollectionViewCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ThumbnailImagesCollectionViewCell.swift; path = MyEZ/Views/ThumbnailImagesCollectionViewCell.swift; sourceTree = SOURCE_ROOT; };
@@ -204,8 +202,7 @@
 		22BAC919284C47CE002160A0 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				22B0AF122F5B602A00D530D5 /* PreviewTopUsersService.swift */,
-				2236FF222F5F7416003478C4 /* OdooService.swift */,
+					2236FF222F5F7416003478C4 /* OdooService.swift */,
 				227067791F9A73BC00AE018A /* UserValues.swift */,
 			);
 			path = Models;
@@ -504,8 +501,7 @@
 				D3C681D06BD2AA399DAC946D /* RootView.swift in Sources */,
 				C59C0996DAEEE6F529A27976 /* AuthService.swift in Sources */,
 				4017F2ED6CFC7403D75E173E /* AuthViewModel.swift in Sources */,
-				22B0AF132F5B602A00D530D5 /* PreviewTopUsersService.swift in Sources */,
-				4EAEDE5FE878F78E2978AA24 /* AuthFlowView.swift in Sources */,
+					4EAEDE5FE878F78E2978AA24 /* AuthFlowView.swift in Sources */,
 				47C462DDAED16DC0CF0B9CD7 /* BrowseView.swift in Sources */,
 				F78DF0CAC5E40C02D4E518CA /* ContactView.swift in Sources */,
 				6EAAC8D82F01B7210760474F /* ProfileViewModel.swift in Sources */,

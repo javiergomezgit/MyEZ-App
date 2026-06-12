@@ -12,6 +12,12 @@ struct MyEZView: View {
         RankTheme.forRank(viewModel.categoryImageName.isEmpty ? "minimumweight" : viewModel.categoryImageName)
     }
 
+    private var monthTitle: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM"
+        return "\(formatter.string(from: Date())) Top Users"
+    }
+
     var body: some View {
         ZStack {
             SceneBackgroundView()
@@ -19,7 +25,7 @@ struct MyEZView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 22) {
                     rankHeader
-                    TopUsersCard(topUsers: viewModel.topUsers, summaryText: viewModel.topUsersSummaryText, headerColor: rankTheme.accent)
+                    TopUsersCard(topUsers: viewModel.topUsers, monthlyPlace: viewModel.monthlyPlace, headerColor: rankTheme.accent, title: monthTitle)
 
                     VStack(alignment: .leading, spacing: 14) {
                         Text("Your Products")
@@ -62,25 +68,35 @@ struct MyEZView: View {
     }
 
     private var rankHeader: some View {
-        VStack(spacing: 6) {
-            HStack(spacing: 10) {
-                Image(viewModel.categoryImageName.isEmpty ? "minimumweight" : viewModel.categoryImageName)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 44, height: 44)
+        HStack(spacing: 10) {
+            Image(viewModel.categoryImageName.isEmpty ? "minimumweight" : viewModel.categoryImageName)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 44, height: 44)
 
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Your Rank")
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Your Rank")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(AppColors.textSecondary)
+
+                Text(viewModel.categoryName.isEmpty ? "MINIMUMWEIGHT" : viewModel.categoryName)
+                    .font(.system(size: 17, weight: .heavy))
+                    .foregroundColor(AppColors.textPrimary)
+                    .tracking(0.5)
+            }
+
+            Spacer()
+
+            if viewModel.ownedWeight > 0 {
+                VStack(alignment: .trailing, spacing: 3) {
+                    Text("Owned")
                         .font(.system(size: 15, weight: .medium))
                         .foregroundColor(AppColors.textSecondary)
 
-                    Text(viewModel.categoryName.isEmpty ? "MINIMUMWEIGHT" : viewModel.categoryName)
+                    Text("\(viewModel.ownedWeight.formatted()) lbs")
                         .font(.system(size: 17, weight: .heavy))
                         .foregroundColor(AppColors.textPrimary)
-                        .tracking(0.5)
                 }
-
-                Spacer()
             }
         }
         .padding(.horizontal, 20)
@@ -107,39 +123,29 @@ struct UnitCard: View {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(AppColors.surfaceSecondary)
 
-                VStack {
-                    Spacer(minLength: 0)
-
-                    if let imageURL = unit.imageURL {
-                        AsyncImage(url: imageURL) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .scaledToFit()
-                            default:
-                                Image("logoLaunch")
-                                    .resizable()
-                                    .scaledToFit()
-                            }
-                        }
-                        .padding(14)
-                    } else {
-                        Image("logoLaunch")
-                            .resizable()
-                            .scaledToFit()
-                            .padding(14)
-                    }
-                }
-
+                Image("logoLaunch")
+                    .resizable()
+                    .scaledToFit()
+                    .padding(14)
             }
             .frame(height: 158)
 
-            Text(unit.sku)
-                .font(.system(size: 16, weight: .bold))
-                .foregroundColor(AppColors.textPrimary)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
+            VStack(spacing: 2) {
+                Text(unit.sku)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(AppColors.textPrimary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+
+                if unit.qty > 1 {
+                    Text("Qty: \(unit.qty)")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(AppColors.textSecondary)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 12)
         }
         .sceneCard(cornerRadius: 18, fillColor: AppColors.surfacePrimary)
     }
@@ -171,13 +177,26 @@ struct PlaceholderUnitCard: View {
 
 struct TopUsersCard: View {
     let topUsers: [MyEZViewModel.TopUserDisplay]
-    let summaryText: String
+    let monthlyPlace: Int
     let headerColor: Color
+    let title: String
+
+    private static func ordinalString(_ value: Int) -> String {
+        let tens = (value / 10) % 10
+        let ones = value % 10
+        if tens == 1 { return "\(value)th" }
+        switch ones {
+        case 1: return "\(value)st"
+        case 2: return "\(value)nd"
+        case 3: return "\(value)rd"
+        default: return "\(value)th"
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Top Users")
+                Text(title)
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(.white)
                 Spacer()
@@ -200,10 +219,10 @@ struct TopUsersCard: View {
             VStack(spacing: 12) {
                 HStack {
                     Text("PLACE")
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Text("WEIGHT")
-                        .frame(maxWidth: .infinity, alignment: .center)
-                    Text("LOCATION")
+                        .frame(width: 72, alignment: .leading)
+                    Text("SCORE")
+                        .frame(width: 80, alignment: .leading)
+                    Text("NAME")
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
                 .font(.system(size: 12, weight: .bold))
@@ -211,15 +230,17 @@ struct TopUsersCard: View {
                 .padding(.horizontal, 6)
 
                 if topUsers.isEmpty {
-                    TopUserRow(place: "1", weight: "15,420 lbs", location: "90210", medal: "🥇")
-                    TopUserRow(place: "2", weight: "12,850 lbs", location: "10001", medal: "🥈")
-                    TopUserRow(place: "3", weight: "9,340 lbs", location: "60601", medal: "🥉")
+                    Text("No leaderboard data yet.")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(AppColors.textMuted)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 8)
                 } else {
                     ForEach(topUsers) { user in
                         TopUserRow(
                             place: "\(user.place)",
-                            weight: user.weightText,
-                            location: user.locationText,
+                            score: user.scoreText,
+                            display: user.displayText,
                             medal: user.medal
                         )
                     }
@@ -245,29 +266,19 @@ struct TopUsersCard: View {
     }
 
     private var summaryBanner: some View {
-        VStack(spacing: 4) {
-            if let parsed = SummaryParts(summaryText: summaryText) {
-                (
-                    Text("Owning ")
-                        .foregroundColor(AppColors.textPrimary)
-                    + Text(parsed.weight)
-                        .foregroundColor(AppColors.accentGreen)
-                    + Text(" of inflatables,")
-                        .foregroundColor(AppColors.textPrimary)
-                )
-                .multilineTextAlignment(.center)
-
+        Group {
+            if monthlyPlace > 0 {
                 (
                     Text("I'm in ")
                         .foregroundColor(AppColors.textPrimary)
-                    + Text(parsed.place)
+                    + Text(Self.ordinalString(monthlyPlace) + " place")
                         .foregroundColor(AppColors.accentRed)
-                    + Text(".")
+                    + Text(" for the month.")
                         .foregroundColor(AppColors.textPrimary)
                 )
                 .multilineTextAlignment(.center)
             } else {
-                Text(summaryText.isEmpty ? "Loading your rank..." : summaryText)
+                Text("Loading your rank...")
                     .foregroundColor(AppColors.textPrimary)
                     .multilineTextAlignment(.center)
             }
@@ -289,25 +300,26 @@ struct TopUsersCard: View {
 
 struct TopUserRow: View {
     let place: String
-    let weight: String
-    let location: String
+    let score: String
+    let display: String
     let medal: String
 
     var body: some View {
-        HStack {
+        HStack(spacing: 0) {
             Text("\(medal)  \(place)")
                 .foregroundColor(AppColors.textPrimary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(width: 72, alignment: .leading)
 
-            Text(weight)
+            Text(score.replacingOccurrences(of: "lbs", with: "pts"))
                 .foregroundColor(AppColors.accentGreen)
-                .frame(maxWidth: .infinity, alignment: .center)
+                .frame(width: 80, alignment: .leading)
 
-            Text(location)
+            Text(display)
                 .foregroundColor(AppColors.textPrimary)
+                .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .trailing)
         }
-        .font(.system(size: 16, weight: .bold))
+        .font(.system(size: 15, weight: .bold))
         .padding(.horizontal, 14)
         .padding(.vertical, 11)
         .background(
@@ -317,66 +329,26 @@ struct TopUserRow: View {
     }
 }
 
-private struct SummaryParts {
-    let weight: String
-    let place: String
-
-    init?(summaryText: String) {
-        guard
-            let weightRange = summaryText.range(of: "Owning "),
-            let inflatablesRange = summaryText.range(of: " of inflatables"),
-            let placeIntroRange = summaryText.range(of: "I'm in "),
-            let placeEndRange = summaryText.range(of: " place")
-        else {
-            return nil
-        }
-
-        let weightStart = weightRange.upperBound
-        let weight = String(summaryText[weightStart..<inflatablesRange.lowerBound])
-        let placeStart = placeIntroRange.upperBound
-        let place = String(summaryText[placeStart..<placeEndRange.lowerBound])
-
-        guard !weight.isEmpty, !place.isEmpty else { return nil }
-        self.weight = weight
-        self.place = place + " Place"
-    }
-}
 
 struct DownloadUnitSheet: View {
     let unit: MyEZViewModel.UnitDisplayItem
     let manualLink: String
-    
+
     @State private var unitLink: String = ""
     @State private var isLoadingLink: Bool = true
     @State private var showingLinkAlert: Bool = false
     @State private var linkErrorMessage: String?
-    
+
     var body: some View {
         ZStack {
             SceneBackgroundView()
-            
+
             VStack(spacing: 18) {
-                if let imageURL = unit.imageURL {
-                    AsyncImage(url: imageURL) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .scaledToFit()
-                        default:
-                            Image("logoLaunch")
-                                .resizable()
-                                .scaledToFit()
-                        }
-                    }
+                Image("logoLaunch")
+                    .resizable()
+                    .scaledToFit()
                     .frame(height: 180)
-                } else {
-                    Image("logoLaunch")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(height: 180)
-                }
-                
+
                 Text(unit.sku)
                     .font(.system(size: 22, weight: .bold))
                     .foregroundColor(AppColors.textPrimary)
@@ -405,7 +377,7 @@ struct DownloadUnitSheet: View {
                         .background(AppColors.buttonGhostFill)
                         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
-                
+
                 Button("Download Manual") {
                     openLink(manualLink)
                 }
@@ -414,7 +386,7 @@ struct DownloadUnitSheet: View {
                 .background(AppColors.buttonGhostFill)
                 .foregroundColor(AppColors.textPrimary)
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                
+
                 Spacer()
             }
             .padding(24)
@@ -427,7 +399,8 @@ struct DownloadUnitSheet: View {
         .alert("Download Files", isPresented: $showingLinkAlert) {
             Button("Copy Link") {
                 let downloadLink = unitLink.replacingOccurrences(of: "dl=0", with: "dl=1")
-                UIPasteboard.general.string = downloadLink            }
+                UIPasteboard.general.string = downloadLink
+            }
             Button("Go to Website") {
                 openLink(unitLink)
             }
@@ -436,39 +409,25 @@ struct DownloadUnitSheet: View {
             Text("Choose how to access the files for \(unit.sku).")
         }
     }
-    
+
     private func fetchUnitLink() async {
         guard let url = URL(string: "\(PrivateKeys.baseURLDropbox)\(unit.sku)") else {
-            print("❌ Bad URL: \(PrivateKeys.baseURLDropbox)\(unit.sku)")
             linkErrorMessage = "Try later or contact the EZ team for more information."
             isLoadingLink = false
             return
         }
-        print("🔍 Fetching: \(url)")
         guard let (data, _) = try? await URLSession.shared.data(from: url),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            print("❌ Network or parsing failed")
-            linkErrorMessage = "Try later or contact the EZ team for more information."
-            isLoadingLink = false
-            return
-        }
-        print("📦 Response: \(json)")
-        guard let urlString = json["url"] as? String else {
-            print("❌ No url key in response: \(json)")
-            let apiError = json["error"] as? String
-            if let apiError, !apiError.isEmpty {
-                print("❌ Dropbox API error: \(apiError)")
-            }
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let urlString = json["url"] as? String else {
             linkErrorMessage = "Try later or contact the EZ team for more information."
             isLoadingLink = false
             return
         }
         unitLink = urlString
         linkErrorMessage = nil
-        print("✅ unitLink set: \(unitLink)")
         isLoadingLink = false
     }
-    
+
     private func openLink(_ link: String) {
         guard let url = URL(string: link), !link.isEmpty else { return }
         UIApplication.shared.open(url)

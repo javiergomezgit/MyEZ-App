@@ -6,15 +6,14 @@ final class MyEZViewModel: ObservableObject {
     struct UnitDisplayItem: Identifiable {
         let id = UUID()
         let sku: String
-        let productID: String
-        let imageURL: URL?
+        let qty: Int
     }
-    
+
     struct TopUserDisplay: Identifiable {
         let id = UUID()
         let place: Int
-        let weightText: String
-        let locationText: String
+        let scoreText: String
+        let displayText: String
         let medal: String
     }
 
@@ -24,15 +23,19 @@ final class MyEZViewModel: ObservableObject {
     @Published var categoryImageName: String = userInformation.typeUser
     @Published var ownedUnitsText: String = "You own \(userInformation.weight) Pounds of inflatable"
     @Published var topUsers: [TopUserDisplay] = []
-    @Published var topUsersSummaryText: String = ""
+    @Published var monthlyPlace: Int = 0
+    @Published var ownedWeight: Int = 0
     @Published var manualLink: String = ""
     @Published var unitLink: String = ""
     @Published var selectedUnit: UnitDisplayItem?
     @Published var showingDownload = false
-    
+
     private lazy var dbRef: DatabaseReference = Database.database().reference()
-    private let topUsersService = PreviewTopUsersService()
-    
+
+    private var firebaseUID: String {
+        UserDefaults.standard.string(forKey: "firebaseUID") ?? ""
+    }
+
     func load() {
         syncAuthenticationState()
         loadUnitsFromFirebase()
@@ -46,58 +49,44 @@ final class MyEZViewModel: ObservableObject {
         loadInfoHeader()
         loadTopUsers()
     }
-    
+
     func select(unit: UnitDisplayItem) {
         selectedUnit = unit
         fetchLinks(for: unit)
     }
-    
+
     private func loadUnitsFromFirebase() {
-        guard isAuthenticated, !userInformation.userId.isEmpty else {
+        guard isAuthenticated, !firebaseUID.isEmpty else {
             displayUnits = []
             print("⚠️ MyEZ units fetch skipped: user is not signed in")
             return
         }
 
-        dbRef.child("users").child(userInformation.userId).child("units").observeSingleEvent(of: .value) { [weak self] snapshot in
+        dbRef.child("users").child(firebaseUID).child("units").observeSingleEvent(of: .value, with: { [weak self] snapshot in
             guard let self = self else { return }
 
-            guard snapshot.exists() else {
-                DispatchQueue.main.async {
-                    self.displayUnits = []
-                }
-                print("⚠️ No units found for user \(userInformation.userId).")
+            guard snapshot.exists(), let dict = snapshot.value as? [String: Any] else {
+                DispatchQueue.main.async { self.displayUnits = [] }
                 return
             }
 
-            let childSnapshots = snapshot.children.allObjects.compactMap { $0 as? DataSnapshot }
-            let units = childSnapshots.compactMap(Self.extractUnitDisplayItem(from:))
+            let units: [UnitDisplayItem] = dict.compactMap { sku, rawQty in
+                let qty = Self.intFromAny(rawQty) ?? 1
+                return UnitDisplayItem(sku: sku, qty: qty)
+            }.sorted { $0.sku < $1.sku }
 
-            if units.isEmpty {
-                DispatchQueue.main.async {
-                    self.displayUnits = []
-                }
-                print("⚠️ Units found but no valid SKU/product_id values were available.")
-                return
-            }
-
-            DispatchQueue.main.async {
-                self.displayUnits = units
-            }
-        } withCancel: { error in
-            DispatchQueue.main.async {
-                self.displayUnits = []
-            }
-            print("❌ Failed to fetch units from Firebase: \(error.localizedDescription)")
+            DispatchQueue.main.async { self.displayUnits = units }
+        }) { [weak self] error in
+            DispatchQueue.main.async { self?.displayUnits = [] }
+            print("❌ Failed to fetch units: \(error.localizedDescription)")
         }
     }
 
     private func syncAuthenticationState() {
-        let savedUser = UserSession.shared.load()
-        let resolvedUserId = savedUser.map { String($0.partnerID) } ?? userInformation.userId
-        isAuthenticated = savedUser != nil && !resolvedUserId.isEmpty
+        let uid = firebaseUID
+        isAuthenticated = UserSession.shared.load() != nil && !uid.isEmpty
     }
-    
+
     private func loadInfoHeader() {
         let weight = userInformation.weight
         userInformation.typeUser = checkTypeUser(weightUnits: weight)
@@ -105,36 +94,53 @@ final class MyEZViewModel: ObservableObject {
         categoryName = resolvedType.uppercased()
         categoryImageName = resolvedType
         ownedUnitsText = "You own \(userInformation.weight) Pounds of inflatable"
+        ownedWeight = userInformation.weight
     }
 
     private func loadTopUsers() {
-        topUsersService.updateAndGetTopUsersSummary { [weak self] result in
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM"
+        let monthKey = formatter.string(from: Date())
+        let uid = firebaseUID
+
+        dbRef.child("leaderboards").child(monthKey).observeSingleEvent(of: .value, with: { [weak self] snapshot in
             guard let self = self else { return }
-            switch result {
-            case .success(let summary):
-                let formatter = NumberFormatter()
-                formatter.numberStyle = .decimal
-
-                let topDisplays = summary.topUsers.enumerated().map { index, entry in
-                    let medal = Self.medal(for: index)
-                    let formattedWeight = formatter.string(from: NSNumber(value: entry.weight)) ?? String(entry.weight)
-                    let weightText = "\(formattedWeight) lbs"
-                    let locationText = entry.zipCode ?? "—"
-                    return TopUserDisplay(place: index + 1, weightText: weightText, locationText: locationText, medal: medal)
-                }
-
-                let weightText = formatter.string(from: NSNumber(value: summary.currentUserWeight)) ?? "\(summary.currentUserWeight)"
-                let placeText = Self.ordinalString(summary.currentUserRank)
-                let summaryText = "Owning \(weightText) lbs of inflatables, I'm in \(placeText) place."
-
+            guard let entries = snapshot.value as? [String: Any] else {
                 DispatchQueue.main.async {
-                    self.topUsers = topDisplays
-                    self.topUsersSummaryText = summaryText
+                    self.topUsers = []
+                    self.monthlyPlace = 0
                 }
-            case .failure:
-                break
+                return
             }
-        }
+
+            let scored: [(uid: String, score: Int, display: String)] = entries.compactMap { entryUID, value in
+                guard let dict = value as? [String: Any],
+                      let score = Self.intFromAny(dict["score"]) else { return nil }
+                let display = dict["display"] as? String ?? "—"
+                return (entryUID, score, display)
+            }.sorted { $0.score > $1.score }
+
+            let numberFormatter = NumberFormatter()
+            numberFormatter.numberStyle = .decimal
+
+            let top5 = scored.prefix(5)
+            let topDisplays: [TopUserDisplay] = top5.enumerated().map { index, entry in
+                let formattedScore = numberFormatter.string(from: NSNumber(value: entry.score)) ?? "\(entry.score)"
+                return TopUserDisplay(
+                    place: index + 1,
+                    scoreText: "\(formattedScore) pts",
+                    displayText: entry.display,
+                    medal: Self.medal(for: index)
+                )
+            }
+
+            let currentPlace = (scored.firstIndex { $0.uid == uid } ?? -1) + 1
+
+            DispatchQueue.main.async {
+                self.topUsers = topDisplays
+                self.monthlyPlace = currentPlace > 0 ? currentPlace : 0
+            }
+        })
     }
 
     private static func medal(for index: Int) -> String {
@@ -157,87 +163,24 @@ final class MyEZViewModel: ObservableObject {
         default: return "\(value)th"
         }
     }
-    
+
     private func fetchLinks(for unit: UnitDisplayItem) {
         manualLink = ""
         unitLink = ""
-        dbRef.child("downloadLinks").observeSingleEvent(of: .value) { snapshot in
-            let value = snapshot.value as? NSDictionary
-            self.manualLink = value?["generalManual"] as? String ?? ""
-        }
-        dbRef.child("unitsLink").observeSingleEvent(of: .value) { snapshot in
-            let value = snapshot.value as? NSDictionary
-            self.unitLink = value?[unit.sku] as? String ?? ""
+        dbRef.child("downloadLinks").observeSingleEvent(of: .value, with: { [weak self] snapshot in
+            self?.manualLink = (snapshot.value as? NSDictionary)?["generalManual"] as? String ?? ""
+        })
+        dbRef.child("unitsLink").observeSingleEvent(of: .value, with: { [weak self] snapshot in
+            guard let self = self else { return }
+            self.unitLink = (snapshot.value as? NSDictionary)?[unit.sku] as? String ?? ""
             DispatchQueue.main.async { self.showingDownload = true }
-        }
+        })
     }
 
-    private static func extractUnitDisplayItem(from snapshot: DataSnapshot) -> UnitDisplayItem? {
-        let rawValue = snapshot.value
-        print("📦 unit snapshot [\(snapshot.key)]: \(String(describing: rawValue))")
-
-        guard let dictionary = rawValue as? [String: Any] else {
-            return nil
-        }
-
-        guard let productID = firstNonEmptyValue(
-            in: dictionary,
-            keys: ["product_id", "productId", "productID"]
-        ) else {
-            return nil
-        }
-
-        let nestedUnit = dictionary["unit"] as? [String: Any]
-        let nestedProduct = dictionary["product"] as? [String: Any]
-
-        let sku = firstNonEmptyValue(
-            in: dictionary,
-            keys: [
-                "sku",
-                "SKU",
-                "sku_unit",
-                "skuUnit",
-                "unit_sku",
-                "default_code",
-                "defaultCode",
-                "model",
-                "serial",
-                "serial_number",
-                "serialNumber"
-            ]
-        )
-        ?? nestedUnit.flatMap { firstNonEmptyValue(in: $0, keys: ["sku", "default_code", "model", "serial"]) }
-        ?? nestedProduct.flatMap { firstNonEmptyValue(in: $0, keys: ["sku", "default_code", "model"]) }
-        ?? snapshot.key
-
-        print("📦 product_id: \(productID)")
-        print("🏷️ sku text: \(sku)")
-
-        return UnitDisplayItem(
-            sku: sku,
-            productID: productID,
-            imageURL: URL(string: "https://ezinflatables.odoo.com/web/image/product.product/\(productID)/image_1024")
-        )
-    }
-
-    private static func stringify(_ value: Any) -> String? {
-        if let stringValue = value as? String, !stringValue.isEmpty {
-            return stringValue
-        }
-
-        if let numberValue = value as? NSNumber {
-            return numberValue.stringValue
-        }
-
-        return nil
-    }
-
-    private static func firstNonEmptyValue(in dictionary: [String: Any], keys: [String]) -> String? {
-        for key in keys {
-            if let value = dictionary[key].flatMap(stringify), !value.isEmpty {
-                return value
-            }
-        }
+    private static func intFromAny(_ value: Any) -> Int? {
+        if let i = value as? Int { return i }
+        if let d = value as? Double { return Int(d) }
+        if let s = value as? String { return Int(s) }
         return nil
     }
 }

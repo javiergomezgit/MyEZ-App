@@ -12,6 +12,10 @@ final class ProfileViewModel: ObservableObject {
     @Published var showingPrivacy = false
     @Published var currentUserWeight: Int = 0
     @Published var currentUserRank: Int = 0
+    @Published var editName: String = ""
+    @Published var editPhone: String = ""
+    @Published var editCompanyName: String = ""
+    @Published var editZipCode: String = ""
 
     private lazy var dbRef: DatabaseReference = Database.database().reference()
 
@@ -22,9 +26,61 @@ final class ProfileViewModel: ObservableObject {
     func refresh() {
         user = UserSession.shared.load()
         isSubscribed = userInformation.subscribed
-        loadSubscriptionState()
-        loadCurrentWeight()
+        // Seed edit fields immediately from cached values so the sheet isn't blank
+        // while the Firebase fetch is in flight.
+        editName = userInformation.name
+        editPhone = userInformation.phone
+        editCompanyName = userInformation.companyName
+        editZipCode = userInformation.zipCode
+        loadProfileFromFirebase()
         loadMonthlyPlace()
+    }
+
+    private func loadProfileFromFirebase() {
+        guard !firebaseUID.isEmpty else { return }
+        dbRef.child("users").child(firebaseUID).observeSingleEvent(of: .value, with: { [weak self] snapshot in
+            guard let self, let value = snapshot.value as? [String: Any] else { return }
+
+            let name = value["name"] as? String ?? userInformation.name
+            let phone = value["phone"] as? String ?? ""
+            let company = value["company_name"] as? String ?? ""
+            let zip = value["zipCode"] as? String ?? ""
+            let subscribed = value["subscribed"] as? Bool ?? false
+            let weight = Self.intValue(value["owned_weight"]) ?? userInformation.weight
+            let typeUser = value["typeuser"] as? String ?? value["typeUser"] as? String ?? userInformation.typeUser
+
+            DispatchQueue.main.async {
+                userInformation.name = name
+                userInformation.phone = phone
+                userInformation.companyName = company
+                userInformation.zipCode = zip
+                userInformation.subscribed = subscribed
+                userInformation.weight = weight
+                userInformation.typeUser = typeUser
+                self.isSubscribed = subscribed
+                self.currentUserWeight = weight
+                self.editName = name
+                self.editPhone = phone
+                self.editCompanyName = company
+                self.editZipCode = zip
+
+                if var cached = UserSession.shared.load() {
+                    cached = AppUser(
+                        uid: cached.uid,
+                        partnerID: cached.partnerID,
+                        name: name,
+                        email: cached.email,
+                        typeUser: typeUser,
+                        ownwedWeight: weight,
+                        companyID: cached.companyID,
+                        completedSigningUp: cached.completedSigningUp,
+                        profileImageUrl: cached.profileImageUrl
+                    )
+                    UserSession.shared.save(user: cached)
+                    self.user = cached
+                }
+            }
+        })
     }
 
     func updateSubscription(isOn: Bool) {
@@ -61,6 +117,17 @@ final class ProfileViewModel: ObservableObject {
                 userInformation.phone = trimmedPhone
                 userInformation.companyName = trimmedCompany
                 userInformation.zipCode = trimmedZip
+                self.editName = resolvedName
+                self.editPhone = trimmedPhone
+                self.editCompanyName = trimmedCompany
+                self.editZipCode = trimmedZip
+
+                // Keep the leaderboard display in sync — company name, or zip if no company
+                let display = !trimmedCompany.isEmpty ? trimmedCompany : trimmedZip
+                let monthFormatter = DateFormatter()
+                monthFormatter.dateFormat = "yyyy-MM"
+                let monthKey = monthFormatter.string(from: Date())
+                self.dbRef.child("leaderboards").child(monthKey).child(self.firebaseUID).child("display").setValue(display)
 
                 user = AppUser(
                     uid: user.uid,
@@ -147,7 +214,7 @@ final class ProfileViewModel: ObservableObject {
         formatter.dateFormat = "yyyy-MM"
         let monthKey = formatter.string(from: Date())
 
-        dbRef.child("leaderboards").child(monthKey).observeSingleEvent(of: .value) { [weak self] snapshot in
+        dbRef.child("leaderboards").child(monthKey).observeSingleEvent(of: .value, with: { [weak self] snapshot in
             guard let self = self else { return }
             guard let entries = snapshot.value as? [String: Any] else {
                 DispatchQueue.main.async { self.currentUserRank = 0 }
@@ -165,37 +232,7 @@ final class ProfileViewModel: ObservableObject {
             DispatchQueue.main.async {
                 self.currentUserRank = place > 0 ? place : 0
             }
-        }
-    }
-
-    private func loadCurrentWeight() {
-        guard !firebaseUID.isEmpty else { return }
-        dbRef.child("users").child(firebaseUID).observeSingleEvent(of: .value) { [weak self] snapshot in
-            guard let self = self else { return }
-            let value = snapshot.value as? [String: Any]
-            let weight = Self.intValue(value?["owned_weight"])
-                ?? Self.intValue(value?["weightOwned"])
-                ?? userInformation.weight
-
-            DispatchQueue.main.async {
-                userInformation.weight = weight
-                self.currentUserWeight = weight
-            }
-        }
-    }
-
-    private func loadSubscriptionState() {
-        guard !firebaseUID.isEmpty else { return }
-        dbRef.child("users").child(firebaseUID).observeSingleEvent(of: .value) { [weak self] snapshot in
-            guard let self = self else { return }
-            let value = snapshot.value as? [String: Any]
-            let subscribed = value?["subscribed"] as? Bool ?? false
-
-            DispatchQueue.main.async {
-                userInformation.subscribed = subscribed
-                self.isSubscribed = subscribed
-            }
-        }
+        })
     }
 
     private static func intValue(_ value: Any?) -> Int? {
