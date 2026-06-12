@@ -6,9 +6,7 @@ struct ProfileView: View {
     @StateObject private var viewModel = ProfileViewModel()
     @State private var showingImagePicker = false
     @State private var showingMail = false
-    @State private var showingAddresses = false
     @State private var showingMyInformation = false
-    @State private var showingOrders = false
     @State private var showingSafariURL: IdentifiableURL?
 
     var body: some View {
@@ -23,12 +21,6 @@ struct ProfileView: View {
                     profileSection("Account", rows: [
                         ProfileRow(icon: "person.text.rectangle", title: "My Information", tint: AppColors.accentRed,
                             action: { showingMyInformation = true },
-                            isEnabled: viewModel.user != nil),
-                        ProfileRow(icon: "clock", title: "Order History", tint: AppColors.accentBlue,
-                            action: { showingOrders = true },
-                            isEnabled: viewModel.user != nil),
-                        ProfileRow(icon: "mappin.and.ellipse", title: "Addresses", tint: AppColors.accentGreen,
-                            action: { showingAddresses = true },
                             isEnabled: viewModel.user != nil)
                     ])
 
@@ -64,50 +56,9 @@ struct ProfileView: View {
             .padding(.horizontal, 20)
         }
         .onAppear { viewModel.refresh() }
-        .sheet(isPresented: $showingOrders) {
-            if let url = URL(string: "https://ezinflatables.odoo.com/my/orders") {
-                NavigationStack {
-                    AuthenticatedBrowserView(url: url, title: "Order History", injectShopCSS: true, showNavButtons: true)
-                        .navigationTitle("Order History")
-                        .navigationBarTitleDisplayMode(.inline)
-                }
-            }
-        }
         .sheet(isPresented: $showingMyInformation) {
-            if let url = URL(string: "https://ezinflatables.odoo.com/my/account") {
-                NavigationStack {
-                    AuthenticatedBrowserView(
-                        url: url,
-                        title: "My Information",
-                        injectShopCSS: true,
-                        showNavButtons: true,
-                        onAccountProfileSaved: { accountInfo in
-                            viewModel.syncAccountProfileFromOdoo(accountInfo) {
-                                showingMyInformation = false
-                            }
-                        }
-                    )
-                    .navigationTitle("My Information")
-                    .navigationBarTitleDisplayMode(.inline)
-                }
-            }
-        }
-        .sheet(isPresented: $showingAddresses) {
-            if let url = URL(string: "https://ezinflatables.odoo.com/my/addresses") {
-                NavigationStack {
-                    AuthenticatedBrowserView(
-                        url: url,
-                        title: "Addresses",
-                        injectShopCSS: true,
-                        showNavButtons: true,
-                        portalSavePathPrefix: "/my/addresses",
-                        onPortalSave: {
-                            showingAddresses = false
-                        }
-                    )
-                    .navigationTitle("Addresses")
-                    .navigationBarTitleDisplayMode(.inline)
-                }
+            MyInformationView(viewModel: viewModel) {
+                showingMyInformation = false
             }
         }
         .sheet(isPresented: $showingImagePicker) {
@@ -205,7 +156,7 @@ struct ProfileView: View {
 
             HStack(spacing: 12) {
                 statCard(value: totalWeightText, label: "Total Weight (lbs)")
-                statCard(value: rankText, label: "Rank Position")
+                statCard(value: rankText, label: "Monthly Place")
             }
         }
         .padding(20)
@@ -288,10 +239,7 @@ struct ProfileView: View {
     }
 
     private var rankText: String {
-        if viewModel.currentUserRank > 0 {
-            return "#\(viewModel.currentUserRank)"
-        }
-        return "#42"
+        viewModel.currentUserRank > 0 ? "#\(viewModel.currentUserRank)" : "—"
     }
 
     private var displayRankTitle: String {
@@ -328,6 +276,99 @@ struct ProfileView: View {
             subject: "MyEZ App Contact", body: body)
     }
 }
+
+// MARK: - My Information Sheet
+
+struct MyInformationView: View {
+    @ObservedObject var viewModel: ProfileViewModel
+    let onDismiss: () -> Void
+
+    @State private var name: String = ""
+    @State private var phone: String = ""
+    @State private var companyName: String = ""
+    @State private var zipCode: String = ""
+    @State private var isSaving = false
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                SceneBackgroundView()
+
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 20) {
+                        infoField(label: "Full Name", placeholder: "John Doe", text: $name, keyboard: .default)
+                        infoField(label: "Phone", placeholder: "1234567890", text: $phone, keyboard: .phonePad)
+                        infoField(label: "Company Name", placeholder: "EZ Inflatables", text: $companyName, keyboard: .default)
+                        infoField(label: "Zip Code", placeholder: "33101", text: $zipCode, keyboard: .numbersAndPunctuation)
+
+                        Button {
+                            isSaving = true
+                            viewModel.updateProfile(name: name, phone: phone, companyName: companyName, zipCode: zipCode) {
+                                isSaving = false
+                                onDismiss()
+                            }
+                        } label: {
+                            Text(isSaving ? "Saving..." : "Save Changes")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 56)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                        .fill(AppColors.buttonBlueStart)
+                                )
+                        }
+                        .disabled(isSaving)
+                        .padding(.top, 8)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
+                    .padding(.bottom, 40)
+                }
+            }
+            .navigationTitle("My Information")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { onDismiss() }
+                        .foregroundColor(AppColors.accentRed)
+                }
+            }
+        }
+        .onAppear {
+            name = userInformation.name
+            phone = userInformation.phone
+            companyName = userInformation.companyName
+            zipCode = userInformation.zipCode
+        }
+    }
+
+    private func infoField(label: String, placeholder: String, text: Binding<String>, keyboard: UIKeyboardType) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(AppColors.textPrimary)
+
+            TextField(placeholder, text: text)
+                .keyboardType(keyboard)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(keyboard == .default ? .words : .never)
+                .foregroundColor(AppColors.textPrimary)
+                .padding(.horizontal, 16)
+                .frame(height: 56)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(AppColors.surfacePrimary)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(AppColors.borderSubtle, lineWidth: 1)
+                )
+        }
+    }
+}
+
+// MARK: - Supporting Views
 
 struct ProfileRow: View {
     let icon: String

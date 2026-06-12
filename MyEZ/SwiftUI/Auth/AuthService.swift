@@ -165,7 +165,7 @@ final class AuthService {
                 "signedIn": "myez_app",
                 "zipCode": zipCode,
                 "activeAt": now,
-                "typeUser": "minimumweight",
+                "typeuser": "minimumweight",
                 "owned_weight": 0,
                 "units": ["SKU": 1],
                 "company_name": "",
@@ -197,7 +197,7 @@ final class AuthService {
         userInformation.companyName = value["company_name"] as? String ?? ""
         userInformation.zipCode = value["zipCode"] as? String ?? ""
         userInformation.phone = value["phone"] as? String ?? ""
-        userInformation.typeUser = value["typeUser"] as? String ?? value["typeuser"] as? String ?? "minimumweight"
+        userInformation.typeUser = value["typeuser"] as? String ?? value["typeUser"] as? String ?? "minimumweight"
         userInformation.weight = value["owned_weight"] as? Int ?? 0
         userInformation.subscribed = value["subscribed"] as? Bool ?? false
         userInformation.profileImageUrl = profileImageURL
