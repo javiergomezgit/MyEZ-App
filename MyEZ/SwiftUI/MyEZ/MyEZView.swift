@@ -1,4 +1,5 @@
 import SwiftUI
+import Kingfisher
 
 struct MyEZView: View {
     @StateObject private var viewModel = MyEZViewModel()
@@ -25,7 +26,7 @@ struct MyEZView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 22) {
                     rankHeader
-                    TopUsersCard(topUsers: viewModel.topUsers, monthlyPlace: viewModel.monthlyPlace, headerColor: rankTheme.accent, title: monthTitle)
+                    TopUsersCard(topUsers: viewModel.topUsers, monthlyPlace: viewModel.monthlyPlace, isLoading: viewModel.isLoadingLeaderboard, headerColor: rankTheme.accent, title: monthTitle)
 
                     VStack(alignment: .leading, spacing: 14) {
                         Text("Your Products")
@@ -34,11 +35,19 @@ struct MyEZView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
 
                         if viewModel.isAuthenticated {
-                            LazyVGrid(columns: columns, spacing: 14) {
-                                ForEach(viewModel.displayUnits) { unit in
-                                    UnitCard(unit: unit)
-                                        .onTapGesture { viewModel.select(unit: unit) }
+                            if viewModel.displayUnits.isEmpty {
+                                Text("If your units are not appearing here, please contact us.")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(AppColors.textSecondary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            } else {
+                                LazyVGrid(columns: columns, spacing: 14) {
+                                    ForEach(viewModel.displayUnits) { unit in
+                                        UnitCard(unit: unit)
+                                            .onTapGesture { viewModel.select(unit: unit) }
+                                    }
                                 }
+                                .padding(.horizontal, 4)
                             }
                         } else {
                             SignedOutProductsMessage()
@@ -87,16 +96,14 @@ struct MyEZView: View {
 
             Spacer()
 
-            if viewModel.ownedWeight > 0 {
-                VStack(alignment: .trailing, spacing: 3) {
-                    Text("Owned")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(AppColors.textSecondary)
+            VStack(alignment: .trailing, spacing: 3) {
+                Text("Owned")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(AppColors.textSecondary)
 
-                    Text("\(viewModel.ownedWeight.formatted()) lbs")
-                        .font(.system(size: 17, weight: .heavy))
-                        .foregroundColor(AppColors.textPrimary)
-                }
+                Text("\(viewModel.ownedWeight.formatted()) lbs")
+                    .font(.system(size: 17, weight: .heavy))
+                    .foregroundColor(AppColors.textPrimary)
             }
         }
         .padding(.horizontal, 20)
@@ -119,16 +126,20 @@ struct UnitCard: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(AppColors.surfaceSecondary)
-
-                Image("logoLaunch")
-                    .resizable()
-                    .scaledToFit()
-                    .padding(14)
-            }
-            .frame(height: 158)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(AppColors.surfaceSecondary)
+                .frame(height: 158)
+                .overlay {
+                    if let url = unit.imageURL {
+                        KFImage(url)
+                            .placeholder { ProgressView() }
+                            .fade(duration: 0.3)
+                            .resizable()
+                            .scaledToFit()
+                            .scaleEffect(1.1)
+                    }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
 
             VStack(spacing: 2) {
                 Text(unit.sku)
@@ -136,18 +147,25 @@ struct UnitCard: View {
                     .foregroundColor(AppColors.textPrimary)
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                if unit.qty > 1 {
-                    Text("Qty: \(unit.qty)")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(AppColors.textSecondary)
-                }
+                Text("Qty: \(unit.qty)")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(AppColors.textSecondary)
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, minHeight: 52, alignment: .center)
             .padding(.horizontal, 8)
             .padding(.vertical, 12)
         }
-        .sceneCard(cornerRadius: 18, fillColor: AppColors.surfacePrimary)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(AppColors.surfacePrimary)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(AppColors.borderSubtle, lineWidth: 0.7)
+                )
+                .shadow(color: Color.black.opacity(0.07), radius: 6, x: 0, y: 3)
+        )
     }
 }
 
@@ -178,6 +196,7 @@ struct PlaceholderUnitCard: View {
 struct TopUsersCard: View {
     let topUsers: [MyEZViewModel.TopUserDisplay]
     let monthlyPlace: Int
+    let isLoading: Bool
     let headerColor: Color
     let title: String
 
@@ -277,8 +296,12 @@ struct TopUsersCard: View {
                         .foregroundColor(AppColors.textPrimary)
                 )
                 .multilineTextAlignment(.center)
-            } else {
+            } else if isLoading {
                 Text("Loading your rank...")
+                    .foregroundColor(AppColors.textPrimary)
+                    .multilineTextAlignment(.center)
+            } else {
+                Text("No points yet this month — make a purchase to get on the board!")
                     .foregroundColor(AppColors.textPrimary)
                     .multilineTextAlignment(.center)
             }
@@ -344,10 +367,24 @@ struct DownloadUnitSheet: View {
             SceneBackgroundView()
 
             VStack(spacing: 18) {
-                Image("logoLaunch")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 180)
+                Group {
+                    if let url = unit.imageURL {
+                        KFImage(url)
+                            .placeholder {
+                                ProgressView()
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 180)
+                            }
+                            .fade(duration: 0.3)
+                            .resizable()
+                            .scaledToFit()
+                    } else {
+                        Image("logoLaunch")
+                            .resizable()
+                            .scaledToFit()
+                    }
+                }
+                .frame(height: 180)
 
                 Text(unit.sku)
                     .font(.system(size: 22, weight: .bold))

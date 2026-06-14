@@ -162,7 +162,7 @@ final class AuthService {
             let data: [String: Any] = [
                 "name": name,
                 "email": email,
-                "signedIn": "myez_app",
+                "createdIn": "myez_app",
                 "zipCode": zipCode,
                 "activeAt": now,
                 "typeuser": "minimumweight",

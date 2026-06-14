@@ -7,6 +7,7 @@ final class MyEZViewModel: ObservableObject {
         let id = UUID()
         let sku: String
         let qty: Int
+        var imageURL: URL?
     }
 
     struct TopUserDisplay: Identifiable {
@@ -24,6 +25,7 @@ final class MyEZViewModel: ObservableObject {
     @Published var ownedUnitsText: String = "You own \(userInformation.weight) Pounds of inflatable"
     @Published var topUsers: [TopUserDisplay] = []
     @Published var monthlyPlace: Int = 0
+    @Published var isLoadingLeaderboard: Bool = true
     @Published var ownedWeight: Int = 0
     @Published var manualLink: String = ""
     @Published var unitLink: String = ""
@@ -70,12 +72,24 @@ final class MyEZViewModel: ObservableObject {
                 return
             }
 
-            let units: [UnitDisplayItem] = dict.compactMap { sku, rawQty in
+            var units: [UnitDisplayItem] = dict.compactMap { sku, rawQty in
+                guard sku != "SKU" else { return nil }
                 let qty = Self.intFromAny(rawQty) ?? 1
                 return UnitDisplayItem(sku: sku, qty: qty)
             }.sorted { $0.sku < $1.sku }
 
             DispatchQueue.main.async { self.displayUnits = units }
+
+            self.dbRef.child("product_images").observeSingleEvent(of: .value, with: { [weak self] imgSnapshot in
+                guard let self = self,
+                      let imgDict = imgSnapshot.value as? [String: Any] else { return }
+                for i in units.indices {
+                    if let urlString = imgDict[units[i].sku] as? String {
+                        units[i].imageURL = URL(string: urlString)
+                    }
+                }
+                DispatchQueue.main.async { self.displayUnits = units }
+            })
         }) { [weak self] error in
             DispatchQueue.main.async { self?.displayUnits = [] }
             print("❌ Failed to fetch units: \(error.localizedDescription)")
@@ -98,6 +112,7 @@ final class MyEZViewModel: ObservableObject {
     }
 
     private func loadTopUsers() {
+        isLoadingLeaderboard = true
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM"
         let monthKey = formatter.string(from: Date())
@@ -109,6 +124,7 @@ final class MyEZViewModel: ObservableObject {
                 DispatchQueue.main.async {
                     self.topUsers = []
                     self.monthlyPlace = 0
+                    self.isLoadingLeaderboard = false
                 }
                 return
             }
@@ -139,6 +155,7 @@ final class MyEZViewModel: ObservableObject {
             DispatchQueue.main.async {
                 self.topUsers = topDisplays
                 self.monthlyPlace = currentPlace > 0 ? currentPlace : 0
+                self.isLoadingLeaderboard = false
             }
         })
     }
