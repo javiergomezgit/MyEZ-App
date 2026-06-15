@@ -51,14 +51,12 @@ struct RankTheme {
 
     static let all: [String: RankTheme] = [
         "minimumweight": RankTheme(base: Color(hex: "191A31"), accent: Color(hex: "F4C430")),
-        "flyweight": RankTheme(base: Color(hex: "1A1D36"), accent: Color(hex: "FFD24A")),
-        "bantamweight": RankTheme(base: Color(hex: "211B32"), accent: Color(hex: "FF9F1C")),
+        "flyweight":     RankTheme(base: Color(hex: "1A1D36"), accent: Color(hex: "FFD24A")),
+        "bantamweight":  RankTheme(base: Color(hex: "211B32"), accent: Color(hex: "FF9F1C")),
         "featherweight": RankTheme(base: Color(hex: "162A2A"), accent: Color(hex: "43C463")),
-        "lightweight": RankTheme(base: Color(hex: "112A3D"), accent: Color(hex: "35C6F4")),
-        "welterweight": RankTheme(base: Color(hex: "251A3A"), accent: Color(hex: "8F5BFF")),
-        "middleweight": RankTheme(base: Color(hex: "2B1D25"), accent: Color(hex: "D28A2D")),
-        "cruiserweight": RankTheme(base: Color(hex: "2C1720"), accent: Color(hex: "F04E3E")),
-        "heavyweight": RankTheme(base: Color(hex: "16181D"), accent: Color(hex: "6E7784"))
+        "lightweight":   RankTheme(base: Color(hex: "112A3D"), accent: Color(hex: "35C6F4")),
+        "middleweight":  RankTheme(base: Color(hex: "2B1D25"), accent: Color(hex: "D28A2D")),
+        "heavyweight":   RankTheme(base: Color(hex: "16181D"), accent: Color(hex: "6E7784")),
     ]
 
     static let fallback = RankTheme(base: Color(hex: "11152D"), accent: Color(hex: "26357B"))

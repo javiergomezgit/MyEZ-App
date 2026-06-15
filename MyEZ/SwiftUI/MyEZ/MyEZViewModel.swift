@@ -64,10 +64,15 @@ final class MyEZViewModel: ObservableObject {
             return
         }
 
-        dbRef.child("users").child(firebaseUID).child("units").observeSingleEvent(of: .value, with: { [weak self] snapshot in
+        dbRef.child("users").child(firebaseUID).child("units").getData { [weak self] error, snapshot in
             guard let self = self else { return }
-
-            guard snapshot.exists(), let dict = snapshot.value as? [String: Any] else {
+            if let error = error {
+                DispatchQueue.main.async { self.displayUnits = [] }
+                print("❌ Failed to fetch units: \(error.localizedDescription)")
+                return
+            }
+            guard let snapshot = snapshot, snapshot.exists(),
+                  let dict = snapshot.value as? [String: Any] else {
                 DispatchQueue.main.async { self.displayUnits = [] }
                 return
             }
@@ -80,19 +85,16 @@ final class MyEZViewModel: ObservableObject {
 
             DispatchQueue.main.async { self.displayUnits = units }
 
-            self.dbRef.child("product_images").observeSingleEvent(of: .value, with: { [weak self] imgSnapshot in
+            self.dbRef.child("product_images").getData { [weak self] _, imgSnapshot in
                 guard let self = self,
-                      let imgDict = imgSnapshot.value as? [String: Any] else { return }
+                      let imgDict = imgSnapshot?.value as? [String: Any] else { return }
                 for i in units.indices {
                     if let urlString = imgDict[units[i].sku] as? String {
                         units[i].imageURL = URL(string: urlString)
                     }
                 }
                 DispatchQueue.main.async { self.displayUnits = units }
-            })
-        }) { [weak self] error in
-            DispatchQueue.main.async { self?.displayUnits = [] }
-            print("❌ Failed to fetch units: \(error.localizedDescription)")
+            }
         }
     }
 
@@ -102,13 +104,21 @@ final class MyEZViewModel: ObservableObject {
     }
 
     private func loadInfoHeader() {
-        let weight = userInformation.weight
-        userInformation.typeUser = checkTypeUser(weightUnits: weight)
-        let resolvedType = userInformation.typeUser.isEmpty ? "minimumweight" : userInformation.typeUser
-        categoryName = resolvedType.uppercased()
-        categoryImageName = resolvedType
-        ownedUnitsText = "You own \(userInformation.weight) Pounds of inflatable"
-        ownedWeight = userInformation.weight
+        guard !firebaseUID.isEmpty else { return }
+        dbRef.child("users").child(firebaseUID).getData { [weak self] _, snapshot in
+            guard let self = self,
+                  let dict = snapshot?.value as? [String: Any] else { return }
+            let weight = Self.intFromAny(dict["owned_weight"]) ?? userInformation.weight
+            userInformation.weight = weight
+            userInformation.typeUser = checkTypeUser(weightUnits: weight)
+            let resolvedType = userInformation.typeUser.isEmpty ? "minimumweight" : userInformation.typeUser
+            DispatchQueue.main.async {
+                self.categoryName = resolvedType.uppercased()
+                self.categoryImageName = resolvedType
+                self.ownedUnitsText = "You own \(weight) Pounds of inflatable"
+                self.ownedWeight = weight
+            }
+        }
     }
 
     private func loadTopUsers() {
@@ -118,9 +128,10 @@ final class MyEZViewModel: ObservableObject {
         let monthKey = formatter.string(from: Date())
         let uid = firebaseUID
 
-        dbRef.child("leaderboards").child(monthKey).observeSingleEvent(of: .value, with: { [weak self] snapshot in
+        dbRef.child("leaderboards").child(monthKey).getData { [weak self] _, snapshot in
             guard let self = self else { return }
-            guard let entries = snapshot.value as? [String: Any] else {
+            guard let snapshot = snapshot,
+                  let entries = snapshot.value as? [String: Any] else {
                 DispatchQueue.main.async {
                     self.topUsers = []
                     self.monthlyPlace = 0
@@ -157,7 +168,7 @@ final class MyEZViewModel: ObservableObject {
                 self.monthlyPlace = currentPlace > 0 ? currentPlace : 0
                 self.isLoadingLeaderboard = false
             }
-        })
+        }
     }
 
     private static func medal(for index: Int) -> String {
@@ -184,14 +195,14 @@ final class MyEZViewModel: ObservableObject {
     private func fetchLinks(for unit: UnitDisplayItem) {
         manualLink = ""
         unitLink = ""
-        dbRef.child("downloadLinks").observeSingleEvent(of: .value, with: { [weak self] snapshot in
-            self?.manualLink = (snapshot.value as? NSDictionary)?["generalManual"] as? String ?? ""
-        })
-        dbRef.child("unitsLink").observeSingleEvent(of: .value, with: { [weak self] snapshot in
+        dbRef.child("downloadLinks").getData { [weak self] _, snapshot in
+            self?.manualLink = (snapshot?.value as? NSDictionary)?["generalManual"] as? String ?? ""
+        }
+        dbRef.child("unitsLink").getData { [weak self] _, snapshot in
             guard let self = self else { return }
-            self.unitLink = (snapshot.value as? NSDictionary)?[unit.sku] as? String ?? ""
+            self.unitLink = (snapshot?.value as? NSDictionary)?[unit.sku] as? String ?? ""
             DispatchQueue.main.async { self.showingDownload = true }
-        })
+        }
     }
 
     private static func intFromAny(_ value: Any) -> Int? {

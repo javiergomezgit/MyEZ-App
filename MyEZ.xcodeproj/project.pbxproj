@@ -46,6 +46,7 @@
 		BAFE56C02151C44A00B3B245 /* SweetAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAFE56BF2151C44A00B3B245 /* SweetAlert.swift */; };
 		C59C0996DAEEE6F529A27976 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73C8EB5BB682575EC87A171A /* AuthService.swift */; };
 		CA0FA5F6B8A880627DF7FFE0 /* SafariView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12DA86A78C49EA20E32684B2 /* SafariView.swift */; };
+		D085E172F9AB634A7B64D9EE /* RanksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8766E01BDB7579411E35FDB3 /* RanksView.swift */; };
 		D3C681D06BD2AA399DAC946D /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 846A32C3BB81E3C29B621792 /* RootView.swift */; };
 		DF4071B59F97FE8E5B1717E4 /* WalkthroughView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99E81B62B3C4B07E49004AD /* WalkthroughView.swift */; };
 		F78DF0CAC5E40C02D4E518CA /* ContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBEE3772A077021721A278F6 /* ContactView.swift */; };
@@ -89,6 +90,7 @@
 		73C8EB5BB682575EC87A171A /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		7B95E909348334896A68F812 /* UIViewController+TopMost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIViewController+TopMost.swift"; sourceTree = "<group>"; };
 		846A32C3BB81E3C29B621792 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		8766E01BDB7579411E35FDB3 /* RanksView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RanksView.swift; sourceTree = "<group>"; };
 		BA0F56FE21B1FFEE008C5366 /* wave_load.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = wave_load.json; sourceTree = "<group>"; };
 		BA2F23432141A77D00FB6E84 /* Ailerons-Typeface.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Ailerons-Typeface.otf"; sourceTree = "<group>"; };
 		BA3C7916225FBE2700E3D0A3 /* CloudKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CloudKit.framework; path = System/Library/Frameworks/CloudKit.framework; sourceTree = SDKROOT; };
@@ -202,7 +204,7 @@
 		22BAC919284C47CE002160A0 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-					2236FF222F5F7416003478C4 /* OdooService.swift */,
+				2236FF222F5F7416003478C4 /* OdooService.swift */,
 				227067791F9A73BC00AE018A /* UserValues.swift */,
 			);
 			path = Models;
@@ -358,6 +360,7 @@
 			children = (
 				D810A485ED03241B4D419B1B /* MyEZView.swift */,
 				673BD4755D05AD7853C1F76E /* MyEZViewModel.swift */,
+				8766E01BDB7579411E35FDB3 /* RanksView.swift */,
 			);
 			path = MyEZ;
 			sourceTree = "<group>";
@@ -501,7 +504,7 @@
 				D3C681D06BD2AA399DAC946D /* RootView.swift in Sources */,
 				C59C0996DAEEE6F529A27976 /* AuthService.swift in Sources */,
 				4017F2ED6CFC7403D75E173E /* AuthViewModel.swift in Sources */,
-					4EAEDE5FE878F78E2978AA24 /* AuthFlowView.swift in Sources */,
+				4EAEDE5FE878F78E2978AA24 /* AuthFlowView.swift in Sources */,
 				47C462DDAED16DC0CF0B9CD7 /* BrowseView.swift in Sources */,
 				F78DF0CAC5E40C02D4E518CA /* ContactView.swift in Sources */,
 				6EAAC8D82F01B7210760474F /* ProfileViewModel.swift in Sources */,
@@ -531,6 +534,7 @@
 				222A0FEE2F4E2D4000F9F5A4 /* KeychainHelper.swift in Sources */,
 				2236FF252F5F74DB003478C4 /* DealsView.swift in Sources */,
 				2236FF232F5F741F003478C4 /* OdooService.swift in Sources */,
+				D085E172F9AB634A7B64D9EE /* RanksView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

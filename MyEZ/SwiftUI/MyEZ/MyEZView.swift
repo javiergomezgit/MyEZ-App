@@ -3,6 +3,7 @@ import Kingfisher
 
 struct MyEZView: View {
     @StateObject private var viewModel = MyEZViewModel()
+    @State private var showingRanks = false
 
     private let columns = [
         GridItem(.flexible(), spacing: 14),
@@ -109,6 +110,12 @@ struct MyEZView: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 18)
         .sceneCard(cornerRadius: 26, fillColor: AppColors.surfacePrimary)
+        .onTapGesture { showingRanks = true }
+        .sheet(isPresented: $showingRanks) {
+            RanksView(currentRank: viewModel.categoryImageName)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+        }
     }
 }
 

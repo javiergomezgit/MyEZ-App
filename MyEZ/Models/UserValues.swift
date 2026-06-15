@@ -79,29 +79,20 @@ var extraInfo = UserExtraInfo(completedSigningUp: false, myez : [""])
 
 
 func checkTypeUser(weightUnits: Int) -> String {
-    
-    var typeUser = ""
-    
     switch weightUnits {
-        case 0..<2500:
-            typeUser = "minimumweight"
-        case 2500..<5000:
-            typeUser = "flyweight"
-        case 5000..<7500:
-            typeUser = "bantamweight"
-        case 7500..<10000:
-            typeUser = "featherweight"
-        case 10000..<12500:
-            typeUser = "lightweight"
-        case 12500..<15001:
-            typeUser = "welterweight"
-        case 15001..<17500:
-            typeUser = "middleweight"
-        case 17500..<20000:
-            typeUser = "cruiserweight"
-        default:
-            typeUser = "heavyweight"
+    case 0..<1000:
+        return "minimumweight"
+    case 1000..<2000:
+        return "flyweight"
+    case 2000..<4000:
+        return "bantamweight"
+    case 4000..<6000:
+        return "featherweight"
+    case 6000..<9000:
+        return "lightweight"
+    case 9000..<13000:
+        return "middleweight"
+    default:
+        return "heavyweight"
     }
-    
-    return typeUser
 }
