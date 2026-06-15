@@ -123,7 +123,7 @@ struct ContactView: View {
 
 struct ChatWebView: View {
     var body: some View {
-        AuthenticatedBrowserView(url: URL(string: "https://tawk.to/chat/5e0120b527773e0d832a7141/default")!, title: "Chat", injectShopCSS: false, showNavButtons: false)
+        AuthenticatedBrowserView(url: URL(string: "https://tawk.to/chat/5e0120b527773e0d832a7141/default")!, title: "Chat", showNavButtons: false)
             .ignoresSafeArea()
     }
 }

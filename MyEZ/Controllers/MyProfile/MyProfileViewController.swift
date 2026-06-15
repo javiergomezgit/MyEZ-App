@@ -174,33 +174,12 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
     }
     
     func cleanData() {
-        
-        // 1. DELETE LOCAL INFORMATION (UserDefaults)
-        UserDefaults.standard.removeObject(forKey: "savedUserSession")
-        print("💾 Local user data deleted.")
-        
-        // 2. DELETE STORED COOKIES
+        UserSession.shared.clear()
+
         let storage = HTTPCookieStorage.shared
         if let cookies = storage.cookies {
-            for cookie in cookies {
-                storage.deleteCookie(cookie)
-            }
+            for cookie in cookies { storage.deleteCookie(cookie) }
         }
-        print("🍪 Cookies cleared.")
-        
-        // 3. SIGNOUT FROM ODOO (Network Call)
-        let odooLogoutURL = URL(string: "https://ezinflatables.odoo.com/web/session/logout")!
-        var request = URLRequest(url: odooLogoutURL)
-        request.httpMethod = "GET"
-        
-        URLSession.shared.dataTask(with: request) { _, _, _ in
-            print("🔌 Signed out from Odoo Server.")
-            
-            // 4. NAVIGATE TO LOGIN SCREEN
-            DispatchQueue.main.async {
-                // Add your code here to switch the root view back to Login
-            }
-        }.resume()
     }
     
     func updateProfileImage(newImage: UIImage){
@@ -313,14 +292,6 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
         }
     }
 
-    @IBAction func openOrderHistory(_ sender: UIButton) {
-        guard let url = URL(string: "https://ezinflatables.odoo.com/my/orders") else { return }
-
-        let vc = AuthenticatedBrowserViewController()
-        vc.configure(url: url, title: "Order History", injectShopCSS: true, showNavButtons: true)
-        navigationController?.pushViewController(vc, animated: true)
-    }
-    
     func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
         controller.dismiss(animated: true)
     }

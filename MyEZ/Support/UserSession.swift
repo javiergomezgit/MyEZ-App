@@ -9,64 +9,32 @@
 import Foundation
 
 class UserSession {
-    // Singleton instance so you can access it anywhere like 'UserSession.shared'
     static let shared = UserSession()
     private let defaults = UserDefaults.standard
     private let key = "savedUserSession"
-    
+
     private init() {}
-    
-    // MARK: - Save User
+
     func save(user: AppUser) {
         do {
-            let encoder = JSONEncoder()
-            let data = try encoder.encode(user)
+            let data = try JSONEncoder().encode(user)
             defaults.set(data, forKey: key)
-            print("💾 User saved locally!")
         } catch {
             print("❌ Failed to save user locally: \(error)")
         }
     }
-    
-    // MARK: - Load User
+
     func load() -> AppUser? {
         guard let data = defaults.data(forKey: key) else { return nil }
-        
         do {
-            let decoder = JSONDecoder()
-            let user = try decoder.decode(AppUser.self, from: data)
-            return user
+            return try JSONDecoder().decode(AppUser.self, from: data)
         } catch {
             print("❌ Failed to load user: \(error)")
             return nil
         }
     }
-    
-    func getSessionID() -> String? {
-        if let primary = defaults.string(forKey: "odooSessionID"), !primary.isEmpty {
-            return primary
-        }
-        if let fallback = defaults.string(forKey: "sessionID"), !fallback.isEmpty {
-            return fallback
-        }
-        return nil
-    }
-    
-    func saveSessionID(sessionID: String) {
-        defaults.set(sessionID, forKey: "sessionID")
-        print ("session id from odoo's cookies saved")
-    }
-    
-    // MARK: - Delete (Logout)
+
     func clear() {
         defaults.removeObject(forKey: key)
-        print("🗑️ User session cleared.")
     }
-}
-
-class SessionManager {
-    static let shared = SessionManager()
-    
-    // We store the ID here for instant access
-    var currentSessionID: String?
 }

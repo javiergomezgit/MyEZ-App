@@ -20,7 +20,7 @@ struct ClientResponse: Codable {
 
 class OdooService {
     static let shared = OdooService()
-    private let baseURL = "https://myez-odoo-api-production-87b0.up.railway.app"
+    private let baseURL = "httpssss://myez-odoo-api-production-87b0.up.railway.app"
     
     func fetchRanking() async throws -> [Client] {
         let url = URL(string: "\(baseURL)/odoo/clients/ranking")!
