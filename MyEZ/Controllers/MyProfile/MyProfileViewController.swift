@@ -206,7 +206,8 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
     func updateProfileImage(newImage: UIImage){
         guard var user = UserSession.shared.load() else { return }
         
-        let storageRef = Storage.storage().reference().child("users/\(user.partnerID)/profile/\(user.partnerID)-profileImage.jpg")
+        let uid = UserDefaults.standard.string(forKey: "firebaseUID") ?? user.email
+        let storageRef = Storage.storage().reference().child("users/\(uid)/profile/\(uid)-profileImage.jpg")
         
         //Get Image from Assets (Ensure "default_profile_asset" exists in your Assets.xcassets)
         guard let imageData = newImage.jpegData(compressionQuality: 0.7) else {
@@ -229,7 +230,7 @@ class MyProfileViewController: UITableViewController, MFMailComposeViewControlle
                 case .success(let downloadURL):
                     let urlString = downloadURL.absoluteString
                     
-                    self.dbRef.child("users").child("\(user.partnerID)").child("profile_image_url").setValue(urlString) { (dbError, _) in
+                    self.dbRef.child("users").child(uid).child("profile_image_url").setValue(urlString) { (dbError, _) in
                         if let dbError = dbError {
                             print("❌ Database Update Error: \(dbError.localizedDescription)")
                         } else {

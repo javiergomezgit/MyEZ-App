@@ -67,12 +67,10 @@ final class ProfileViewModel: ObservableObject {
                 if var cached = UserSession.shared.load() {
                     cached = AppUser(
                         uid: cached.uid,
-                        partnerID: cached.partnerID,
                         name: name,
                         email: cached.email,
                         typeUser: typeUser,
                         ownwedWeight: weight,
-                        companyID: cached.companyID,
                         completedSigningUp: cached.completedSigningUp,
                         profileImageUrl: cached.profileImageUrl
                     )
@@ -131,12 +129,10 @@ final class ProfileViewModel: ObservableObject {
 
                 user = AppUser(
                     uid: user.uid,
-                    partnerID: user.partnerID,
                     name: resolvedName,
                     email: user.email,
                     typeUser: user.typeUser,
                     ownwedWeight: user.ownwedWeight,
-                    companyID: user.companyID,
                     completedSigningUp: user.completedSigningUp,
                     profileImageUrl: user.profileImageUrl
                 )

@@ -26,25 +26,12 @@ struct UserValues {
     var showWalk: Bool
 }
 
-struct OdooUser {
-    let uid: Int //Save this to keep session alive
-    let name: String
-    let username: String // This is the email/login
-    let partnerID: Int //Save thiss to fetch orders and other information
-    let sessionID: String // The session cookie value
-    let companyID: Int
-}
-
 struct AppUser: Codable {
     let uid: Int
-    let partnerID: Int
     let name: String
     let email: String
     let typeUser: String
-    // FIXME: Typo — should be `ownedWeight`. Rename here and everywhere it is used
-    // (AuthService.saveLocally, AuthService.didFinishRegistration, UserSession encode/decode).
     let ownwedWeight: Int
-    let companyID: Int
     var completedSigningUp: Bool
     var profileImageUrl: String?
 }

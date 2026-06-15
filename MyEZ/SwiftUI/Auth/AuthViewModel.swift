@@ -25,7 +25,6 @@ final class AuthViewModel: ObservableObject {
                     let token = AppDelegate.deviceIDToken
                     if !token.isEmpty, let uid = Auth.auth().currentUser?.uid {
                         AuthService.shared.updateFCMToken(firebaseUID: uid, token: token)
-                        self?.registerFCMToken(firebaseUID: uid, token: token)
                     }
                 case .failure(let error):
                     self?.errorMessage = error.localizedDescription
@@ -76,27 +75,12 @@ final class AuthViewModel: ObservableObject {
                     let token = AppDelegate.deviceIDToken
                     if !token.isEmpty, let uid = Auth.auth().currentUser?.uid {
                         AuthService.shared.updateFCMToken(firebaseUID: uid, token: token)
-                        self?.registerFCMToken(firebaseUID: uid, token: token)
                     }
                 case .failure(let error):
                     self?.errorMessage = error.localizedDescription
                 }
             }
         }
-    }
-
-    private func registerFCMToken(firebaseUID: String, token: String) {
-        let urlString = "https://myez-odooapi-production.up.railway.app/register-token?firebase_uid=\(firebaseUID)&token=\(token)"
-        guard let url = URL(string: urlString) else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        URLSession.shared.dataTask(with: request) { _, _, error in
-            if let error = error {
-                print("❌ FCM token registration failed: \(error)")
-                return
-            }
-            print("✅ FCM token registered for \(firebaseUID)")
-        }.resume()
     }
 
     private func isValidEmail(_ email: String) -> Bool {

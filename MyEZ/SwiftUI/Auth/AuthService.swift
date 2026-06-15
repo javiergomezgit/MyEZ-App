@@ -32,7 +32,7 @@ final class AuthService {
 
     // MARK: - Sign In
 
-    func signIn(email: String, password: String, completion: @escaping (Result<OdooUser, AuthError>) -> Void) {
+    func signIn(email: String, password: String, completion: @escaping (Result<Void, AuthError>) -> Void) {
         Auth.auth().signIn(withEmail: email, password: password) { [weak self] result, error in
             if let error = error {
                 completion(.failure(.message(error.localizedDescription)))
@@ -44,8 +44,7 @@ final class AuthService {
             }
             let authName = firebaseUser.displayName ?? ""
             self?.loadOrCreateFirebaseProfile(firebaseUID: firebaseUser.uid, email: email, name: authName) {
-                let placeholder = OdooUser(uid: 0, name: authName, username: email, partnerID: 0, sessionID: "", companyID: 0)
-                completion(.success(placeholder))
+                completion(.success(()))
             }
         }
     }
@@ -216,12 +215,10 @@ final class AuthService {
 
         let localUser = AppUser(
             uid: 0,
-            partnerID: 0,
             name: name,
             email: email,
             typeUser: userInformation.typeUser.isEmpty ? "minimumweight" : userInformation.typeUser,
             ownwedWeight: userInformation.weight,
-            companyID: 0,
             completedSigningUp: false,
             profileImageUrl: profileImageURL
         )

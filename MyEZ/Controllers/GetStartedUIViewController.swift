@@ -83,7 +83,7 @@ class GetStartedUIViewController: UIViewController {
     func retrieveInfoFromUserDefaults() {
                 
         if let userInformationSession = UserSession.shared.load() {
-            userInformation.userId = String(userInformationSession.partnerID)
+            userInformation.userId = UserDefaults.standard.string(forKey: "firebaseUID") ?? userInformationSession.email
             userInformation.email = userInformationSession.email
             userInformation.name = userInformationSession.name
             userInformation.profileImageUrl = userInformationSession.profileImageUrl ?? "https://firebasestorage.googleapis.com/v0/b/myezfirebase.appspot.com/o/myez-default-profile-image.png?alt=media&token=220f60c3-4cb2-480f-a365-f7852b229857"
