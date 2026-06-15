@@ -21,6 +21,7 @@ final class AuthenticatedBrowserViewController: UIViewController, WKUIDelegate {
     private var customCSS: String?
     private var customJS: String?
     private var showNavButtons: Bool = true
+    var blockCheckoutNavigation: Bool = false
 
     func configure(
         url: URL,
@@ -28,7 +29,8 @@ final class AuthenticatedBrowserViewController: UIViewController, WKUIDelegate {
         earlyJS: String? = nil,
         customCSS: String? = nil,
         customJS: String? = nil,
-        showNavButtons: Bool = true
+        showNavButtons: Bool = true,
+        blockCheckoutNavigation: Bool = false
     ) {
         startURL = url
         pageTitleText = title
@@ -36,6 +38,7 @@ final class AuthenticatedBrowserViewController: UIViewController, WKUIDelegate {
         self.customCSS = customCSS
         self.customJS = customJS
         self.showNavButtons = showNavButtons
+        self.blockCheckoutNavigation = blockCheckoutNavigation
     }
 
     override func viewDidLoad() {
@@ -160,6 +163,17 @@ final class AuthenticatedBrowserViewController: UIViewController, WKUIDelegate {
 
 // MARK: - WKNavigationDelegate
 extension AuthenticatedBrowserViewController: WKNavigationDelegate {
+
+    func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        if blockCheckoutNavigation,
+           let url = action.request.url,
+           url.absoluteString.contains("/checkout") {
+            decisionHandler(.cancel)
+            webView.evaluateJavaScript("window.myezShowModal && window.myezShowModal();", completionHandler: nil)
+            return
+        }
+        decisionHandler(.allow)
+    }
 
     func webView(_ webView: WKWebView, didStartProvisionalNavigation _: WKNavigation!) {
         UIView.transition(with: progressView, duration: 0.33, options: [.transitionCrossDissolve], animations: {
