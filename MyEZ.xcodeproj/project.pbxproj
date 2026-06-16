@@ -109,7 +109,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		2225278D2F394CAC003032EC /* Exceptions for "MyEZ/Security" folder in "MyEZ" target */ = {
+		2225278D2F394CAC003032EC /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -119,18 +119,8 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		220724CA2F3949BD00D68B92 /* MyEZ/Security */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				2225278D2F394CAC003032EC /* Exceptions for "MyEZ/Security" folder in "MyEZ" target */,
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = MyEZ/Security;
-			sourceTree = "<group>";
-		};
+		220724CA2F3949BD00D68B92 /* MyEZ/Security */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (2225278D2F394CAC003032EC /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = MyEZ/Security; sourceTree = "<group>"; };
+		22FF73932FE1D34C008CD454 /* Walkthrough */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Walkthrough; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -321,6 +311,7 @@
 		9EF307590D273E34F98DFF7E /* SwiftUI */ = {
 			isa = PBXGroup;
 			children = (
+				22FF73932FE1D34C008CD454 /* Walkthrough */,
 				C99E81B62B3C4B07E49004AD /* WalkthroughView.swift */,
 				58DF8FB5411F777D7EA75435 /* Theme.swift */,
 				DF9C1E2A8A3C0ED16BFE1684 /* MyEZ */,
@@ -384,6 +375,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				220724CA2F3949BD00D68B92 /* MyEZ/Security */,
+				22FF73932FE1D34C008CD454 /* Walkthrough */,
 			);
 			name = MyEZ;
 			productName = MyEZ;
@@ -482,9 +474,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-MyEZ/Pods-MyEZ-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-MyEZ/Pods-MyEZ-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;

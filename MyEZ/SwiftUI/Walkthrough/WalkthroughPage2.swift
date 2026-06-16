@@ -1,0 +1,143 @@
+import SwiftUI
+
+// MARK: - Data
+
+private struct RankTier {
+    let name: String
+    let discount: Int
+    let isCurrent: Bool
+}
+
+private let rankTiers: [RankTier] = [
+    RankTier(name: "Minimumweight", discount: 0,  isCurrent: false),
+    RankTier(name: "Flyweight",     discount: 2,  isCurrent: true),
+    RankTier(name: "Bantamweight",  discount: 3,  isCurrent: false),
+]
+
+// MARK: - Sub-views
+
+private struct RankCircleView: View {
+    let rankName: String
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(AppColors.accentRed, lineWidth: 3)
+                .frame(width: 160, height: 160)
+            VStack(spacing: 4) {
+                Text("RANK")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(AppColors.textSecondary)
+                    .tracking(2)
+                Text(rankName.uppercased())
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(AppColors.textPrimary)
+            }
+        }
+    }
+}
+
+private struct RankProgressView: View {
+    let ownedLbs: Int
+    let nextLbs: Int
+    let nextRankName: String
+
+    private var progress: Double {
+        min(Double(ownedLbs) / Double(nextLbs), 1.0)
+    }
+
+    var body: some View {
+        VStack(spacing: 6) {
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .fill(AppColors.borderSubtle)
+                        .frame(height: 8)
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .fill(AppColors.accentRed)
+                        .frame(width: geo.size.width * progress, height: 8)
+                }
+            }
+            .frame(height: 8)
+
+            HStack {
+                Text("\(ownedLbs.formatted()) lb owned")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(AppColors.textPrimary)
+                Spacer()
+                Text("Next: \(nextRankName) at \(nextLbs.formatted()) lb")
+                    .font(.system(size: 13))
+                    .foregroundColor(AppColors.textSecondary)
+            }
+        }
+    }
+}
+
+private struct RankTierRow: View {
+    let tier: RankTier
+
+    var body: some View {
+        Text("\(tier.name) — \(tier.discount)%\(tier.isCurrent ? " (current)" : "")")
+            .font(.system(size: 15, weight: tier.isCurrent ? .semibold : .regular))
+            .foregroundColor(tier.isCurrent ? .white : AppColors.textSecondary)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 11)
+            .frame(maxWidth: .infinity)
+            .background(
+                Capsule()
+                    .fill(tier.isCurrent ? AppColors.accentRed : Color(hex: "F0EFEC"))
+            )
+    }
+}
+
+// MARK: - Page View
+
+struct WalkthroughPage2: View {
+    @Binding var index: Int
+    let totalPages: Int
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            Color.clear
+
+            VStack(spacing: 20) {
+                Spacer()
+
+                RankCircleView(rankName: "Flyweight")
+
+                RankProgressView(ownedLbs: 1340, nextLbs: 2000, nextRankName: "Bantamweight")
+                    .padding(.horizontal, 32)
+
+                // Active discount badge
+                Text("2% PURCHASE DISCOUNT — ACTIVE")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(AppColors.accentRed)
+                    .tracking(0.4)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 9)
+                    .background(
+                        Capsule()
+                            .fill(AppColors.accentRed.opacity(0.10))
+                    )
+
+                // Rank tiers list
+                VStack(spacing: 8) {
+                    ForEach(rankTiers, id: \.name) { tier in
+                        RankTierRow(tier: tier)
+                    }
+                }
+                .padding(.horizontal, 32)
+
+                Spacer()
+            }
+            .padding(.bottom, 200)
+
+            WalkthroughBottomPanel(
+                index: $index,
+                totalPages: totalPages,
+                title: "Your Rank. Your Discount.",
+                subtitle: "The more you own, the higher your rank and the better your pricing. Every purchase moves you closer to the next tier."
+            )
+        }
+    }
+}
