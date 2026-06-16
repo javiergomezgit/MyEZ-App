@@ -108,7 +108,7 @@ final class MyEZViewModel: ObservableObject {
         dbRef.child("users").child(firebaseUID).getData { [weak self] _, snapshot in
             guard let self = self,
                   let dict = snapshot?.value as? [String: Any] else { return }
-            let weight = Self.intFromAny(dict["owned_weight"]) ?? userInformation.weight
+            let weight = Self.intFromAny(dict["owned_weight"] as Any) ?? userInformation.weight
             userInformation.weight = weight
             userInformation.typeUser = checkTypeUser(weightUnits: weight)
             let resolvedType = userInformation.typeUser.isEmpty ? "minimumweight" : userInformation.typeUser
@@ -142,7 +142,7 @@ final class MyEZViewModel: ObservableObject {
 
             let scored: [(uid: String, score: Int, display: String)] = entries.compactMap { entryUID, value in
                 guard let dict = value as? [String: Any],
-                      let score = Self.intFromAny(dict["score"]) else { return nil }
+                      let score = Self.intFromAny(dict["score"] as Any) else { return nil }
                 let display = dict["display"] as? String ?? "—"
                 return (entryUID, score, display)
             }.sorted { $0.score > $1.score }

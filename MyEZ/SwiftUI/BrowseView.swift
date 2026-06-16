@@ -2,17 +2,47 @@ import SwiftUI
 
 struct BrowseView: View {
     @StateObject private var browserController = BrowserController()
+    @EnvironmentObject private var appState: AppState
+
+    private func drainPendingURL() {
+        guard let url = appState.pendingBrowseURL else { return }
+        browserController.navigate(to: url)
+        appState.pendingBrowseURL = nil
+    }
 
     var body: some View {
         AuthenticatedBrowserContainer(controller: browserController)
             .ignoresSafeArea()
             .background(AppColors.dark.ignoresSafeArea())
             .navigationBarHidden(true)
+            .onAppear {
+                drainPendingURL()
+            }
+            .onChange(of: appState.pendingBrowseURL) { _, url in
+                guard url != nil else { return }
+                drainPendingURL()
+            }
     }
 }
 
 final class BrowserController: ObservableObject {
     weak var viewController: AuthenticatedBrowserViewController?
+    private(set) var queuedURL: URL?
+
+    func navigate(to url: URL) {
+        if let vc = viewController {
+            vc.navigate(to: url)
+            queuedURL = nil
+        } else {
+            queuedURL = url
+        }
+    }
+
+    func drainQueue() {
+        guard let url = queuedURL, let vc = viewController else { return }
+        vc.navigate(to: url)
+        queuedURL = nil
+    }
 }
 
 struct AuthenticatedBrowserContainer: UIViewControllerRepresentable {
@@ -25,7 +55,7 @@ struct AuthenticatedBrowserContainer: UIViewControllerRepresentable {
         .mobile-menu__section--loose { display: none !important; }
         .header__action-item--account { display: none !important; }
         .rfq-btn, .rfq-collection-btn, .rfq-btn-cart,
-        [class*="rfq-btn"], [class*="grfq"], [id*="grfq"],
+        [class*="rfq-btn"], [class*="grfq"], [id*="rfq-btn"], [id*="grfq"],
         .g-rfq-button, .globo-rfq-btn { display: none !important; }
         .template-cart [name="checkout"],
         .template-cart .cart__checkout-button,
@@ -187,12 +217,23 @@ struct AuthenticatedBrowserContainer: UIViewControllerRepresentable {
                     'a[href="/checkout"]', 'a[href*="/checkout"]',
                     'shopify-accelerated-checkout-cart', '.shopify-payment-button',
                     '[data-shopify="payment-button"]', '.dynamic-checkout-cart',
-                    '[name="goto_pp"]', '[name="goto_gc"]'
+                    '[name="goto_pp"]', '[name="goto_gc"]',
+                    '.rfq-btn', '.rfq-collection-btn', '.rfq-btn-cart',
+                    '.g-rfq-button', '.globo-rfq-btn',
+                    '[class*="rfq-btn"]', '[class*="grfq"]', '[id*="rfq-btn"]', '[id*="grfq"]'
                 ];
                 sels.forEach(function(sel) {
                     try { document.querySelectorAll(sel).forEach(function(el) {
                         el.style.setProperty('display', 'none', 'important');
                     }); } catch(e) {}
+                });
+                // Hide any button/link whose visible text is "Request a Quote" (catches dynamic widgets)
+                var rfqText = 'request a quote';
+                document.querySelectorAll('button, a, [role="button"]').forEach(function(el) {
+                    if (el.id === 'myez-quote-btn') return;
+                    if ((el.textContent || '').trim().toLowerCase() === rfqText) {
+                        el.style.setProperty('display', 'none', 'important');
+                    }
                 });
             }
 
@@ -247,5 +288,6 @@ struct AuthenticatedBrowserContainer: UIViewControllerRepresentable {
 
     func updateUIViewController(_ uiViewController: AuthenticatedBrowserViewController, context: Context) {
         controller.viewController = uiViewController
+        controller.drainQueue()
     }
 }

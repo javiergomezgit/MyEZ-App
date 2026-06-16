@@ -19,9 +19,9 @@ enum AppColors {
     static let buttonBlueStart = Color(hex: "536ED7")
     static let buttonBlueEnd = Color(hex: "3F56B3")
 
-    static let accentRed = Color(hex: "DE4B43")
-    static let buttonRedStart = Color(hex: "E24E45")
-    static let buttonRedEnd = Color(hex: "D63B32")
+    static let accentRed = Color(hex: "ED1C24")
+    static let buttonRedStart = Color(hex: "ED1C24")
+    static let buttonRedEnd = Color(hex: "C8151C")
 
     static let accentGreen = Color(hex: "58BB7B")
     static let accentYellow = Color(hex: "F2BF55")

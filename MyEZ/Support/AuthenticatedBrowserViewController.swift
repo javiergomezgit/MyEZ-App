@@ -57,6 +57,10 @@ final class AuthenticatedBrowserViewController: UIViewController, WKUIDelegate {
         loadWeb()
     }
 
+    func navigate(to url: URL) {
+        webView?.load(URLRequest(url: url))
+    }
+
     deinit {
         estimatedProgressObserver?.invalidate()
     }

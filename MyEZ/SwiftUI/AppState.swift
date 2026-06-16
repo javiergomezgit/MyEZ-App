@@ -3,6 +3,8 @@ import FirebaseAuth
 
 final class AppState: ObservableObject {
     @Published var isAuthenticated: Bool
+    @Published var selectedTab: RootTab = .browse
+    @Published var pendingBrowseURL: URL?
 
     init() {
         // Use locally cached session for initial state — no Firebase call needed at init time.

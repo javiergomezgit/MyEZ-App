@@ -141,7 +141,6 @@ struct MyEZApp: App {
 
 struct RootTabView: View {
     @ObservedObject var appState: AppState
-    @State private var selectedTab: RootTab = .browse
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -149,18 +148,20 @@ struct RootTabView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(AppColors.backgroundBottom.ignoresSafeArea())
 
-            CustomTabBar(selectedTab: $selectedTab)
+            CustomTabBar(selectedTab: $appState.selectedTab)
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
+        .environmentObject(appState)
     }
 
     @ViewBuilder
     private var tabContent: some View {
-        switch selectedTab {
+        switch appState.selectedTab {
         case .browse:
             NavigationStack { BrowseView() }
         case .deals:
             NavigationStack { DealsView() }
+            .padding(.horizontal, 20)
         case .myez:
             NavigationStack {
                 MyEZView()
