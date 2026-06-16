@@ -195,8 +195,8 @@ final class MyEZViewModel: ObservableObject {
     private func fetchLinks(for unit: UnitDisplayItem) {
         manualLink = ""
         unitLink = ""
-        dbRef.child("downloadLinks").getData { [weak self] _, snapshot in
-            self?.manualLink = (snapshot?.value as? NSDictionary)?["generalManual"] as? String ?? ""
+        dbRef.child("general_urls").getData { [weak self] _, snapshot in
+            self?.manualLink = (snapshot?.value as? NSDictionary)?["manual_url"] as? String ?? ""
         }
         dbRef.child("unitsLink").getData { [weak self] _, snapshot in
             guard let self = self else { return }

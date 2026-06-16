@@ -38,7 +38,7 @@ struct ProfileView: View {
                             isEnabled: true),
                         ProfileRow(icon: "doc.text", title: "Terms & Privacy", tint: AppColors.accentSky,
                             action: {
-                                if let url = URL(string: "https://www.ezinflatables.com/pages/privacy-policy") {
+                                if let url = URL(string: "https://www.ezinflatables.com/policies/privacy-policy") {
                                     showingSafariURL = IdentifiableURL(url: url)
                                 }
                             },

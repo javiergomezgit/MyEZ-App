@@ -1,9 +1,11 @@
 import SwiftUI
 import Kingfisher
+import FirebaseDatabase
 
 struct MyEZView: View {
     @StateObject private var viewModel = MyEZViewModel()
     @State private var showingRanks = false
+    @State private var showingMonthlyPrize = false
 
     private let columns = [
         GridItem(.flexible(), spacing: 14),
@@ -27,7 +29,7 @@ struct MyEZView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 22) {
                     rankHeader
-                    TopUsersCard(topUsers: viewModel.topUsers, monthlyPlace: viewModel.monthlyPlace, isLoading: viewModel.isLoadingLeaderboard, headerColor: rankTheme.accent, title: monthTitle)
+                    TopUsersCard(topUsers: viewModel.topUsers, monthlyPlace: viewModel.monthlyPlace, isLoading: viewModel.isLoadingLeaderboard, headerColor: rankTheme.accent, title: monthTitle, onPrizeTap: { showingMonthlyPrize = true })
 
                     VStack(alignment: .leading, spacing: 14) {
                         Text("Your Products")
@@ -74,6 +76,11 @@ struct MyEZView: View {
                     .presentationDetents([.medium])
                     .presentationDragIndicator(.visible)
             }
+        }
+        .sheet(isPresented: $showingMonthlyPrize) {
+            MonthlyPrizeSheet()
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
         }
     }
 
@@ -144,6 +151,11 @@ struct UnitCard: View {
                             .resizable()
                             .scaledToFit()
                             .scaleEffect(1.1)
+                    } else {
+                        Image("logoLaunch")
+                            .resizable()
+                            .scaledToFit()
+                            .padding(24)
                     }
                 }
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -206,6 +218,7 @@ struct TopUsersCard: View {
     let isLoading: Bool
     let headerColor: Color
     let title: String
+    let onPrizeTap: () -> Void
 
     private static func ordinalString(_ value: Int) -> String {
         let tens = (value / 10) % 10
@@ -226,6 +239,16 @@ struct TopUsersCard: View {
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(.white)
                 Spacer()
+                HStack(spacing: 4) {
+                    Image(systemName: "gift.fill")
+                        .font(.system(size: 12))
+                    Text("Prize")
+                        .font(.system(size: 13, weight: .bold))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(Capsule().fill(.white.opacity(0.25)))
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 12)
@@ -241,6 +264,8 @@ struct TopUsersCard: View {
                         )
                     )
             )
+            .contentShape(Rectangle())
+            .onTapGesture { onPrizeTap() }
 
             VStack(spacing: 12) {
                 HStack {
@@ -368,6 +393,7 @@ struct DownloadUnitSheet: View {
     @State private var isLoadingLink: Bool = true
     @State private var showingLinkAlert: Bool = false
     @State private var linkErrorMessage: String?
+    @State private var showingManualPDF: Bool = false
 
     var body: some View {
         ZStack {
@@ -410,26 +436,40 @@ struct DownloadUnitSheet: View {
                     .background(AppColors.buttonBlueStart)
                     .foregroundColor(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                } else if let linkErrorMessage = linkErrorMessage {
-                    Text(linkErrorMessage)
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(AppColors.accentRed)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 14)
-                        .background(AppColors.buttonGhostFill)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                } else if linkErrorMessage != nil {
+                    Button("Contact Us") {
+                        guard let topVC = UIApplication.shared.topMostViewController() else { return }
+                        let sender = EmailSender()
+                        sender.presentEmailSender(
+                            from: topVC,
+                            to: ["javier@ezinflatables.com"],
+                            subject: "Download Request – \(unit.sku)",
+                            body: "Hi, I need the download files for my unit: \(unit.sku)."
+                        )
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(AppColors.buttonRedStart)
+                    .foregroundColor(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
 
                 Button("Download Manual") {
-                    openLink(manualLink)
+                    guard !manualLink.isEmpty else { return }
+                    showingManualPDF = true
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
-                .background(AppColors.buttonGhostFill)
-                .foregroundColor(AppColors.textPrimary)
+                .background(manualLink.isEmpty ? AppColors.buttonGhostFill.opacity(0.5) : AppColors.buttonGhostFill)
+                .foregroundColor(manualLink.isEmpty ? AppColors.textMuted : AppColors.textPrimary)
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .disabled(manualLink.isEmpty)
+                .sheet(isPresented: $showingManualPDF) {
+                    if let url = URL(string: manualLink) {
+                        SafariView(url: url)
+                            .ignoresSafeArea()
+                    }
+                }
 
                 Spacer()
             }
@@ -446,7 +486,8 @@ struct DownloadUnitSheet: View {
                 UIPasteboard.general.string = downloadLink
             }
             Button("Go to Website") {
-                openLink(unitLink)
+                guard let url = URL(string: unitLink), !unitLink.isEmpty else { return }
+                UIApplication.shared.open(url)
             }
             Button("Cancel", role: .cancel) { }
         } message: {
@@ -472,8 +513,230 @@ struct DownloadUnitSheet: View {
         isLoadingLink = false
     }
 
-    private func openLink(_ link: String) {
-        guard let url = URL(string: link), !link.isEmpty else { return }
-        UIApplication.shared.open(url)
+}
+
+
+// MARK: - Monthly Prize Sheet
+
+struct MonthlyPrizeSheet: View {
+    @StateObject private var vm = MonthlyPrizeViewModel()
+
+    private let gradientTop    = Color(hex: "FF6B6B")
+    private let gradientBottom = Color(hex: "FF9F43")
+    private var imageSide: CGFloat { UIScreen.main.bounds.width - 40 }
+
+    var body: some View {
+        ZStack {
+            // Warm festive background
+            LinearGradient(
+                colors: [gradientTop, gradientBottom],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+
+            Group {
+                if vm.isLoading {
+                    VStack(spacing: 14) {
+                        ProgressView()
+                            .tint(.white)
+                            .scaleEffect(1.4)
+                        Text("Loading prize...")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(.white.opacity(0.85))
+                    }
+                } else if let prize = vm.prize {
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 0) {
+
+                            // Hero header
+                            VStack(spacing: 6) {
+                                Text("🎁")
+                                    .font(.system(size: 52))
+                                Text("Monthly Prize")
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundColor(.white.opacity(0.8))
+                                    .kerning(2)
+                                    .textCase(.uppercase)
+                                Text("TOP BUYER WINS FREE!")
+                                    .font(.system(size: 26, weight: .heavy))
+                                    .foregroundColor(.white)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(.top, 32)
+                            .padding(.bottom, 28)
+                            .padding(.horizontal, 24)
+
+                            // White card
+                            VStack(alignment: .leading, spacing: 0) {
+
+                                // Square image
+                                ZStack {
+                                    Color(AppColors.surfaceSecondary)
+                                    if let url = prize.imageURL {
+                                        AsyncImage(url: url) { image in
+                                            image.resizable().scaledToFit()
+                                        } placeholder: {
+                                            Text(prize.emoji)
+                                                .font(.system(size: imageSide * 0.45))
+                                        }
+                                    } else {
+                                        Text(prize.emoji)
+                                            .font(.system(size: imageSide * 0.45))
+                                    }
+                                }
+                                .frame(width: imageSide, height: imageSide)
+                                .clipShape(
+                                        UnevenRoundedRectangle(
+                                            topLeadingRadius: 24,
+                                            bottomLeadingRadius: 0,
+                                            bottomTrailingRadius: 0,
+                                            topTrailingRadius: 24
+                                        )
+                                    )
+
+                                // Info area
+                                VStack(alignment: .leading, spacing: 12) {
+                                    // "FREE" badge + name row
+                                    HStack(alignment: .top, spacing: 10) {
+                                        Text("FREE")
+                                            .font(.system(size: 11, weight: .heavy))
+                                            .foregroundColor(.white)
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 4)
+                                            .background(
+                                                Capsule()
+                                                    .fill(LinearGradient(
+                                                        colors: [gradientTop, gradientBottom],
+                                                        startPoint: .leading, endPoint: .trailing
+                                                    ))
+                                            )
+
+                                        Text(prize.emoji + "  " + prize.name)
+                                            .font(.system(size: 18, weight: .bold))
+                                            .foregroundColor(AppColors.textPrimary)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+
+                                    // Subtitle
+                                    if let subtitle = prize.subtitle {
+                                        Text(subtitle)
+                                            .font(.system(size: 14))
+                                            .foregroundColor(AppColors.textSecondary)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+
+                                    // Expiry
+                                    if let expiry = prize.expiryLabel {
+                                        HStack(spacing: 5) {
+                                            Image(systemName: "clock")
+                                                .font(.system(size: 12))
+                                            Text(expiry)
+                                                .font(.system(size: 13, weight: .medium))
+                                        }
+                                        .foregroundColor(prize.isExpiringSoon ? AppColors.accentRed : AppColors.textMuted)
+                                    }
+                                }
+                                .padding(20)
+                            }
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                            .shadow(color: Color.black.opacity(0.12), radius: 20, x: 0, y: 8)
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 40)
+                        }
+                    }
+                } else {
+                    VStack(spacing: 14) {
+                        Text("🎁")
+                            .font(.system(size: 52))
+                        Text("No prize announced yet.\nCheck back soon!")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(.white.opacity(0.85))
+                            .multilineTextAlignment(.center)
+                    }
+                }
+            }
+        }
+        .onAppear { vm.load() }
+    }
+}
+
+private class MonthlyPrizeViewModel: ObservableObject {
+    @Published var prize: PrizeItem?
+    @Published var isLoading = true
+
+    struct PrizeItem {
+        let name: String
+        let subtitle: String?
+        let emoji: String
+        let imageURL: URL?
+        let expiresAt: Date?
+
+        var expiryLabel: String? {
+            guard let date = expiresAt else { return nil }
+            let df = DateFormatter()
+            df.dateStyle = .medium
+            df.timeStyle = .none
+            return "Ends \(df.string(from: date))"
+        }
+
+        var isExpiringSoon: Bool {
+            guard let date = expiresAt else { return false }
+            return date.timeIntervalSinceNow < 3 * 24 * 3600
+        }
+    }
+
+    func load() {
+        Database.database().reference().child("monthly_prize")
+            .observeSingleEvent(of: .value) { [weak self] snapshot in
+                let item = Self.parsePrize(from: snapshot)
+                DispatchQueue.main.async {
+                    self?.prize = item
+                    self?.isLoading = false
+                }
+            }
+    }
+
+    private static func parsePrize(from snapshot: DataSnapshot) -> PrizeItem? {
+        if let dict = snapshot.value as? [String: Any], dict["name"] != nil {
+            return makePrizeItem(from: dict)
+        }
+        for case let child as DataSnapshot in snapshot.children {
+            if let dict = child.value as? [String: Any] {
+                return makePrizeItem(from: dict)
+            }
+        }
+        return nil
+    }
+
+    private static func makePrizeItem(from dict: [String: Any]) -> PrizeItem? {
+        let name = (dict["name"] as? String ?? dict["title"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return nil }
+        let subtitle = dict["subtitle"] as? String ?? dict["description"] as? String
+        let emoji = dict["emoji"] as? String ?? "🎁"
+        let imageURLString = dict["imageURL"] as? String ?? dict["imageUrl"] as? String ?? dict["image_url"] as? String
+        let imageURL = imageURLString.flatMap(URL.init(string:))
+        let expiresAt = dateValue(in: dict, keys: ["expiresAt", "expires_at", "expiry", "expiration"])
+        return PrizeItem(name: name, subtitle: subtitle, emoji: emoji, imageURL: imageURL, expiresAt: expiresAt)
+    }
+
+    private static func dateValue(in dict: [String: Any], keys: [String]) -> Date? {
+        for key in keys {
+            if let ts = dict[key] as? Double {
+                let s = ts > 1_000_000_000_00 ? ts / 1000.0 : ts
+                return Date(timeIntervalSince1970: s)
+            }
+            if let ts = dict[key] as? NSNumber {
+                let s = ts.doubleValue > 1_000_000_000_00 ? ts.doubleValue / 1000.0 : ts.doubleValue
+                return Date(timeIntervalSince1970: s)
+            }
+            if let str = dict[key] as? String {
+                if let d = ISO8601DateFormatter().date(from: str) { return d }
+                let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
+                if let d = df.date(from: str) { return d }
+            }
+        }
+        return nil
     }
 }
