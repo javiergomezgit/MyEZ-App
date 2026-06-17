@@ -589,7 +589,7 @@
 				CODE_SIGN_ENTITLEMENTS = MyEZ/Extras/MyEZ.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.0.0;
+				CURRENT_PROJECT_VERSION = 1.0.1;
 				DEVELOPMENT_TEAM = SJK4QJY486;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -629,7 +629,7 @@
 				CODE_SIGN_ENTITLEMENTS = MyEZ/Extras/MyEZ.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1.0.0;
+				CURRENT_PROJECT_VERSION = 1.0.1;
 				DEVELOPMENT_TEAM = SJK4QJY486;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
