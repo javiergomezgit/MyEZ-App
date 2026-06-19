@@ -25,6 +25,7 @@ final class MyEZViewModel: ObservableObject {
     @Published var ownedUnitsText: String = "You own \(userInformation.weight) Pounds of inflatable"
     @Published var topUsers: [TopUserDisplay] = []
     @Published var monthlyPlace: Int = 0
+    @Published var monthlyScore: Int = 0
     @Published var isLoadingLeaderboard: Bool = true
     @Published var ownedWeight: Int = 0
     @Published var manualLink: String = ""
@@ -161,11 +162,14 @@ final class MyEZViewModel: ObservableObject {
                 )
             }
 
-            let currentPlace = (scored.firstIndex { $0.uid == uid } ?? -1) + 1
+            let currentIndex = scored.firstIndex { $0.uid == uid }
+            let currentPlace = currentIndex.map { $0 + 1 } ?? 0
+            let currentScore = currentIndex.map { scored[$0].score } ?? 0
 
             DispatchQueue.main.async {
                 self.topUsers = topDisplays
-                self.monthlyPlace = currentPlace > 0 ? currentPlace : 0
+                self.monthlyPlace = currentPlace
+                self.monthlyScore = currentScore
                 self.isLoadingLeaderboard = false
             }
         }

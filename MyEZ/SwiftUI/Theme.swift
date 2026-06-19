@@ -1,39 +1,39 @@
 import SwiftUI
 
 enum AppColors {
-    static let backgroundTop = Color(hex: "F8F7F5")
-    static let backgroundBottom = Color(hex: "F2F1EE")
+    static let backgroundTop = Color("backgroundTop")
+    static let backgroundBottom = Color("backgroundBottom")
 
-    static let surfacePrimary = Color.white
-    static let surfaceSecondary = Color(hex: "F7F7F4")
-    static let surfaceElevated = Color(hex: "FCFBF9")
+    static let surfacePrimary = Color("surfacePrimary")
+    static let surfaceSecondary = Color("surfaceSecondary")
+    static let surfaceElevated = Color("surfaceElevated")
 
-    static let borderSubtle = Color(hex: "E7E5E1")
-    static let borderStrong = Color(hex: "D8D5CF")
+    static let borderSubtle = Color("borderSubtle")
+    static let borderStrong = Color("borderStrong")
 
-    static let textPrimary = Color(hex: "2E3440")
-    static let textSecondary = Color(hex: "7C8594")
-    static let textMuted = Color(hex: "A0A8B4")
+    static let textPrimary = Color("textPrimary")
+    static let textSecondary = Color("textSecondary")
+    static let textMuted = Color("textMuted")
 
-    static let accentBlue = Color(hex: "4F6FD9")
-    static let buttonBlueStart = Color(hex: "536ED7")
-    static let buttonBlueEnd = Color(hex: "3F56B3")
+    static let accentBlue = Color("accentBlue")
+    static let buttonBlueStart = Color("buttonBlueStart")
+    static let buttonBlueEnd = Color("buttonBlueEnd")
 
-    static let accentRed = Color(hex: "ED1C24")
-    static let buttonRedStart = Color(hex: "ED1C24")
-    static let buttonRedEnd = Color(hex: "C8151C")
+    static let accentRed = Color("accentRed")
+    static let buttonRedStart = Color("buttonRedStart")
+    static let buttonRedEnd = Color("buttonRedEnd")
 
-    static let accentGreen = Color(hex: "58BB7B")
-    static let accentYellow = Color(hex: "F2BF55")
-    static let accentPurple = Color(hex: "A56BFF")
-    static let accentSky = Color(hex: "70CDE7")
+    static let accentGreen = Color("accentGreen")
+    static let accentYellow = Color("accentYellow")
+    static let accentPurple = Color("accentPurple")
+    static let accentSky = Color("accentSky")
 
-    static let buttonGhostFill = Color(hex: "F3F2EF")
+    static let buttonGhostFill = Color("buttonGhostFill")
 
     /// Legacy aliases kept to minimize churn while views migrate to the new names.
     static let primary = accentRed
     static let secondary = buttonBlueEnd
-    static let accent = Color(hex: "DAE401")
+    static let accent = Color("accentLegacy")
     static let light = textPrimary
     static let dark = textPrimary
     static let sceneBackgroundTop = backgroundTop
@@ -50,16 +50,16 @@ struct RankTheme {
     let accent: Color
 
     static let all: [String: RankTheme] = [
-        "minimumweight": RankTheme(base: Color(hex: "191A31"), accent: Color(hex: "F4C430")),
-        "flyweight":     RankTheme(base: Color(hex: "1A1D36"), accent: Color(hex: "FFD24A")),
-        "bantamweight":  RankTheme(base: Color(hex: "211B32"), accent: Color(hex: "FF9F1C")),
-        "featherweight": RankTheme(base: Color(hex: "162A2A"), accent: Color(hex: "43C463")),
-        "lightweight":   RankTheme(base: Color(hex: "112A3D"), accent: Color(hex: "35C6F4")),
-        "middleweight":  RankTheme(base: Color(hex: "2B1D25"), accent: Color(hex: "D28A2D")),
-        "heavyweight":   RankTheme(base: Color(hex: "16181D"), accent: Color(hex: "6E7784")),
+        "minimumweight": RankTheme(base: Color("rankMinimumweightBase"), accent: Color("rankMinimumweightAccent")),
+        "flyweight":     RankTheme(base: Color("rankFlyweightBase"),     accent: Color("rankFlyweightAccent")),
+        "bantamweight":  RankTheme(base: Color("rankBantamweightBase"),  accent: Color("rankBantamweightAccent")),
+        "featherweight": RankTheme(base: Color("rankFeatherweightBase"), accent: Color("rankFeatherweightAccent")),
+        "lightweight":   RankTheme(base: Color("rankLightweightBase"),   accent: Color("rankLightweightAccent")),
+        "middleweight":  RankTheme(base: Color("rankMiddleweightBase"),  accent: Color("rankMiddleweightAccent")),
+        "heavyweight":   RankTheme(base: Color("rankHeavyweightBase"),   accent: Color("rankHeavyweightAccent")),
     ]
 
-    static let fallback = RankTheme(base: Color(hex: "11152D"), accent: Color(hex: "26357B"))
+    static let fallback = RankTheme(base: Color("rankFallbackBase"), accent: Color("rankFallbackAccent"))
 
     static func forRank(_ rank: String) -> RankTheme {
         all[rank.lowercased()] ?? fallback

@@ -209,14 +209,14 @@ struct CustomTabBar: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(Color.white.opacity(0.97))
-                .frame(height: barHeight)
+            AppColors.surfacePrimary
+                .ignoresSafeArea(edges: .bottom)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 28, style: .continuous)
-                        .stroke(AppColors.borderSubtle, lineWidth: 1)
+                    Rectangle()
+                        .frame(height: 0.5)
+                        .foregroundColor(AppColors.borderSubtle),
+                    alignment: .top
                 )
-                .shadow(color: Color.black.opacity(0.08), radius: 16, x: 0, y: 8)
 
             HStack(spacing: 22) {
                 TabBarButton(systemImage: "storefront", tab: .browse, selectedTab: $selectedTab)
@@ -226,9 +226,9 @@ struct CustomTabBar: View {
                 TabBarButton(systemImage: "person", tab: .profile, selectedTab: $selectedTab)
             }
             .padding(.horizontal, 10)
+            .frame(height: barHeight)
         }
-        .padding(.horizontal, 20)
-        .padding(.bottom, -10)
+        .frame(height: barHeight)
     }
 }
 
@@ -260,7 +260,7 @@ struct TabBarButton: View {
                 }
                 Image(systemName: systemImage)
                     .font(.system(size: 20, weight: .regular))
-                    .foregroundColor(isSelected ? .white : AppColors.textMuted)
+                    .foregroundColor(isSelected ? .white : AppColors.textSecondary)
             }
             .frame(width: 58, height: 50)
         }
@@ -288,7 +288,7 @@ struct MyEZTabButton: View {
                         )
                 } else {
                     Circle()
-                        .fill(Color.white)
+                        .fill(AppColors.surfacePrimary)
                         .overlay(
                             Circle()
                                 .stroke(AppColors.borderSubtle, lineWidth: 1)

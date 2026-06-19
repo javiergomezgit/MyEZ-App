@@ -9,47 +9,111 @@
 import SwiftUI
 import FirebaseDatabase
 
+// MARK: - Tab
+
+private enum DealsTab: CaseIterable {
+    case points, deals
+
+    var label: String {
+        switch self {
+        case .points: return "🎯 Points"
+        case .deals:  return "💰 Deals"
+        }
+    }
+}
+
+// MARK: - Main View
+
 struct DealsView: View {
-    @StateObject private var viewModel = DealsViewModel()
+    @StateObject private var dealsVM  = DealsViewModel(path: "dealsLinks")
+    @StateObject private var pointsVM = DealsViewModel(path: "pointsActivities")
     @EnvironmentObject private var appState: AppState
 
-    var body: some View {
-        content
-            .background { SceneBackgroundView() }
-            .toolbar(.hidden, for: .navigationBar)
-            .task {
-                viewModel.loadDeals()
-            }
+    @State private var selectedTab: DealsTab = .points
+    @State private var blogItem: IdentifiableURL?
+
+    private var activeVM: DealsViewModel {
+        selectedTab == .deals ? dealsVM : pointsVM
     }
 
-    @ViewBuilder
-    private var content: some View {
-        if viewModel.isLoading {
-            ProgressView("Loading deals...")
-                .tint(.white)
-                .foregroundColor(.white)
+    var body: some View {
+        VStack(spacing: 0) {
+            tabPicker
                 .padding(.horizontal, 20)
-        } else if let errorMessage = viewModel.errorMessage {
+                .padding(.top, 16)
+                .padding(.bottom, 8)
+
+            tabContent
+        }
+        .background { SceneBackgroundView() }
+        .toolbar(.hidden, for: .navigationBar)
+        .task { dealsVM.load(); pointsVM.load() }
+        .sheet(item: $blogItem) { item in
+            SafariView(url: item.url).ignoresSafeArea()
+        }
+    }
+
+    // MARK: Tab Picker
+
+    private var tabPicker: some View {
+        HStack(spacing: 0) {
+            ForEach(DealsTab.allCases, id: \.self) { tab in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { selectedTab = tab }
+                } label: {
+                    Text(tab.label)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(selectedTab == tab ? .white : AppColors.textSecondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(selectedTab == tab ? AppColors.buttonRedStart : Color.clear)
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(4)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(AppColors.surfaceSecondary)
+        )
+    }
+
+    // MARK: Tab Content
+
+    @ViewBuilder
+    private var tabContent: some View {
+        if activeVM.isLoading {
+            Spacer()
+            ProgressView("Loading...")
+                .tint(AppColors.textPrimary)
+                .foregroundColor(AppColors.textPrimary)
+            Spacer()
+        } else if let errorMessage = activeVM.errorMessage {
+            Spacer()
             DealsFeedbackView(
-                title: "Unable to load deals",
+                title: "Unable to load \(selectedTab == .points ? "points" : "deals")",
                 message: errorMessage,
                 buttonTitle: "Try Again",
-                action: viewModel.loadDeals
+                action: activeVM.load
             )
             .padding(.horizontal, 28)
+            Spacer()
         } else {
-            ScrollView {
+            ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
-                    header
+                    Text(selectedTab.label)
+                        .font(.system(size: 30, weight: .bold))
+                        .foregroundColor(AppColors.textPrimary)
 
-                    if viewModel.deals.isEmpty {
-                        DealsEmptyView(onRefresh: viewModel.loadDeals)
+                    if activeVM.deals.isEmpty {
+                        DealsEmptyView(tab: selectedTab == .points ? "Points" : "Deals", onRefresh: activeVM.load)
                     } else {
                         VStack(spacing: 16) {
-                            ForEach(viewModel.deals) { deal in
-                                DealCard(deal: deal) {
-                                    handleAction(for: deal)
-                                }
+                            ForEach(activeVM.deals) { deal in
+                                DealCard(deal: deal) { handleAction(for: deal) }
                             }
                         }
                     }
@@ -58,16 +122,8 @@ struct DealsView: View {
                 .padding(.bottom, 100)
             }
             .padding(.horizontal, 20)
-            .refreshable {
-                viewModel.loadDeals()
-            }
+            .refreshable { activeVM.load() }
         }
-    }
-
-    private var header: some View {
-        Text("Deals")
-            .font(.system(size: 30, weight: .bold))
-            .foregroundColor(AppColors.textPrimary)
     }
 
     private func handleAction(for deal: DealsViewModel.DealItem) {
@@ -76,25 +132,140 @@ struct DealsView: View {
             guard let url = URL(string: deal.actionValue) else { return }
             appState.pendingBrowseURL = url
             appState.selectedTab = .browse
+
         case "call_now":
             let digits = deal.actionValue.filter(\.isNumber)
             guard !digits.isEmpty, let url = URL(string: "tel://\(digits)") else { return }
             UIApplication.shared.open(url)
+
         case "email_now":
             guard let topVC = UIApplication.shared.topMostViewController() else { return }
             let sender = EmailSender()
-            sender.presentEmailSender(
-                from: topVC,
-                to: [deal.actionValue],
-                subject: "MyEZ – \(deal.name)",
-                body: ""
-            )
+            sender.presentEmailSender(from: topVC, to: [deal.actionValue],
+                                      subject: "MyEZ – \(deal.name)", body: "")
+
         case "text_now":
             let digits = deal.actionValue.filter(\.isNumber)
             guard !digits.isEmpty, let url = URL(string: "sms:\(digits)") else { return }
             UIApplication.shared.open(url)
+
+        case "blog_reading":
+            let raw = deal.actionValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            let urlString = raw.hasPrefix("http") ? raw : "https://\(raw)"
+            guard let url = URL(string: urlString) else { return }
+            blogItem = IdentifiableURL(url: url)
+            recordActivity(for: deal)
+
+        case "buy_product":
+            openBuyProduct(deal: deal)
+            recordActivity(for: deal)
+
+        case "post_sharing":
+            sharePost(deal: deal)
+
+        case "social_sharing":
+            shareSocial(deal: deal)
+
+        case "share_anything":
+            shareAnything(deal: deal)
+
         default:
             break
+        }
+    }
+
+    private func sharePost(deal: DealsViewModel.DealItem) {
+        let message = "🔥 Just read this from EZ Inflatables — \(deal.name). Check it out!"
+        let items: [Any] = [message, URL(string: deal.actionValue)].compactMap { $0 }
+        presentShareSheet(items: items, deal: deal)
+    }
+
+    private func shareSocial(deal: DealsViewModel.DealItem) {
+        let message = "🔥 Just read this from EZ Inflatables — \(deal.name). Check it out!"
+        let items: [Any] = [message, URL(string: deal.actionValue)].compactMap { $0 }
+        presentShareSheet(items: items, deal: deal)
+    }
+
+    private func shareAnything(deal: DealsViewModel.DealItem) {
+        let message = "🎉 Sharing this with you from EZ Inflatables — \(deal.name). Don't miss it!"
+        let items: [Any] = [message, URL(string: deal.actionValue)].compactMap { $0 }
+        presentShareSheet(items: items, deal: deal)
+    }
+
+    private func presentShareSheet(items: [Any], deal: DealsViewModel.DealItem) {
+        guard let topVC = UIApplication.shared.topMostViewController() else { return }
+        let ac = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        if let popover = ac.popoverPresentationController {
+            popover.sourceView = topVC.view
+            popover.sourceRect = CGRect(x: topVC.view.bounds.midX, y: topVC.view.bounds.midY, width: 0, height: 0)
+            popover.permittedArrowDirections = []
+        }
+        ac.completionWithItemsHandler = { _, completed, _, _ in
+            guard completed else { return }
+            recordActivity(for: deal)
+        }
+        topVC.present(ac, animated: true)
+    }
+
+    // Constructs a Shopify discount URL: /discount/{code}?redirect={product_path}
+    // This saves the coupon to the browser session and redirects to the product page.
+    private func openBuyProduct(deal: DealsViewModel.DealItem) {
+        let open: (String) -> Void = { code in
+            let raw = deal.actionValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let productURL = URL(string: raw.hasPrefix("http") ? raw : "https://\(raw)"),
+                  let host = productURL.host,
+                  let scheme = productURL.scheme else { return }
+            let redirect = productURL.path + (productURL.query.map { "?\($0)" } ?? "")
+            var comps = URLComponents()
+            comps.scheme = scheme
+            comps.host = host
+            comps.path = "/discount/\(code)"
+            comps.queryItems = [URLQueryItem(name: "redirect", value: redirect)]
+            guard let finalURL = comps.url else { return }
+            DispatchQueue.main.async {
+                appState.pendingBrowseURL = finalURL
+                appState.selectedTab = .browse
+            }
+        }
+
+        if let code = deal.couponCode, !code.isEmpty {
+            open(code)
+        } else {
+            Database.database().reference().child("coupon_code")
+                .observeSingleEvent(of: .value) { snapshot in
+                    let code = snapshot.value as? String ?? ""
+                    open(code)
+                }
+        }
+    }
+
+    private func recordActivity(for deal: DealsViewModel.DealItem) {
+        let uid = UserDefaults.standard.string(forKey: "firebaseUID") ?? ""
+        guard !uid.isEmpty else { return }
+
+        let db = Database.database().reference()
+        let transactionRef = db.child("users").child(uid)
+            .child("pointTransactions").child(deal.id)
+
+        // Only record once — if the activity ID already exists, skip
+        transactionRef.observeSingleEvent(of: .value) { snapshot in
+            guard !snapshot.exists() else { return }
+
+            let data: [String: Any] = [
+                "doneDate": Date().timeIntervalSince1970,
+                "score": deal.score,
+                "type": deal.actionType
+            ]
+            transactionRef.setValue(data)
+
+            guard deal.score > 0 else { return }
+
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM"
+            let monthKey = formatter.string(from: Date())
+
+            db.child("leaderboards").child(monthKey).child(uid).child("score")
+                .setValue(ServerValue.increment(NSNumber(value: deal.score)))
         }
     }
 }
@@ -107,37 +278,29 @@ private struct DealCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Image — ZStack owns the frame; AsyncImage fills it via overlay
-            ZStack(alignment: .topTrailing) {
-                Color(AppColors.surfaceSecondary)
-                    .overlay(
-                        AsyncImage(url: deal.imageURL) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image.resizable().scaledToFill()
-                            case .failure:
-                                fallbackImage
-                            case .empty:
-                                ZStack {
-                                    AppColors.surfaceSecondary
-                                    ProgressView().tint(AppColors.buttonRedStart)
-                                }
-                            @unknown default:
-                                fallbackImage
+            Color(AppColors.surfaceSecondary)
+                .overlay(
+                    AsyncImage(url: deal.imageURL) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image.resizable().scaledToFill()
+                        case .failure:
+                            fallbackImage
+                        case .empty:
+                            ZStack {
+                                AppColors.surfaceSecondary
+                                ProgressView().tint(AppColors.buttonRedStart)
                             }
+                        @unknown default:
+                            fallbackImage
                         }
-                    )
-                    .clipped()
-
-                Text(deal.emoji)
-                    .font(.system(size: 30))
-                    .padding(8)
-            }
+                    }
+                )
+                .clipped()
             .frame(maxWidth: .infinity)
             .frame(height: 190)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
-            // Row 1: title (left) | expiry pill (right)
             HStack(alignment: .top, spacing: 8) {
                 Text(deal.name)
                     .font(.system(size: 18, weight: .bold))
@@ -151,7 +314,6 @@ private struct DealCard: View {
                 }
             }
 
-            // Row 2: subtitle (left) | countdown (right)
             HStack(alignment: .top, spacing: 8) {
                 if let subtitle = deal.subtitle {
                     Text(subtitle)
@@ -172,32 +334,37 @@ private struct DealCard: View {
                 }
             }
 
-            // CTA button — full width
-            Button(action: action) {
-                HStack(spacing: 6) {
-                    Text(deal.buttonTitle)
-                        .font(.system(size: 15, weight: .semibold))
-                    Image(systemName: deal.buttonIcon)
-                        .font(.system(size: 13, weight: .bold))
+            HStack(spacing: 12) {
+                Button(action: action) {
+                    HStack(spacing: 6) {
+                        Text(deal.buttonTitle)
+                            .font(.system(size: 15, weight: .semibold))
+                        Image(systemName: deal.buttonIcon)
+                            .font(.system(size: 13, weight: .bold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 13)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        LinearGradient(
+                            colors: deal.isPointsActivity
+                                ? [AppColors.buttonBlueStart, AppColors.buttonBlueEnd]
+                                : [AppColors.buttonRedStart, AppColors.buttonRedEnd],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ),
+                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    )
                 }
-                .foregroundColor(.white)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 13)
-                .frame(maxWidth: .infinity)
-                .background(
-                    LinearGradient(
-                        colors: [AppColors.buttonRedStart, AppColors.buttonRedEnd],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    ),
-                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-                )
+                .buttonStyle(.plain)
+
             }
-            .buttonStyle(.plain)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sceneCard(cornerRadius: 22, fillColor: .white)
+        .sceneCard(cornerRadius: 22, fillColor: AppColors.surfacePrimary)
     }
 
     private var fallbackImage: some View {
@@ -236,6 +403,7 @@ private struct ExpiryPill: View {
 // MARK: - Empty State
 
 private struct DealsEmptyView: View {
+    let tab: String
     let onRefresh: () -> Void
 
     var body: some View {
@@ -250,7 +418,7 @@ private struct DealsEmptyView: View {
             }
 
             VStack(spacing: 8) {
-                Text("No Active Deals")
+                Text("No Active \(tab)")
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(AppColors.textPrimary)
 
@@ -281,7 +449,7 @@ private struct DealsEmptyView: View {
     }
 }
 
-// MARK: - Error / Feedback View
+// MARK: - Feedback View
 
 private struct DealsFeedbackView: View {
     let title: String
@@ -334,32 +502,46 @@ final class DealsViewModel: ObservableObject {
         let subtitle: String?
         let sort: Int
         let expiresAt: Date?
+        let score: Int
+        let couponCode: String?
 
         var buttonTitle: String {
             switch normalizedActionType {
-            case "go_to_link":  return "View Offer"
-            case "call_now":    return "Call Now"
-            case "email_now":   return "Email Us"
-            case "text_now":    return "Text Us"
-            case "add_to_cart": return "Add to Cart"
-            default:            return "View Offer"
+            case "go_to_link":      return "View Offer"
+            case "call_now":        return "Call Now"
+            case "email_now":       return "Email Us"
+            case "text_now":        return "Text Us"
+            case "add_to_cart":     return "Add to Cart"
+            case "blog_reading":    return "Read More"
+            case "post_sharing":    return "Share Post"
+            case "social_sharing":  return "Share Social Media"
+            case "buy_product":     return "Buy Now"
+            case "share_anything":  return "Share"
+            default:                return "View Offer"
             }
         }
 
         var buttonIcon: String {
             switch normalizedActionType {
-            case "go_to_link":  return "arrow.up.right"
-            case "call_now":    return "phone.fill"
-            case "email_now":   return "envelope.fill"
-            case "text_now":    return "message.fill"
-            case "add_to_cart": return "cart.badge.plus"
-            default:            return "tag.fill"
+            case "go_to_link":      return "arrow.up.right"
+            case "call_now":        return "phone.fill"
+            case "email_now":       return "envelope.fill"
+            case "text_now":        return "message.fill"
+            case "add_to_cart":     return "cart.badge.plus"
+            case "blog_reading":    return "book.fill"
+            case "post_sharing":    return "square.and.arrow.up"
+            case "social_sharing":  return "person.2.fill"
+            case "buy_product":     return "bag.fill"
+            case "share_anything":  return "square.and.arrow.up"
+            default:                return "tag.fill"
             }
         }
 
         var normalizedActionType: String {
             actionType.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         }
+
+        var isPointsActivity: Bool { score > 0 }
 
         var expiryLabel: String? {
             guard let date = expiresAt else { return nil }
@@ -375,13 +557,9 @@ final class DealsViewModel: ObservableObject {
             guard seconds > 0 else { return nil }
             let days = Int(seconds / 86400)
             let hours = Int(seconds.truncatingRemainder(dividingBy: 86400) / 3600)
-            if days > 0 {
-                return "\(days) day\(days == 1 ? "" : "s"), \(hours) hr\(hours == 1 ? "" : "s")"
-            }
+            if days > 0 { return "\(days) day\(days == 1 ? "" : "s"), \(hours) hr\(hours == 1 ? "" : "s")" }
             let minutes = Int(seconds.truncatingRemainder(dividingBy: 3600) / 60)
-            if hours > 0 {
-                return "\(hours) hr\(hours == 1 ? "" : "s"), \(minutes) min"
-            }
+            if hours > 0 { return "\(hours) hr\(hours == 1 ? "" : "s"), \(minutes) min" }
             return "\(minutes) min"
         }
 
@@ -396,32 +574,28 @@ final class DealsViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     private lazy var dbRef: DatabaseReference = Database.database().reference()
-    private let dealsPath = "dealsLinks"
+    private let path: String
 
-    func loadDeals() {
+    init(path: String) {
+        self.path = path
+    }
+
+    func load() {
         isLoading = true
         errorMessage = nil
-        print("[Deals] Starting Firebase fetch from node: \(dealsPath)")
 
-        dbRef.child(dealsPath).observeSingleEvent(of: .value) { [weak self] snapshot in
+        dbRef.child(path).observeSingleEvent(of: .value) { [weak self] snapshot in
             guard let self else { return }
-
-            print("[Deals] Snapshot exists: \(snapshot.exists()), children: \(snapshot.childrenCount)")
-
             let items = Self.extractDealItems(from: snapshot)
                 .sorted { lhs, rhs in
                     lhs.sort == rhs.sort
                         ? lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
                         : lhs.sort < rhs.sort
                 }
-
             DispatchQueue.main.async {
                 self.deals = Array(items.prefix(5))
-                self.errorMessage = items.isEmpty
-                    ? "No valid deals were parsed from `\(self.dealsPath)`. Check the Xcode console logs."
-                    : nil
+                self.errorMessage = items.isEmpty ? "No items found." : nil
                 self.isLoading = false
-                print("[Deals] Rendered \(self.deals.count) deals: \(self.deals.map(\.name))")
             }
         } withCancel: { [weak self] error in
             DispatchQueue.main.async {
@@ -429,17 +603,17 @@ final class DealsViewModel: ObservableObject {
                 self?.deals = []
                 self?.isLoading = false
             }
-            print("[Deals] Firebase read cancelled: \(error.localizedDescription)")
         }
     }
+
+    // kept for backward compatibility with call sites that used loadDeals()
+    func loadDeals() { load() }
 
     private static func extractDealItems(from snapshot: DataSnapshot) -> [DealItem] {
         let directItems = snapshot.children.allObjects
             .compactMap { $0 as? DataSnapshot }
             .compactMap(makeDealItem(from:))
-
         if !directItems.isEmpty { return directItems }
-
         return snapshot.children.allObjects
             .compactMap { $0 as? DataSnapshot }
             .flatMap { parent in
@@ -460,6 +634,8 @@ final class DealsViewModel: ObservableObject {
         let subtitle    = stringValue(in: value, keys: ["subtitle", "description", "benefit"])
         let sort        = intValue(in: value, keys: ["sort"]) ?? Int.max
         let expiresAt   = dateValue(in: value, keys: ["expiresAt", "expires_at", "expiry", "expiration"])
+        let score       = intValue(in: value, keys: ["score", "points"]) ?? 0
+        let couponCode  = stringValue(in: value, keys: ["coupon_code", "couponCode"])
 
         guard let actionType, let actionValue else { return nil }
 
@@ -472,7 +648,9 @@ final class DealsViewModel: ObservableObject {
             name: name,
             subtitle: subtitle,
             sort: sort,
-            expiresAt: expiresAt
+            expiresAt: expiresAt,
+            score: score,
+            couponCode: couponCode
         )
     }
 
@@ -492,24 +670,19 @@ final class DealsViewModel: ObservableObject {
 
     private static func dateValue(in dict: [String: Any], keys: [String]) -> Date? {
         for key in keys {
-            // Unix timestamp — values above 1e11 are milliseconds (Firebase JS default)
             if let ts = dict[key] as? Double {
-                let seconds = ts > 1_000_000_000_00 ? ts / 1000.0 : ts
-                return Date(timeIntervalSince1970: seconds)
+                let s = ts > 1_000_000_000_00 ? ts / 1000.0 : ts
+                return Date(timeIntervalSince1970: s)
             }
             if let ts = dict[key] as? NSNumber {
                 let raw = ts.doubleValue
-                let seconds = raw > 1_000_000_000_00 ? raw / 1000.0 : raw
-                return Date(timeIntervalSince1970: seconds)
+                let s = raw > 1_000_000_000_00 ? raw / 1000.0 : raw
+                return Date(timeIntervalSince1970: s)
             }
-            // ISO-8601 string
             if let str = dict[key] as? String {
-                let formatter = ISO8601DateFormatter()
-                if let date = formatter.date(from: str) { return date }
-                // "yyyy-MM-dd" fallback
-                let df = DateFormatter()
-                df.dateFormat = "yyyy-MM-dd"
-                if let date = df.date(from: str) { return date }
+                if let d = ISO8601DateFormatter().date(from: str) { return d }
+                let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
+                if let d = df.date(from: str) { return d }
             }
         }
         return nil

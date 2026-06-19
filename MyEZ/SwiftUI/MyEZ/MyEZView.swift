@@ -29,7 +29,7 @@ struct MyEZView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 22) {
                     rankHeader
-                    TopUsersCard(topUsers: viewModel.topUsers, monthlyPlace: viewModel.monthlyPlace, isLoading: viewModel.isLoadingLeaderboard, headerColor: rankTheme.accent, title: monthTitle, onPrizeTap: { showingMonthlyPrize = true })
+                    TopUsersCard(topUsers: viewModel.topUsers, monthlyPlace: viewModel.monthlyPlace, monthlyScore: viewModel.monthlyScore, isLoading: viewModel.isLoadingLeaderboard, headerColor: rankTheme.accent, title: monthTitle, onPrizeTap: { showingMonthlyPrize = true })
 
                     VStack(alignment: .leading, spacing: 14) {
                         Text("Your Products")
@@ -215,6 +215,7 @@ struct PlaceholderUnitCard: View {
 struct TopUsersCard: View {
     let topUsers: [MyEZViewModel.TopUserDisplay]
     let monthlyPlace: Int
+    let monthlyScore: Int
     let isLoading: Bool
     let headerColor: Color
     let title: String
@@ -310,7 +311,7 @@ struct TopUsersCard: View {
                 Text("Pull to refresh")
                     .font(.system(size: 15, weight: .medium))
             }
-            .foregroundColor(AppColors.textMuted)
+            .foregroundColor(AppColors.textSecondary)
             .padding(.vertical, 14)
         }
         .sceneCard(cornerRadius: 22, fillColor: AppColors.surfacePrimary)
@@ -324,7 +325,11 @@ struct TopUsersCard: View {
                         .foregroundColor(AppColors.textPrimary)
                     + Text(Self.ordinalString(monthlyPlace) + " place")
                         .foregroundColor(AppColors.accentRed)
-                    + Text(" for the month.")
+                    + Text(" for the month with ")
+                        .foregroundColor(AppColors.textPrimary)
+                    + Text("\(monthlyScore) pts")
+                        .foregroundColor(AppColors.accentRed)
+                    + Text(".")
                         .foregroundColor(AppColors.textPrimary)
                 )
                 .multilineTextAlignment(.center)
@@ -344,10 +349,10 @@ struct TopUsersCard: View {
         .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(hex: "F5F9FF"))
+                .fill(AppColors.surfaceSecondary)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(Color(hex: "CFE0FF"), lineWidth: 1)
+                        .stroke(AppColors.borderSubtle, lineWidth: 1)
                 )
         )
     }
@@ -639,7 +644,7 @@ struct MonthlyPrizeSheet: View {
                                 }
                                 .padding(20)
                             }
-                            .background(Color.white)
+                            .background(AppColors.surfacePrimary)
                             .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                             .shadow(color: Color.black.opacity(0.12), radius: 20, x: 0, y: 8)
                             .padding(.horizontal, 20)
