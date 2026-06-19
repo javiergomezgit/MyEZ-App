@@ -28,9 +28,11 @@ struct DealsView: View {
     @StateObject private var dealsVM  = DealsViewModel(path: "dealsLinks")
     @StateObject private var pointsVM = DealsViewModel(path: "pointsActivities")
     @EnvironmentObject private var appState: AppState
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var selectedTab: DealsTab = .points
     @State private var blogItem: IdentifiableURL?
+    @State private var showingPurchaseConfirm = false
 
     private var activeVM: DealsViewModel {
         selectedTab == .deals ? dealsVM : pointsVM
@@ -48,6 +50,24 @@ struct DealsView: View {
         .background { SceneBackgroundView() }
         .toolbar(.hidden, for: .navigationBar)
         .task { dealsVM.load(); pointsVM.load() }
+        .onAppear { checkPendingPurchase() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { checkPendingPurchase() }
+        }
+        .alert("Purchase Complete?", isPresented: $showingPurchaseConfirm) {
+            Button("Yes, I completed it") {
+                if let dealID = appState.pendingPointsDealID,
+                   let deal = pointsVM.deals.first(where: { $0.id == dealID }) {
+                    recordActivity(for: deal)
+                }
+                appState.pendingPointsDealID = nil
+            }
+            Button("No", role: .cancel) {
+                appState.pendingPointsDealID = nil
+            }
+        } message: {
+            Text("Did you complete your purchase? Your points will be added if you did.")
+        }
         .sheet(item: $blogItem) { item in
             SafariView(url: item.url).ignoresSafeArea()
         }
@@ -128,10 +148,13 @@ struct DealsView: View {
 
     private func handleAction(for deal: DealsViewModel.DealItem) {
         switch deal.normalizedActionType {
-        case "go_to_link", "add_to_cart":
+        case "go_to_link":
             guard let url = URL(string: deal.actionValue) else { return }
             appState.pendingBrowseURL = url
             appState.selectedTab = .browse
+
+        case "add_to_cart":
+            openAddToCart(deal: deal)
 
         case "call_now":
             let digits = deal.actionValue.filter(\.isNumber)
@@ -157,8 +180,8 @@ struct DealsView: View {
             recordActivity(for: deal)
 
         case "buy_product":
+            appState.pendingPointsDealID = deal.id
             openBuyProduct(deal: deal)
-            recordActivity(for: deal)
 
         case "post_sharing":
             sharePost(deal: deal)
@@ -207,21 +230,43 @@ struct DealsView: View {
         topVC.present(ac, animated: true)
     }
 
-    // Constructs a Shopify discount URL: /discount/{code}?redirect={product_path}
-    // This saves the coupon to the browser session and redirects to the product page.
+    // DEALS: navigates to the product page with ?autoAddToCart=1.
+    // The JS injected in BrowseView reads the variant from the page form,
+    // calls Shopify's AJAX cart API, and redirects to /cart.
+    private func openAddToCart(deal: DealsViewModel.DealItem) {
+        let raw = deal.actionValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let urlString = raw.hasPrefix("http") ? raw : "https://\(raw)"
+        guard var comps = URLComponents(string: urlString) else { return }
+        var items = comps.queryItems ?? []
+        items.append(URLQueryItem(name: "autoAddToCart", value: "1"))
+        comps.queryItems = items
+        guard let finalURL = comps.url else { return }
+        DispatchQueue.main.async {
+            appState.pendingBrowseURL = finalURL
+            appState.selectedTab = .browse
+        }
+    }
+
+    // POINTS: applies coupon then navigates to the product page with
+    // ?autoAddToCart=1&autoCheckout=1. The JS auto-adds the item and
+    // redirects to /checkout where the email is pre-filled.
     private func openBuyProduct(deal: DealsViewModel.DealItem) {
-        let open: (String) -> Void = { code in
-            let raw = deal.actionValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard let productURL = URL(string: raw.hasPrefix("http") ? raw : "https://\(raw)"),
-                  let host = productURL.host,
-                  let scheme = productURL.scheme else { return }
-            let redirect = productURL.path + (productURL.query.map { "?\($0)" } ?? "")
-            var comps = URLComponents()
-            comps.scheme = scheme
-            comps.host = host
-            comps.path = "/discount/\(code)"
-            comps.queryItems = [URLQueryItem(name: "redirect", value: redirect)]
-            guard let finalURL = comps.url else { return }
+        let raw = deal.actionValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let urlString = raw.hasPrefix("http") ? raw : "https://\(raw)"
+        guard var productComps = URLComponents(string: urlString),
+              let host = productComps.host else { return }
+
+        var qItems = productComps.queryItems ?? []
+        qItems.append(URLQueryItem(name: "autoAddToCart", value: "1"))
+        qItems.append(URLQueryItem(name: "autoCheckout", value: "1"))
+        productComps.queryItems = qItems
+        guard let productURL = productComps.url else { return }
+        let redirectPath = productURL.path + "?" + (productURL.query ?? "")
+
+        let navigate: (String) -> Void = { code in
+            var discountComps = URLComponents(string: "https://\(host)/discount/\(code)")
+            discountComps?.queryItems = [URLQueryItem(name: "redirect", value: redirectPath)]
+            guard let finalURL = discountComps?.url else { return }
             DispatchQueue.main.async {
                 appState.pendingBrowseURL = finalURL
                 appState.selectedTab = .browse
@@ -229,14 +274,19 @@ struct DealsView: View {
         }
 
         if let code = deal.couponCode, !code.isEmpty {
-            open(code)
+            navigate(code)
         } else {
             Database.database().reference().child("coupon_code")
                 .observeSingleEvent(of: .value) { snapshot in
                     let code = snapshot.value as? String ?? ""
-                    open(code)
+                    navigate(code)
                 }
         }
+    }
+
+    private func checkPendingPurchase() {
+        guard appState.pendingPointsDealID != nil else { return }
+        showingPurchaseConfirm = true
     }
 
     private func recordActivity(for deal: DealsViewModel.DealItem) {
