@@ -66,19 +66,42 @@ struct WalkthroughPage1: View {
         ZStack(alignment: .bottom) {
             Color.clear
 
-            LazyVGrid(columns: columns, spacing: 12) {
-                ForEach(walkthroughFleetItems, id: \.name) { item in
-                    FleetCardView(item: item)
+            GeometryReader { geo in
+                let panelHeight: CGFloat = 220
+                let availableHeight = geo.size.height - panelHeight
+
+                VStack(spacing: 0) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .fill(AppColors.surfacePrimary)
+                            .frame(width: 92, height: 92)
+                            .shadow(color: Color.black.opacity(0.05), radius: 12, x: 0, y: 6)
+                        Image("logoLaunch")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 64, height: 64)
+                    }
+                    .padding(.top, 72)
+
+                    Spacer()
+
+                    LazyVGrid(columns: columns, spacing: 12) {
+                        ForEach(walkthroughFleetItems, id: \.name) { item in
+                            FleetCardView(item: item)
+                        }
+                    }
+                    .padding(.horizontal, 24)
+
+                    Spacer()
                 }
+                .frame(height: availableHeight)
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 260)
 
             WalkthroughBottomPanel(
                 index: $index,
                 totalPages: totalPages,
                 title: "Your Fleet, Always With You",
-                subtitle: "Every inflatable you own, in one place. See your full inventory anytime with product images and SKU details."
+                subtitle: "Every inflatable you own, in one place. See your full EZ inventory anytime with product images and SKU details."
             )
         }
     }

@@ -1,131 +1,75 @@
 import SwiftUI
 
-// MARK: - Individual Cards
+// MARK: - Data
 
-private struct BackDealCard: View {
-    var body: some View {
-        HStack {
-            Text("☀️").font(.system(size: 20))
-            Spacer()
-            Text("Expires in 2dh 24h")
-                .font(.system(size: 12))
-                .foregroundColor(AppColors.textSecondary)
-        }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 16)
-        .frame(maxWidth: .infinity)
-        .frame(height: 140)
-        .background(Color(hex: "CDCDD8"))
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-    }
+private struct DealItem {
+    let emoji: String
+    let title: String
+    let description: String
+    let badge: String
+    let expiry: String
+    let progress: Double  // 0–1, represents time elapsed
+    let badgeColor: Color
 }
 
-private struct MiddleDealCard: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .top) {
-                Text("👀").font(.system(size: 20))
-                Spacer()
-                Text("BOGO")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(AppColors.textSecondary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(Capsule().stroke(AppColors.borderStrong, lineWidth: 1))
-            }
-            Text("Weekend Warrior Deal")
-                .font(.system(size: 16, weight: .bold))
-                .foregroundColor(AppColors.textPrimary)
-            Spacer()
-        }
-        .padding(.horizontal, 18)
-        .padding(.top, 16)
-        .frame(maxWidth: .infinity)
-        .frame(height: 150)
-        .background(Color(hex: "E2E2EA"))
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-    }
-}
+private let dealItems: [DealItem] = [
+    DealItem(emoji: "🏖️", title: "Summer Blowout Sale",  description: "Save up to 40% on water slides",      badge: "40% OFF", expiry: "Expires in 2d 14h", progress: 0.40, badgeColor: AppColors.accentBlue),
+    DealItem(emoji: "🎯", title: "Weekend Warrior Deal",  description: "BOGO on combo units this weekend",     badge: "BOGO",    expiry: "Expires in 1d 8h",  progress: 0.22, badgeColor: AppColors.accentBlue),
+    DealItem(emoji: "🎉", title: "New Customer Bundle",   description: "15% off your first 3 inflatables",    badge: "15% OFF", expiry: "Expires in 5d",      progress: 0.10, badgeColor: AppColors.accentBlue),
+]
 
-private struct FrontDealCard: View {
+// MARK: - Sub-views
+
+private struct DealCardView: View {
+    let deal: DealItem
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: 10) {
+            // Header row
             HStack(alignment: .top) {
-                Text("💧").font(.system(size: 22))
+                Text(deal.emoji)
+                    .font(.system(size: 28))
+                Text(deal.title)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(AppColors.textPrimary)
                 Spacer()
-                Text("Expires in 2d 14h")
+                Text(deal.expiry)
                     .font(.system(size: 12))
                     .foregroundColor(AppColors.textSecondary)
+                    .multilineTextAlignment(.trailing)
             }
-            .padding(.horizontal, 18)
-            .padding(.top, 18)
 
-            Text("Summer Blowout Sale")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(AppColors.textPrimary)
-                .padding(.horizontal, 18)
-                .padding(.top, 8)
-
-            Text("Save up to 40% on water slides")
-                .font(.system(size: 13))
+            // Description
+            Text(deal.description)
+                .font(.system(size: 14))
                 .foregroundColor(AppColors.textSecondary)
-                .padding(.horizontal, 18)
-                .padding(.top, 3)
 
-            Spacer()
-
-            HStack {
-                Text("40% OFF")
-                    .font(.system(size: 14, weight: .bold))
+            // Badge + progress bar
+            HStack(spacing: 12) {
+                Text(deal.badge)
+                    .font(.system(size: 13, weight: .bold))
                     .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(Capsule().fill(AppColors.accentRed))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 7)
+                    .background(Capsule().fill(deal.badgeColor))
 
-                Spacer()
-
-                Text("View Deal")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 10)
-                    .background(Capsule().fill(AppColors.accentRed))
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(AppColors.borderSubtle)
+                            .frame(height: 6)
+                        Capsule()
+                            .fill(deal.badgeColor)
+                            .frame(width: geo.size.width * deal.progress, height: 6)
+                    }
+                }
+                .frame(height: 6)
             }
-            .padding(.horizontal, 18)
-            .padding(.bottom, 18)
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: 180)
+        .padding(18)
         .background(AppColors.surfacePrimary)
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(AppColors.borderSubtle, lineWidth: 0.7)
-        )
-        .shadow(color: Color.black.opacity(0.12), radius: 16, x: 0, y: 6)
-    }
-}
-
-// MARK: - Stacked Deck
-
-private struct StackedDealsView: View {
-    var body: some View {
-        // Cards peek from behind — back on top, front at bottom (later = higher z-order)
-        ZStack(alignment: .top) {
-            BackDealCard()
-                .rotationEffect(.degrees(-4), anchor: .bottom)
-                .padding(.horizontal, 14)
-
-            MiddleDealCard()
-                .rotationEffect(.degrees(2), anchor: .bottom)
-                .padding(.horizontal, 6)
-                .offset(y: 44)
-
-            FrontDealCard()
-                .offset(y: 88)
-        }
-        .frame(height: 270)
-        .padding(.horizontal, 20)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 3)
     }
 }
 
@@ -140,18 +84,20 @@ struct WalkthroughPage4: View {
         ZStack(alignment: .bottom) {
             Color.clear
 
-            VStack {
-                Spacer()
-                StackedDealsView()
-                Spacer()
+            VStack(spacing: 12) {
+                ForEach(dealItems, id: \.title) { deal in
+                    DealCardView(deal: deal)
+                }
             }
-            .padding(.bottom, 240)
+            .padding(.horizontal, 20)
+            .padding(.top, 100)
+            .padding(.bottom, 260)
 
             WalkthroughBottomPanel(
                 index: $index,
                 totalPages: totalPages,
                 title: "Deals Built for You",
-                subtitle: "Exclusive time-limited offers pushed directly to your phone. They expire automatically, so you never miss a window.",
+                subtitle: "Exclusive time-limited offers pushed directly to your phone. They expire automatically — so you never miss a window.",
                 onDone: onFinish
             )
         }

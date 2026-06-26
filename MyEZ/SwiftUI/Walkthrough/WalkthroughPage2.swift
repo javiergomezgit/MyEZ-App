@@ -73,20 +73,47 @@ private struct RankProgressView: View {
     }
 }
 
-private struct RankTierRow: View {
-    let tier: RankTier
+private struct RankBarChartView: View {
+    // Bar heights relative to max
+    private let bars: [(label: String, shortName: String, discount: Int, isCurrent: Bool)] = [
+        ("Minimumweight", "Minweight", 0,  false),
+        ("Flyweight",     "Flyweight", 2,  true),
+        ("Bantamweight",  "Bantam",    3,  false),
+    ]
+    private let maxHeight: CGFloat = 140
+    private let barHeights: [CGFloat] = [60, 110, 140]
 
     var body: some View {
-        Text("\(tier.name) — \(tier.discount)%\(tier.isCurrent ? " (current)" : "")")
-            .font(.system(size: 15, weight: tier.isCurrent ? .semibold : .regular))
-            .foregroundColor(tier.isCurrent ? .white : AppColors.textSecondary)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 11)
-            .frame(maxWidth: .infinity)
-            .background(
-                Capsule()
-                    .fill(tier.isCurrent ? AppColors.accentRed : Color(hex: "F0EFEC"))
-            )
+        VStack(spacing: 12) {
+            // Header
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.up")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(AppColors.accentRed)
+                Text("Heavier = bigger discount")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(AppColors.accentRed)
+            }
+
+            // Bar chart
+            HStack(alignment: .bottom, spacing: 16) {
+                ForEach(Array(zip(bars, barHeights)), id: \.0.label) { bar, height in
+                    VStack(spacing: 6) {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(bar.isCurrent ? AppColors.accentRed : Color(UIColor.systemGray5))
+                            .frame(width: 72, height: height)
+
+                        Text("\(bar.discount)%")
+                            .font(.system(size: 15, weight: bar.isCurrent ? .bold : .regular))
+                            .foregroundColor(bar.isCurrent ? AppColors.accentRed : AppColors.textSecondary)
+
+                        Text(bar.shortName)
+                            .font(.system(size: 12, weight: bar.isCurrent ? .semibold : .regular))
+                            .foregroundColor(bar.isCurrent ? AppColors.textPrimary : AppColors.textSecondary)
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -120,13 +147,7 @@ struct WalkthroughPage2: View {
                             .fill(AppColors.accentRed.opacity(0.10))
                     )
 
-                // Rank tiers list
-                VStack(spacing: 8) {
-                    ForEach(rankTiers, id: \.name) { tier in
-                        RankTierRow(tier: tier)
-                    }
-                }
-                .padding(.horizontal, 32)
+                RankBarChartView()
 
                 Spacer()
             }

@@ -6,7 +6,9 @@ struct WalkthroughView: View {
 
     let onFinish: () -> Void
 
-    private var showSkip: Bool { index < totalPages - 1 }
+    private var topButtonLabel: String {
+        index == totalPages - 1 ? "Done" : "Skip"
+    }
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -25,24 +27,20 @@ struct WalkthroughView: View {
             .tabViewStyle(.page(indexDisplayMode: .never))
             .animation(.easeInOut(duration: 0.25), value: index)
 
-            if showSkip {
-                Button(action: onFinish) {
-                    Text("Skip")
-                        .font(.system(size: 16, weight: .semibold, design: .rounded))
-                        .foregroundColor(index == 0 ? AppColors.textSecondary : .white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .background(index == 0 ? Color.clear : Color.black.opacity(0.34))
-                        .overlay(
-                            Capsule()
-                                .stroke(index == 0 ? Color.clear : Color.white.opacity(0.16), lineWidth: 1)
-                        )
-                        .clipShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .padding(.top, 18)
-                .padding(.trailing, 20)
+            Button(action: onFinish) {
+                Text(topButtonLabel)
+                    .font(.system(size: 17, weight: .semibold, design: .rounded))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 11)
+                    .background(
+                        Capsule()
+                            .fill(Color.black.opacity(0.30))
+                    )
             }
+            .buttonStyle(.plain)
+            .padding(.top, 18)
+            .padding(.trailing, 20)
         }
     }
 }
