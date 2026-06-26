@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import FirebaseDatabase
 import FirebaseStorage
+import FirebaseAuth
 
 final class ProfileViewModel: ObservableObject {
     @Published var user: AppUser?
@@ -185,6 +186,37 @@ final class ProfileViewModel: ObservableObject {
 
     func logout(appState: AppState) {
         appState.logout()
+    }
+
+    func deleteAccount(appState: AppState, completion: @escaping (String?) -> Void) {
+        guard let firebaseUser = Auth.auth().currentUser, !firebaseUID.isEmpty else {
+            completion("No authenticated user found.")
+            return
+        }
+        let uid = firebaseUID
+
+        // Delete Realtime Database record
+        dbRef.child("users").child(uid).removeValue()
+
+        // Delete profile image from Storage (best-effort)
+        let storageRef = Storage.storage().reference().child("users/\(uid)/profile/\(uid)-profileImage.jpg")
+        storageRef.delete(completion: nil)
+        let storageRefAlt = Storage.storage().reference().child("users/\(uid)/profile/\(uid)_profileImage.jpg")
+        storageRefAlt.delete(completion: nil)
+
+        // Delete Firebase Auth account
+        firebaseUser.delete { [weak self] error in
+            if let error = error {
+                DispatchQueue.main.async {
+                    completion(error.localizedDescription)
+                }
+                return
+            }
+            DispatchQueue.main.async {
+                appState.logout()
+                completion(nil)
+            }
+        }
     }
 
     func supportEmailBody() -> String {

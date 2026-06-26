@@ -8,6 +8,8 @@ struct ProfileView: View {
     @State private var showingMail = false
     @State private var showingMyInformation = false
     @State private var showingSafariURL: IdentifiableURL?
+    @State private var showingDeleteConfirmation = false
+    @State private var isDeletingAccount = false
 
     var body: some View {
         ZStack {
@@ -21,6 +23,9 @@ struct ProfileView: View {
                     profileSection("Account", rows: [
                         ProfileRow(icon: "person.text.rectangle", title: "My Information", tint: AppColors.accentRed,
                             action: { showingMyInformation = true },
+                            isEnabled: viewModel.user != nil),
+                        ProfileRow(icon: "trash", title: "Delete Account", tint: AppColors.accentRed,
+                            action: { showingDeleteConfirmation = true },
                             isEnabled: viewModel.user != nil)
                     ])
 
@@ -76,6 +81,20 @@ struct ProfileView: View {
             Button("OK", role: .cancel) { }
         } message: {
             Text(viewModel.errorMessage ?? "")
+        }
+        .confirmationDialog("Delete Account", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
+            Button("Delete Account", role: .destructive) {
+                isDeletingAccount = true
+                viewModel.deleteAccount(appState: appState) { errorMessage in
+                    isDeletingAccount = false
+                    if let errorMessage {
+                        viewModel.errorMessage = errorMessage
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This will permanently delete your account and all associated data. This action cannot be undone.")
         }
         .onChange(of: showingMail, initial: false) { _, newValue in
             guard newValue else { return }

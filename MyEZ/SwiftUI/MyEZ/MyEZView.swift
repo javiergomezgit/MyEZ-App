@@ -100,6 +100,8 @@ struct MyEZView: View {
                     .font(.system(size: 17, weight: .heavy))
                     .foregroundColor(AppColors.textPrimary)
                     .tracking(0.5)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
             }
 
             Spacer()
