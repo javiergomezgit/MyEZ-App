@@ -1,7 +1,12 @@
 import SwiftUI
+import FirebaseAuth
 
 struct ContactView: View {
     @State private var showingChat = false
+
+    private var userEmail: String {
+        Auth.auth().currentUser?.email ?? ""
+    }
 
     private let socialLinks: [SocialTileItem] = [
         .init(icon: "facebookContact", title: "Facebook", subtitle: "@EZInflatables", tint: AppColors.accentBlue,
@@ -48,7 +53,7 @@ struct ContactView: View {
         }
         .sheet(isPresented: $showingChat) {
             NavigationStack {
-                ChatWebView()
+                ChatWebView(userEmail: userEmail)
                     .navigationTitle("Chat")
                     .navigationBarTitleDisplayMode(.inline)
             }
@@ -122,9 +127,49 @@ struct ContactView: View {
 }
 
 struct ChatWebView: View {
+    let userEmail: String
+
+    private static func autofillJS(email: String) -> String {
+        let safeEmail = email.replacingOccurrences(of: "\\", with: "\\\\")
+                             .replacingOccurrences(of: "'", with: "\\'")
+        return """
+        (function() {
+            var email = '\(safeEmail)';
+            if (!email) return;
+
+            // React-compatible setter — required for controlled inputs
+            var nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+
+            function fillEmail() {
+                var inputs = document.querySelectorAll(
+                    'input[type="email"], input[name="email"], #email, ' +
+                    'input[placeholder*="mail" i], input[autocomplete="email"]'
+                );
+                inputs.forEach(function(el) {
+                    if (!el.value) {
+                        nativeSetter.call(el, email);
+                        el.dispatchEvent(new Event('input',  { bubbles: true }));
+                        el.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                });
+            }
+
+            fillEmail();
+            [300, 700, 1500, 3000, 5000].forEach(function(ms) { setTimeout(fillEmail, ms); });
+            new MutationObserver(fillEmail).observe(document.body, { childList: true, subtree: true });
+        })();
+        """
+    }
+
     var body: some View {
-        AuthenticatedBrowserView(url: URL(string: "https://tawk.to/chat/5e0120b527773e0d832a7141/default")!, title: "Chat", showNavButtons: false)
-            .ignoresSafeArea()
+        //Exclusive app widget for chat
+        AuthenticatedBrowserView(
+            url: URL(string: "https://tawk.to/chat/5e0120b527773e0d832a7141/1js2icdia")!,
+            title: "Chat",
+            earlyJS: Self.autofillJS(email: userEmail),
+            showNavButtons: false
+        )
+        .ignoresSafeArea()
     }
 }
 
