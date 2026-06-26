@@ -148,7 +148,7 @@ struct DealsView: View {
 
     private func handleAction(for deal: DealsViewModel.DealItem) {
         switch deal.normalizedActionType {
-        case "go_to_link":
+        case "go_to", "go_to_link":
             guard let url = URL(string: deal.actionValue) else { return }
             appState.pendingBrowseURL = url
             appState.selectedTab = .browse
@@ -335,14 +335,14 @@ private struct DealCard: View {
                         case .success(let image):
                             image.resizable().scaledToFill()
                         case .failure:
-                            fallbackImage
+                            fallbackImageView
                         case .empty:
                             ZStack {
                                 AppColors.surfaceSecondary
                                 ProgressView().tint(AppColors.buttonRedStart)
                             }
                         @unknown default:
-                            fallbackImage
+                            fallbackImageView
                         }
                     }
                 )
@@ -389,8 +389,13 @@ private struct DealCard: View {
                     HStack(spacing: 6) {
                         Text(deal.buttonTitle)
                             .font(.system(size: 15, weight: .semibold))
-                        Image(systemName: deal.buttonIcon)
-                            .font(.system(size: 13, weight: .bold))
+                        if deal.normalizedActionType == "go_to", let emoji = deal.emoji {
+                            Text(emoji)
+                                .font(.system(size: 15))
+                        } else {
+                            Image(systemName: deal.buttonIcon)
+                                .font(.system(size: 13, weight: .bold))
+                        }
                     }
                     .foregroundColor(.white)
                     .padding(.horizontal, 18)
@@ -417,16 +422,21 @@ private struct DealCard: View {
         .sceneCard(cornerRadius: 22, fillColor: AppColors.surfacePrimary)
     }
 
-    private var fallbackImage: some View {
+    private var fallbackImageView: some View {
         ZStack {
             LinearGradient(
                 colors: [AppColors.surfaceSecondary, AppColors.surfaceElevated],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-            Image(systemName: "tag.fill")
-                .font(.system(size: 40, weight: .medium))
-                .foregroundColor(AppColors.textMuted)
+            if deal.normalizedActionType == "go_to" {
+                Text(deal.emoji ?? "⭐")
+                    .font(.system(size: 60))
+            } else {
+                Image(systemName: "tag.fill")
+                    .font(.system(size: 40, weight: .medium))
+                    .foregroundColor(AppColors.textMuted)
+            }
         }
     }
 }
@@ -546,7 +556,8 @@ final class DealsViewModel: ObservableObject {
         let id: String
         let actionType: String
         let actionValue: String
-        let emoji: String
+        let emoji: String?
+        let subtype: String?
         let imageURL: URL?
         let name: String
         let subtitle: String?
@@ -557,6 +568,9 @@ final class DealsViewModel: ObservableObject {
 
         var buttonTitle: String {
             switch normalizedActionType {
+            case "go_to":
+                guard let sub = subtype, !sub.isEmpty else { return "Go To" }
+                return sub.replacingOccurrences(of: "_", with: " ").capitalized
             case "go_to_link":      return "View Offer"
             case "call_now":        return "Call Now"
             case "email_now":       return "Email Us"
@@ -573,6 +587,7 @@ final class DealsViewModel: ObservableObject {
 
         var buttonIcon: String {
             switch normalizedActionType {
+            case "go_to":           return "arrow.up.right"
             case "go_to_link":      return "arrow.up.right"
             case "call_now":        return "phone.fill"
             case "email_now":       return "envelope.fill"
@@ -678,7 +693,8 @@ final class DealsViewModel: ObservableObject {
 
         let actionType  = stringValue(in: value, keys: ["actionType", "action_type"])
         let actionValue = stringValue(in: value, keys: ["actionValue", "action_value"])
-        let emoji       = stringValue(in: value, keys: ["emoji"]) ?? "🎉"
+        let emoji       = stringValue(in: value, keys: ["emoji"])
+        let subtype     = stringValue(in: value, keys: ["subtype"])
         let imageURL    = stringValue(in: value, keys: ["imageURL", "imageUrl", "image_url"])
         let name        = stringValue(in: value, keys: ["name", "title"]) ?? "Deal"
         let subtitle    = stringValue(in: value, keys: ["subtitle", "description", "benefit"])
@@ -694,6 +710,7 @@ final class DealsViewModel: ObservableObject {
             actionType: actionType,
             actionValue: actionValue,
             emoji: emoji,
+            subtype: subtype,
             imageURL: imageURL.flatMap(URL.init(string:)),
             name: name,
             subtitle: subtitle,
