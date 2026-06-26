@@ -1,4 +1,5 @@
 import SwiftUI
+import FirebaseDatabase
 
 struct BrowseView: View {
     @StateObject private var browserController = BrowserController()
@@ -10,12 +11,24 @@ struct BrowseView: View {
         appState.pendingBrowseURL = nil
     }
 
+    private func loadBrowseURL() {
+        Database.database().reference().child("general_urls").child("browse_url")
+            .observeSingleEvent(of: .value) { snapshot in
+                guard let urlString = snapshot.value as? String,
+                      let url = URL(string: urlString) else { return }
+                DispatchQueue.main.async {
+                    browserController.navigate(to: url)
+                }
+            }
+    }
+
     var body: some View {
         AuthenticatedBrowserContainer(controller: browserController)
             .ignoresSafeArea()
             .background(AppColors.dark.ignoresSafeArea())
             .navigationBarHidden(true)
             .onAppear {
+                loadBrowseURL()
                 drainPendingURL()
             }
             .onChange(of: appState.pendingBrowseURL) { _, url in
@@ -180,17 +193,15 @@ struct AuthenticatedBrowserContainer: UIViewControllerRepresentable {
 
     func makeUIViewController(context: Context) -> AuthenticatedBrowserViewController {
         let vc = AuthenticatedBrowserViewController()
-        if let url = URL(string: "https://www.ezinflatables.com/collections/in-stock-app") {
-            vc.configure(
-                url: url,
-                title: "Browse",
-                earlyJS: Self.widgetBlockerJS,
-                customCSS: Self.shopifyCSS,
-                customJS: Self.cartPageJS(email: userInformation.email),
-                showNavButtons: false,
-                blockCheckoutNavigation: false
-            )
-        }
+        vc.configure(
+            url: nil,
+            title: "Browse",
+            earlyJS: Self.widgetBlockerJS,
+            customCSS: Self.shopifyCSS,
+            customJS: Self.cartPageJS(email: userInformation.email),
+            showNavButtons: false,
+            blockCheckoutNavigation: false
+        )
         controller.viewController = vc
         return vc
     }

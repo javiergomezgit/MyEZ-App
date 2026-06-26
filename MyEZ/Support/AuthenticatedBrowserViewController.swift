@@ -24,7 +24,7 @@ final class AuthenticatedBrowserViewController: UIViewController, WKUIDelegate {
     var blockCheckoutNavigation: Bool = false
 
     func configure(
-        url: URL,
+        url: URL?,
         title: String? = nil,
         earlyJS: String? = nil,
         customCSS: String? = nil,
