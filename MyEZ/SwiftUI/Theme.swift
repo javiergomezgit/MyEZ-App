@@ -105,7 +105,6 @@ struct SceneCardModifier: ViewModifier {
                             .stroke(AppColors.borderSubtle, lineWidth: 0.7)
                     )
             )
-            .shadow(color: Color.black.opacity(0.06), radius: 16, x: 0, y: 6)
     }
 }
 

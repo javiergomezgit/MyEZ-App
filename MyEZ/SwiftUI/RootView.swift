@@ -6,9 +6,11 @@ struct RootView: View {
     
     var body: some View {
         Group {
-            if appState.isAuthenticated {
+            // TEST: always show walkthrough — remove before release
+            let showWalkthrough = false
+            if !showWalkthrough && appState.isAuthenticated {
                 RootTabView(appState: appState)
-            } else if !didCompleteWalkthrough {
+            } else if showWalkthrough || !didCompleteWalkthrough {
                 WalkthroughView {
                     didCompleteWalkthrough = true
                 }

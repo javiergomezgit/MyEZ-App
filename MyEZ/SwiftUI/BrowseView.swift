@@ -62,7 +62,7 @@ struct AuthenticatedBrowserContainer: UIViewControllerRepresentable {
     @ObservedObject var controller: BrowserController
 
     private static let shopifyCSS = """
-        body { padding-left: 16px !important; padding-right: 16px !important; box-sizing: border-box !important; }
+        body { padding-left: 0 !important; padding-right: 0 !important; margin: 0 !important; }
         footer, .site-footer, #shopify-section-footer, .footer { display: none !important; }
         .header__logo { display: none !important; }
         .mobile-menu__section--loose { display: none !important; }

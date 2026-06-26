@@ -252,11 +252,18 @@ private func authScaffold<Content: View>(title: String, subtitle: String, footer
 
         ScrollView(showsIndicators: false) {
             VStack(spacing: 24) {
-                Image("logo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 72, height: 72)
-                    .padding(.top, 18)
+                ZStack {
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .fill(AppColors.surfacePrimary)
+                        .frame(width: 88, height: 88)
+                        .shadow(color: Color.black.opacity(0.05), radius: 12, x: 0, y: 6)
+
+                    Image("logoLaunch")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 62, height: 62)
+                }
+                .padding(.top, 18)
 
                 VStack(spacing: 8) {
                     Text(title)

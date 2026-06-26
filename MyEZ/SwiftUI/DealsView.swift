@@ -131,7 +131,7 @@ struct DealsView: View {
                     if activeVM.deals.isEmpty {
                         DealsEmptyView(tab: selectedTab == .points ? "Points" : "Deals", onRefresh: activeVM.load)
                     } else {
-                        VStack(spacing: 16) {
+                        VStack(spacing: 28) {
                             ForEach(activeVM.deals) { deal in
                                 DealCard(deal: deal) { handleAction(for: deal) }
                             }

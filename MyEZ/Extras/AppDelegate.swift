@@ -161,7 +161,6 @@ struct RootTabView: View {
             NavigationStack { BrowseView() }
         case .deals:
             NavigationStack { DealsView() }
-            .padding(.horizontal, 20)
         case .myez:
             NavigationStack {
                 MyEZView()
