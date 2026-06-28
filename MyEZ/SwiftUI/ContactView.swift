@@ -201,6 +201,8 @@ private struct ContactMethodRow: View {
                     Text(subtitle)
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(AppColors.textPrimary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
                 }
 
                 Spacer()
@@ -235,13 +237,13 @@ private struct SocialTile: View {
             VStack(spacing: 12) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(item.tint.opacity(0.10))
+                        .fill(AppColors.accentSky.opacity(0.10))
                         .frame(width: 54, height: 54)
 
                     Image(item.icon)
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 28, height: 28)
+                        .frame(width: 32, height: 32)
                 }
 
                 Text(item.title)
