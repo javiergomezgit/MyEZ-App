@@ -129,17 +129,16 @@ struct ContactView: View {
 struct ChatWebView: View {
     let userEmail: String
 
-    private static func autofillJS(email: String) -> String {
-        let safeEmail = email.replacingOccurrences(of: "\\", with: "\\\\")
-                             .replacingOccurrences(of: "'", with: "\\'")
+    // Injected at document-start (all frames) — sets up the observer early.
+    // Uses document.documentElement so it never throws when body is still null.
+    private static func earlyAutofillJS(email: String) -> String {
+        let safe = email.replacingOccurrences(of: "\\", with: "\\\\")
+                        .replacingOccurrences(of: "'", with: "\\'")
         return """
         (function() {
-            var email = '\(safeEmail)';
+            var email = '\(safe)';
             if (!email) return;
-
-            // React-compatible setter — required for controlled inputs
             var nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-
             function fillEmail() {
                 var inputs = document.querySelectorAll(
                     'input[type="email"], input[name="email"], #email, ' +
@@ -153,10 +152,38 @@ struct ChatWebView: View {
                     }
                 });
             }
+            // Schedule retries — covers async React rendering
+            [100, 500, 1000, 2000, 4000].forEach(function(ms) { setTimeout(fillEmail, ms); });
+            // Observe DOM changes — use documentElement, always available at document-start
+            new MutationObserver(fillEmail).observe(document.documentElement, { childList: true, subtree: true });
+        })();
+        """
+    }
 
+    // Evaluated via evaluateJavaScript after the page fully loads — most reliable timing.
+    private static func postLoadAutofillJS(email: String) -> String {
+        let safe = email.replacingOccurrences(of: "\\", with: "\\\\")
+                        .replacingOccurrences(of: "'", with: "\\'")
+        return """
+        (function() {
+            var email = '\(safe)';
+            if (!email) return;
+            var nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+            function fillEmail() {
+                var inputs = document.querySelectorAll(
+                    'input[type="email"], input[name="email"], #email, ' +
+                    'input[placeholder*="mail" i], input[autocomplete="email"]'
+                );
+                inputs.forEach(function(el) {
+                    if (!el.value) {
+                        nativeSetter.call(el, email);
+                        el.dispatchEvent(new Event('input',  { bubbles: true }));
+                        el.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                });
+            }
             fillEmail();
-            [300, 700, 1500, 3000, 5000].forEach(function(ms) { setTimeout(fillEmail, ms); });
-            new MutationObserver(fillEmail).observe(document.body, { childList: true, subtree: true });
+            [300, 800, 2000].forEach(function(ms) { setTimeout(fillEmail, ms); });
         })();
         """
     }
@@ -166,7 +193,8 @@ struct ChatWebView: View {
         AuthenticatedBrowserView(
             url: URL(string: "https://tawk.to/chat/5e0120b527773e0d832a7141/1js2icdia")!,
             title: "Chat",
-            earlyJS: Self.autofillJS(email: userEmail),
+            earlyJS: Self.earlyAutofillJS(email: userEmail),
+            postLoadJS: Self.postLoadAutofillJS(email: userEmail),
             showNavButtons: false
         )
         .ignoresSafeArea()

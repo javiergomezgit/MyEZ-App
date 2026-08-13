@@ -20,6 +20,7 @@ final class AuthenticatedBrowserViewController: UIViewController, WKUIDelegate {
     private var earlyJS: String?
     private var customCSS: String?
     private var customJS: String?
+    private var postLoadJS: String?
     private var showNavButtons: Bool = true
     var blockCheckoutNavigation: Bool = false
 
@@ -29,6 +30,7 @@ final class AuthenticatedBrowserViewController: UIViewController, WKUIDelegate {
         earlyJS: String? = nil,
         customCSS: String? = nil,
         customJS: String? = nil,
+        postLoadJS: String? = nil,
         showNavButtons: Bool = true,
         blockCheckoutNavigation: Bool = false
     ) {
@@ -37,6 +39,7 @@ final class AuthenticatedBrowserViewController: UIViewController, WKUIDelegate {
         self.earlyJS = earlyJS
         self.customCSS = customCSS
         self.customJS = customJS
+        self.postLoadJS = postLoadJS
         self.showNavButtons = showNavButtons
         self.blockCheckoutNavigation = blockCheckoutNavigation
     }
@@ -189,5 +192,9 @@ extension AuthenticatedBrowserViewController: WKNavigationDelegate {
         UIView.transition(with: progressView, duration: 0.33, options: [.transitionCrossDissolve], animations: {
             self.progressView.isHidden = true
         }, completion: nil)
+
+        if let postLoadJS {
+            webView.evaluateJavaScript(postLoadJS, completionHandler: nil)
+        }
     }
 }

@@ -6,6 +6,7 @@ struct AuthenticatedBrowserView: UIViewControllerRepresentable {
     let earlyJS: String?
     let customCSS: String?
     let customJS: String?
+    let postLoadJS: String?
     let showNavButtons: Bool
 
     init(
@@ -14,6 +15,7 @@ struct AuthenticatedBrowserView: UIViewControllerRepresentable {
         earlyJS: String? = nil,
         customCSS: String? = nil,
         customJS: String? = nil,
+        postLoadJS: String? = nil,
         showNavButtons: Bool = true
     ) {
         self.url = url
@@ -21,12 +23,13 @@ struct AuthenticatedBrowserView: UIViewControllerRepresentable {
         self.earlyJS = earlyJS
         self.customCSS = customCSS
         self.customJS = customJS
+        self.postLoadJS = postLoadJS
         self.showNavButtons = showNavButtons
     }
 
     func makeUIViewController(context: Context) -> AuthenticatedBrowserViewController {
         let vc = AuthenticatedBrowserViewController()
-        vc.configure(url: url, title: title, earlyJS: earlyJS, customCSS: customCSS, customJS: customJS, showNavButtons: showNavButtons)
+        vc.configure(url: url, title: title, earlyJS: earlyJS, customCSS: customCSS, customJS: customJS, postLoadJS: postLoadJS, showNavButtons: showNavButtons)
         return vc
     }
 
