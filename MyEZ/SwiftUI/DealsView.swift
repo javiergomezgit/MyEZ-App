@@ -29,6 +29,7 @@ struct DealsView: View {
     @StateObject private var pointsVM = DealsViewModel(path: "pointsActivities")
     @EnvironmentObject private var appState: AppState
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.colorScheme) private var colorScheme
 
     @State private var selectedTab: DealsTab = .points
     @State private var blogItem: IdentifiableURL?
@@ -76,28 +77,38 @@ struct DealsView: View {
     // MARK: Tab Picker
 
     private var tabPicker: some View {
-        HStack(spacing: 0) {
+        let isLight = colorScheme == .light
+        return HStack(spacing: 0) {
             ForEach(DealsTab.allCases, id: \.self) { tab in
+                let isSelected = selectedTab == tab
                 Button {
                     withAnimation(.easeInOut(duration: 0.2)) { selectedTab = tab }
                 } label: {
                     Text(tab.label)
                         .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(selectedTab == tab ? .white : AppColors.textSecondary)
+                        .foregroundColor(isSelected ? .white : AppColors.textSecondary)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
+                        .padding(.vertical, 12)
                         .background(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(selectedTab == tab ? AppColors.buttonRedStart : Color.clear)
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(isSelected
+                                    ? LinearGradient(colors: [AppColors.buttonRedStart, AppColors.buttonRedEnd],
+                                                     startPoint: .leading, endPoint: .trailing)
+                                    : LinearGradient(colors: [Color.clear, Color.clear],
+                                                     startPoint: .leading, endPoint: .trailing))
                         )
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(4)
+        .padding(3)
         .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(AppColors.surfaceSecondary)
+            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .fill(isLight ? Color.white : AppColors.surfaceSecondary)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                        .stroke(AppColors.borderSubtle, lineWidth: isLight ? 1 : 0)
+                )
         )
     }
 
