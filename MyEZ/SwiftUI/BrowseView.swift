@@ -23,18 +23,31 @@ struct BrowseView: View {
     }
 
     var body: some View {
-        AuthenticatedBrowserContainer(controller: browserController)
-            .ignoresSafeArea()
-            .background(AppColors.dark.ignoresSafeArea())
-            .navigationBarHidden(true)
-            .onAppear {
-                loadBrowseURL()
-                drainPendingURL()
+        ZStack(alignment: .topLeading) {
+            AuthenticatedBrowserContainer(controller: browserController)
+                .ignoresSafeArea()
+
+            Button(action: { browserController.viewController?.goBack() }) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 36, height: 36)
+                    .background(Color.black.opacity(0.8))
+                    .clipShape(Circle())
             }
-            .onChange(of: appState.pendingBrowseURL) { _, url in
-                guard url != nil else { return }
-                drainPendingURL()
-            }
+            .padding(.leading, 12)
+            .padding(.top, 14)
+        }
+        .background(AppColors.dark.ignoresSafeArea())
+        .navigationBarHidden(true)
+        .onAppear {
+            loadBrowseURL()
+            drainPendingURL()
+        }
+        .onChange(of: appState.pendingBrowseURL) { _, url in
+            guard url != nil else { return }
+            drainPendingURL()
+        }
     }
 }
 
@@ -66,10 +79,25 @@ struct AuthenticatedBrowserContainer: UIViewControllerRepresentable {
         footer, .site-footer, #shopify-section-footer, .footer { display: none !important; }
         .header__logo { display: none !important; }
         .mobile-menu__section--loose { display: none !important; }
+        .mobile-menu__custom-badge { display: none !important; }
         .header__action-item--account { display: none !important; }
         .rfq-btn, .rfq-collection-btn, .rfq-btn-cart,
         [class*="rfq-btn"], [class*="grfq"], [id*="rfq-btn"], [id*="grfq"],
         .g-rfq-button, .globo-rfq-btn { display: none !important; }
+        /* Move the hamburger menu toggle to top-center, clearing the top-left corner for the native back button.
+           Only the toggle button is repositioned — #mobile-menu (the slide-out drawer) is a sibling inside
+           .header__mobile-nav, so that wrapper must stay untouched or the drawer's positioning breaks. */
+        .header { padding-top: 26px !important; }
+        .header__mobile-nav-toggle {
+            position: absolute !important;
+            top: 20px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            z-index: 5 !important;
+        }
+        .header__mobile-nav-toggle svg.icon--hamburger-mobile {
+            transform: scale(1.1) !important;
+        }
         """
 
     // Runs at document start — blocks chat/accessibility widget scripts before they execute.
