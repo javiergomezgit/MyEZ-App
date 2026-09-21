@@ -4,6 +4,7 @@ import FirebaseDatabase
 
 struct MyEZView: View {
     @StateObject private var viewModel = MyEZViewModel()
+    @StateObject private var prizeVM = MonthlyPrizeViewModel()
     @State private var showingRanks = false
     @State private var showingMonthlyPrize = false
 
@@ -29,7 +30,7 @@ struct MyEZView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 22) {
                     rankHeader
-                    TopUsersCard(topUsers: viewModel.topUsers, monthlyPlace: viewModel.monthlyPlace, monthlyScore: viewModel.monthlyScore, isLoading: viewModel.isLoadingLeaderboard, headerColor: rankTheme.accent, title: monthTitle, onPrizeTap: { showingMonthlyPrize = true })
+                    TopUsersCard(topUsers: viewModel.topUsers, monthlyPlace: viewModel.monthlyPlace, monthlyScore: viewModel.monthlyScore, isLoading: viewModel.isLoadingLeaderboard, headerColor: rankTheme.accent, headerTextColor: rankTheme.base, title: monthTitle, prize: prizeVM.prize, onPrizeTap: { showingMonthlyPrize = true })
 
                     VStack(alignment: .leading, spacing: 14) {
                         Text("Your Products")
@@ -67,9 +68,9 @@ struct MyEZView: View {
                 .padding(.top, 12)
             }
             .padding(.horizontal, 20)
-            .refreshable { viewModel.refreshAll() }
+            .refreshable { viewModel.refreshAll(); prizeVM.load() }
         }
-        .onAppear { viewModel.load() }
+        .onAppear { viewModel.load(); prizeVM.load() }
         .sheet(isPresented: $viewModel.showingDownload) {
             if let unit = viewModel.selectedUnit {
                 DownloadUnitSheet(unit: unit, manualLink: viewModel.manualLink)
@@ -220,7 +221,9 @@ struct TopUsersCard: View {
     let monthlyScore: Int
     let isLoading: Bool
     let headerColor: Color
+    let headerTextColor: Color
     let title: String
+    let prize: MonthlyPrizeViewModel.PrizeItem?
     let onPrizeTap: () -> Void
 
     private static func ordinalString(_ value: Int) -> String {
@@ -239,19 +242,9 @@ struct TopUsersCard: View {
         VStack(spacing: 0) {
             HStack {
                 Text(title)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.white)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(headerTextColor)
                 Spacer()
-                HStack(spacing: 4) {
-                    Image(systemName: "gift.fill")
-                        .font(.system(size: 12))
-                    Text("Prize")
-                        .font(.system(size: 13, weight: .bold))
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(Capsule().fill(.white.opacity(0.25)))
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 12)
@@ -269,6 +262,10 @@ struct TopUsersCard: View {
             )
             .contentShape(Rectangle())
             .onTapGesture { onPrizeTap() }
+
+            prizeBanner
+                .padding(.horizontal, 12)
+                .padding(.top, 12)
 
             VStack(spacing: 12) {
                 HStack {
@@ -317,6 +314,68 @@ struct TopUsersCard: View {
             .padding(.vertical, 14)
         }
         .sceneCard(cornerRadius: 22, fillColor: AppColors.surfacePrimary)
+    }
+
+    private var prizeBanner: some View {
+        Button(action: onPrizeTap) {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(headerColor.opacity(0.22))
+                        .frame(width: 48, height: 48)
+
+                    if let url = prize?.imageURL {
+                        AsyncImage(url: url) { phase in
+                            if let image = phase.image {
+                                image.resizable().scaledToFill()
+                            } else {
+                                Text(prize?.emoji ?? "\u{1F381}").font(.system(size: 24))
+                            }
+                        }
+                        .frame(width: 48, height: 48)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    } else {
+                        Text(prize?.emoji ?? "\u{1F381}").font(.system(size: 24))
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("THIS MONTH\u{2019}S PRIZE")
+                        .font(.system(size: 11, weight: .bold))
+                        .tracking(0.8)
+                        .foregroundColor(AppColors.textSecondary)
+
+                    Text(prize?.name ?? "Tap to see what you can win")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(AppColors.textPrimary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    if let expiry = prize?.expiryLabel {
+                        Text(expiry)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(prize?.isExpiringSoon == true ? AppColors.buttonRedEnd : AppColors.textMuted)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(AppColors.textSecondary)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(headerColor.opacity(0.12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(headerColor.opacity(0.35), lineWidth: 1)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     private var summaryBanner: some View {
@@ -669,7 +728,7 @@ struct MonthlyPrizeSheet: View {
     }
 }
 
-private class MonthlyPrizeViewModel: ObservableObject {
+final class MonthlyPrizeViewModel: ObservableObject {
     @Published var prize: PrizeItem?
     @Published var isLoading = true
 
@@ -682,6 +741,7 @@ private class MonthlyPrizeViewModel: ObservableObject {
 
         var expiryLabel: String? {
             guard let date = expiresAt else { return nil }
+            guard date > Date() else { return "Ended" }
             let df = DateFormatter()
             df.dateStyle = .medium
             df.timeStyle = .none
@@ -690,7 +750,8 @@ private class MonthlyPrizeViewModel: ObservableObject {
 
         var isExpiringSoon: Bool {
             guard let date = expiresAt else { return false }
-            return date.timeIntervalSinceNow < 3 * 24 * 3600
+            let remaining = date.timeIntervalSinceNow
+            return remaining > 0 && remaining < 3 * 24 * 3600
         }
     }
 
