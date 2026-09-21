@@ -1,5 +1,4 @@
 import SwiftUI
-import FirebaseDatabase
 
 struct RanksView: View {
     let currentRank: String
@@ -21,8 +20,6 @@ struct RanksView: View {
         RankTier(key: "heavyweight",   name: "Heavyweight",   threshold: "13,000+ lbs"),
     ]
 
-    @State private var discounts: [String: Int] = [:]
-
     var body: some View {
         ZStack {
             SceneBackgroundView()
@@ -41,8 +38,7 @@ struct RanksView: View {
                         ForEach(tiers) { tier in
                             RankRow(
                                 tier: tier,
-                                isCurrentRank: tier.key == currentRank,
-                                discount: discounts[tier.key]
+                                isCurrentRank: tier.key == currentRank
                             )
                         }
                     }
@@ -51,30 +47,12 @@ struct RanksView: View {
                 }
             }
         }
-        .onAppear { fetchDiscounts() }
-    }
-
-    private func fetchDiscounts() {
-        Database.database().reference().child("rank_discounts")
-            .observeSingleEvent(of: .value) { snapshot in
-                var fetched: [String: Int] = [:]
-                for case let child as DataSnapshot in snapshot.children {
-                    let val: Int?
-                    if let v = child.value as? Int { val = v }
-                    else if let v = child.value as? NSNumber { val = v.intValue }
-                    else if let v = child.value as? String { val = Int(v) }
-                    else { val = nil }
-                    if let v = val { fetched[child.key] = v }
-                }
-                DispatchQueue.main.async { discounts = fetched }
-            }
     }
 }
 
 private struct RankRow: View {
     let tier: RanksView.RankTier
     let isCurrentRank: Bool
-    let discount: Int?
 
     private var theme: RankTheme { RankTheme.forRank(tier.key) }
 
@@ -97,17 +75,6 @@ private struct RankRow: View {
             }
 
             Spacer()
-
-            if let pct = discount {
-                VStack(spacing: 1) {
-                    Text("\(pct)% off")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(isCurrentRank ? .white : theme.accent)
-                    Text("discount")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(isCurrentRank ? .white.opacity(0.7) : AppColors.textSecondary)
-                }
-            }
 
             if isCurrentRank {
                 Text("YOUR RANK")
