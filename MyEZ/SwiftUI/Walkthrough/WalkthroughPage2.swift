@@ -1,19 +1,5 @@
 import SwiftUI
 
-// MARK: - Data
-
-private struct RankTier {
-    let name: String
-    let discount: Int
-    let isCurrent: Bool
-}
-
-private let rankTiers: [RankTier] = [
-    RankTier(name: "Minimumweight", discount: 0,  isCurrent: false),
-    RankTier(name: "Flyweight",     discount: 2,  isCurrent: true),
-    RankTier(name: "Bantamweight",  discount: 3,  isCurrent: false),
-]
-
 // MARK: - Sub-views
 
 private struct RankCircleView: View {
@@ -75,10 +61,10 @@ private struct RankProgressView: View {
 
 private struct RankBarChartView: View {
     // Bar heights relative to max
-    private let bars: [(label: String, shortName: String, discount: Int, isCurrent: Bool)] = [
-        ("Minimumweight", "Minweight", 0,  false),
-        ("Flyweight",     "Flyweight", 2,  true),
-        ("Bantamweight",  "Bantam",    3,  false),
+    private let bars: [(label: String, shortName: String, threshold: String, isCurrent: Bool)] = [
+        ("Minimumweight", "Minweight", "0 lb",     false),
+        ("Flyweight",     "Flyweight", "1,000 lb", true),
+        ("Bantamweight",  "Bantam",    "2,000 lb", false),
     ]
     private let maxHeight: CGFloat = 140
     private let barHeights: [CGFloat] = [60, 110, 140]
@@ -90,7 +76,7 @@ private struct RankBarChartView: View {
                 Image(systemName: "arrow.up")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundColor(AppColors.accentRed)
-                Text("Heavier = bigger discount")
+                Text("Heavier = higher rank")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundColor(AppColors.accentRed)
             }
@@ -103,8 +89,10 @@ private struct RankBarChartView: View {
                             .fill(bar.isCurrent ? AppColors.accentRed : Color(UIColor.systemGray5))
                             .frame(width: 72, height: height)
 
-                        Text("\(bar.discount)%")
-                            .font(.system(size: 15, weight: bar.isCurrent ? .bold : .regular))
+                        Text(bar.threshold)
+                            .font(.system(size: 13, weight: bar.isCurrent ? .bold : .regular))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                             .foregroundColor(bar.isCurrent ? AppColors.accentRed : AppColors.textSecondary)
 
                         Text(bar.shortName)
@@ -135,8 +123,8 @@ struct WalkthroughPage2: View {
                 RankProgressView(ownedLbs: 1340, nextLbs: 2000, nextRankName: "Bantamweight")
                     .padding(.horizontal, 32)
 
-                // Active discount badge
-                Text("2% PURCHASE DISCOUNT — ACTIVE")
+                // Current rank badge
+                Text("RANK 2 OF 7 — FLYWEIGHT")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundColor(AppColors.accentRed)
                     .tracking(0.4)
@@ -156,8 +144,8 @@ struct WalkthroughPage2: View {
             WalkthroughBottomPanel(
                 index: $index,
                 totalPages: totalPages,
-                title: "Your Rank. Your Discount.",
-                subtitle: "The more you own, the higher your rank and the better your pricing. Every purchase moves you closer to the next tier."
+                title: "Own More. Rank Higher.",
+                subtitle: "The more you own, the higher your rank. Every purchase moves you closer to the next tier."
             )
         }
     }
