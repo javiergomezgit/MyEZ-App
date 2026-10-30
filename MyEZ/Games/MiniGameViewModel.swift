@@ -1,5 +1,6 @@
 import Foundation
 import FirebaseDatabase
+import UIKit
 
 // Records finished games for the signed-in user. Guests (who skipped sign-in) can play,
 // but nothing is saved for them.
@@ -7,6 +8,8 @@ final class MiniGameViewModel: ObservableObject {
     // PLACEHOLDER: the game's name isn't decided yet. Also used as the Firebase key.
     static let gameTitle = "To Be Decided"
     static let gameKey = "minigame"
+    // Every 10 game points earn 1 EZ Point. Keep in sync with GAME_POINTS_PER_EZ_POINT in minigame.html.
+    static let gamePointsPerEZPoint = 10
 
     @Published var errorMessage: String?
 
@@ -29,8 +32,29 @@ final class MiniGameViewModel: ObservableObject {
             let score = intFromAny(message["score"])
             let level = intFromAny(message["level"])
             recordGame(score: score, level: level)
+        case "haptic":
+            playHaptic(message["style"] as? String ?? "light")
         default:
             break
+        }
+    }
+
+    // MARK: - Haptics
+
+    private let lightImpact = UIImpactFeedbackGenerator(style: .light)
+    private let mediumImpact = UIImpactFeedbackGenerator(style: .medium)
+    private let heavyImpact = UIImpactFeedbackGenerator(style: .heavy)
+    private let notification = UINotificationFeedbackGenerator()
+
+    private func playHaptic(_ style: String) {
+        switch style {
+        case "medium": mediumImpact.impactOccurred()
+        case "heavy": heavyImpact.impactOccurred()
+        case "success": notification.notificationOccurred(.success)
+        case "error": notification.notificationOccurred(.error)
+        default:
+            lightImpact.impactOccurred()
+            lightImpact.prepare()
         }
     }
 
@@ -47,24 +71,50 @@ final class MiniGameViewModel: ObservableObject {
             "level": level,
             "playedAt": Int(Date().timeIntervalSince1970)
         ]
-        dbRef.child("users").child(firebaseUID).child("gameScores").child(Self.gameKey)
+        let gameRef = dbRef.child("users").child(firebaseUID).child("gameScores").child(Self.gameKey)
             .childByAutoId()
-            .setValue(entry) { [weak self] error, _ in
-                DispatchQueue.main.async {
-                    if let error = error {
-                        print("❌ Failed to save game score: \(error.localizedDescription)")
-                        self?.errorMessage = "Couldn't save your score."
-                        return
-                    }
-                    print("✅ Saved game score \(score) (level \(level))")
-                    self?.awardPoints(score: score)
+        gameRef.setValue(entry) { [weak self] error, _ in
+            DispatchQueue.main.async {
+                if let error = error {
+                    print("❌ Failed to save game score: \(error.localizedDescription)")
+                    self?.errorMessage = "Couldn't save your score."
+                    return
                 }
+                print("✅ Saved game score \(score) (level \(level))")
+                self?.awardPoints(score: score, gameID: gameRef.key ?? UUID().uuidString)
             }
+        }
     }
 
-    // PLACEHOLDER: points strategy not decided. When it is, convert the score into EZ Points
-    // here and write pointTransactions + the monthly leaderboard the way DealsView does.
-    private func awardPoints(score: Int) {}
+    // Converts the game score into EZ Points: a pointTransactions entry plus the monthly
+    // leaderboard, the same records DealsView writes for a points deal. Leftover game points
+    // (score % 10) are dropped.
+    private func awardPoints(score: Int, gameID: String) {
+        let ezPoints = score / Self.gamePointsPerEZPoint
+        guard ezPoints > 0 else { return }
+
+        let transaction: [String: Any] = [
+            "doneDate": Date().timeIntervalSince1970,
+            "score": ezPoints,
+            "type": Self.gameKey
+        ]
+        dbRef.child("users").child(firebaseUID).child("pointTransactions").child("game_\(gameID)")
+            .setValue(transaction) { [weak self] error, _ in
+                guard let self = self else { return }
+                if let error = error {
+                    print("❌ Failed to award game points: \(error.localizedDescription)")
+                    DispatchQueue.main.async { self.errorMessage = "Couldn't add your EZ Points." }
+                    return
+                }
+
+                let formatter = DateFormatter()
+                formatter.dateFormat = "yyyy-MM"
+                let monthKey = formatter.string(from: Date())
+                self.dbRef.child("leaderboards").child(monthKey).child(self.firebaseUID).child("score")
+                    .setValue(ServerValue.increment(NSNumber(value: ezPoints)))
+                print("✅ Awarded \(ezPoints) EZ Points for game score \(score)")
+            }
+    }
 
     private func intFromAny(_ value: Any?) -> Int {
         switch value {

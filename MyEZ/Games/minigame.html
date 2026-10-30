@@ -10,7 +10,7 @@
         padding: 0;
         height: 100%;
         overflow: hidden;
-        background: #F9FAFB;
+        background: #A9DBFA;
         touch-action: none;
         -webkit-user-select: none;
         user-select: none;
@@ -36,31 +36,48 @@
 
     // MARK: - Config
 
+    // Cartoon palette: everything gets a thick INK outline
+    const INK = '#1E1B4B';
     const C = {
+        ink: INK,
         red: '#ED1C24',
-        dark: '#111827',
-        gray: '#6B7280',
-        light: '#F9FAFB',
+        yellow: '#FACC15',
+        cream: '#FEF3C7',
         white: '#FFFFFF',
-        muted: '#6B7280',
-        line: '#E5E7EB',
-        yellow: '#F59E0B',
+        muted: '#64748B',
+        track: '#E2E8F0',
+        skyTop: '#86C9F5',
+        skyBottom: '#D5EEFF',
+        sun: '#FDE047',
+        hillBack: '#A8D99F',
+        hillFront: '#7CC47F',
+        grass: '#5FAF63',
+        slide: '#3F51D9',
+        slideDark: '#2E3BB0',
+        rail: '#93A8FF',
+        water: '#BFE6FF',
+        skin: '#F6C9A0',
+        shirt: '#ED1C24',
+        hat: '#16161D',
         metal: '#374151',
-        amber: '#D97706',
-        // Inflatable water slide
-        slideTop: '#3B82F6',
-        slideBase: '#2563EB',
-        slideDeep: '#1D4ED8',
-        rail: '#60A5FA',
-        canopy: '#93C5FD',
-        water: '#BFDBFE',
-        hold: '#FDE047'
+        amber: '#F59E0B'
     };
-    const FONT = 'system-ui, sans-serif';
+    const FONT = 'ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif';
 
     // PLACEHOLDER: the game's name isn't decided yet.
     const GAME_TITLE = 'To Be Decided';
     const GAME_TAGLINE = 'Protect the water slide';
+
+    // PLACEHOLDER: weapon unlocks aren't built yet; this only drives the progress bar.
+    const NEXT_WEAPON = { name: 'Shotgun', cost: 200 }; // coins
+
+    // Every 10 game points earn 1 EZ Point in the app (awarded by MiniGameViewModel).
+    // Keep in sync with MiniGameViewModel.gamePointsPerEZPoint.
+    const GAME_POINTS_PER_EZ_POINT = 10;
+
+    // Testing: every level is playable from the start screen. Turn off to require winning
+    // the previous level first.
+    const UNLOCK_ALL_LEVELS = true;
 
     // PLACEHOLDER art: set a path (relative to this file) to replace the drawn version.
     // Hit areas don't change, so keep replacement art about the same size and position.
@@ -73,16 +90,18 @@
     // PLACEHOLDER sounds: until a file is set here, each sound is synthesized in code.
     // In the app, sound files sit next to this file, e.g. shot: 'shot.mp3'.
     const SOUND_FILES = {
-        shot: null,      // every shot; the synth pitches it per gun
-        birdFlap: null,  // a flock arrives
-        slideHit: null,  // a bird pinches the inflatable
+        shot: null,       // every shot; the synth pitches it per gun
+        birdHit: null,    // a bird is shot
+        birdFlap: null,   // a flock arrives
+        slideHit: null,   // a bird pinches the inflatable
         claimGun: null,
         claimLife: null,
         doveShot: null,
-        levelUp: null,
+        wave: null,       // a new wave starts
+        levelClear: null,
         gameOver: null
     };
-    const SOUND_MIN_GAP = { shot: 0.04, birdFlap: 0.35 }; // s, so rapid repeats don't pile up
+    const SOUND_MIN_GAP = { shot: 0.04, birdFlap: 0.35, birdHit: 0.03 }; // s, so rapid repeats don't pile up
 
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
@@ -106,16 +125,77 @@
     function sendToApp(type, data) {
         if (!appBridge) return;
         appBridge.postMessage(Object.assign({ type }, data || {}));
-        log('sent to app', type);
+        if (type !== 'haptic') log('sent to app', type);
+    }
+
+    // Outside the app there's no bridge. Android browsers have navigator.vibrate; iOS Safari
+    // doesn't, but toggling a hidden switch control plays the system tap (iOS 18+).
+    const VIBRATE_MS = { light: 12, medium: 25, heavy: 50, success: [25, 60, 25], error: [70, 50, 70] };
+    const hapticSwitch = (() => {
+        if (appBridge || navigator.vibrate) return null;
+        const label = document.createElement('label');
+        label.setAttribute('aria-hidden', 'true');
+        label.style.display = 'none';
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.setAttribute('switch', '');
+        label.appendChild(input);
+        document.body.appendChild(label);
+        return label;
+    })();
+
+    // style: 'light' | 'medium' | 'heavy' | 'success' | 'error'. Light taps are throttled.
+    let lastHaptic = 0;
+    function haptic(style) {
+        const now = performance.now();
+        if (style === 'light' && now - lastHaptic < 60) return;
+        lastHaptic = now;
+        if (appBridge) {
+            sendToApp('haptic', { style });
+        } else if (navigator.vibrate) {
+            navigator.vibrate(VIBRATE_MS[style] || 12);
+        } else if (hapticSwitch) {
+            hapticSwitch.click();
+            if (style !== 'light' && style !== 'medium') setTimeout(() => hapticSwitch.click(), 90);
+        }
     }
 
     function rand(a, b) { return a + Math.random() * (b - a); }
     function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 
+    // MARK: - Saved progress (this device only, not Firebase)
+
+    const stats = {
+        best: {},     // level -> best score
+        stars: {},    // level -> best stars
+        coins: 0,
+        unlocked: 1,
+
+        load() {
+            try {
+                const saved = JSON.parse(localStorage.getItem('myezGameStats') || '{}');
+                Object.assign(this, saved);
+            } catch (e) {}
+        },
+
+        save() {
+            try {
+                localStorage.setItem('myezGameStats', JSON.stringify({
+                    best: this.best, stars: this.stars, coins: this.coins, unlocked: this.unlocked
+                }));
+            } catch (e) {}
+        },
+
+        isUnlocked(level) { return UNLOCK_ALL_LEVELS || level <= this.unlocked; },
+        bestOverall() { return Math.max(0, ...Object.values(this.best)); },
+        starTotal() { return Object.values(this.stars).reduce((a, b) => a + b, 0); }
+    };
+    stats.load();
+
     // MARK: - Drawing helpers
 
     function rrPath(x, y, w, h, r) {
-        r = Math.max(0, Math.min(r, w / 2, h / 2));
+        r = Math.min(r, w / 2, h / 2);
         ctx.moveTo(x + r, y);
         ctx.lineTo(x + w - r, y);
         ctx.arcTo(x + w, y, x + w, y + r, r);
@@ -135,13 +215,33 @@
         ctx.fill();
     }
 
-    function withShadow(blur, offsetY, fn) {
-        ctx.save();
-        ctx.shadowColor = 'rgba(17,24,39,0.15)';
-        ctx.shadowBlur = blur;
-        ctx.shadowOffsetY = offsetY;
-        fn();
-        ctx.restore();
+    // Filled rounded box with an ink outline
+    function boxO(x, y, w, h, r, color, lw) {
+        ctx.beginPath();
+        rrPath(x, y, w, h, r);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.lineWidth = lw || 2;
+        ctx.strokeStyle = INK;
+        ctx.stroke();
+    }
+
+    // Cartoon card: solid ink drop shadow, then the outlined box. No blur, so it's cheap.
+    function card(x, y, w, h, r, color) {
+        fillRR(x, y + 5, w, h, r, INK);
+        boxO(x, y, w, h, r, color, 3);
+    }
+
+    function circleO(x, y, r, color, lw) {
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+        if (lw !== 0) {
+            ctx.lineWidth = lw || 2;
+            ctx.strokeStyle = INK;
+            ctx.stroke();
+        }
     }
 
     function text(str, x, y, size, weight, color, align) {
@@ -149,6 +249,20 @@
         ctx.fillStyle = color;
         ctx.textAlign = align || 'center';
         ctx.textBaseline = 'middle';
+        ctx.fillText(str, x, y);
+    }
+
+    // Chunky outlined text for titles and score popups
+    function textO(str, x, y, size, color, stroke, align) {
+        ctx.font = '900 ' + size + 'px ' + FONT;
+        ctx.textAlign = align || 'center';
+        ctx.textBaseline = 'middle';
+        ctx.lineJoin = 'round';
+        ctx.miterLimit = 2;
+        ctx.lineWidth = stroke || Math.max(3, size / 6);
+        ctx.strokeStyle = INK;
+        ctx.strokeText(str, x, y);
+        ctx.fillStyle = color;
         ctx.fillText(str, x, y);
     }
 
@@ -163,76 +277,36 @@
         return !!r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
     }
 
-    function drawGround(groundY) {
-        ctx.fillStyle = C.white;
-        ctx.fillRect(0, groundY, W, H - groundY);
-        ctx.fillStyle = C.line;
-        ctx.fillRect(0, groundY, W, 2);
+    function drawButton(r, label, color, textColor, size) {
+        card(r.x, r.y, r.w, r.h, 14, color);
+        text(label, r.x + r.w / 2, r.y + r.h / 2 + 1, size || 19, '900', textColor || C.white);
     }
 
-    // White pill anchored by its right edge
-    function drawPill(label, right, cy, color) {
-        ctx.font = '700 15px ' + FONT;
-        const w = ctx.measureText(label).width + 26, h = 34;
-        withShadow(8, 2, () => fillRR(right - w, cy - h / 2, w, h, h / 2, C.white));
-        text(label, right - w / 2, cy + 1, 15, '700', color);
+    function drawCoin(cx, cy, r) {
+        circleO(cx, cy, r, C.yellow, 2);
+        ctx.strokeStyle = INK;
+        ctx.lineWidth = 2;
+        line(cx, cy - r * 0.45, cx, cy + r * 0.45);
     }
 
-    function drawButton(r, label, color) {
-        fillRR(r.x, r.y, r.w, r.h, 12, color);
-        text(label, r.x + r.w / 2, r.y + r.h / 2 + 1, 17, '700', C.white);
-    }
-
-    function backRect() {
-        return { x: 12, y: safeTop + 12, w: 44, h: 44 };
-    }
-
-    function drawBack() {
-        const r = backRect();
-        const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
-        withShadow(8, 2, () => fillRR(r.x, r.y, r.w, r.h, r.w / 2, C.white));
-        ctx.strokeStyle = C.dark;
-        ctx.lineWidth = 3;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        line(cx + 8, cy, cx - 8, cy);
+    function starPath(cx, cy, r) {
         ctx.beginPath();
-        ctx.moveTo(cx - 1, cy - 7);
-        ctx.lineTo(cx - 8, cy);
-        ctx.lineTo(cx - 1, cy + 7);
-        ctx.stroke();
-    }
-
-    // lines: [{ text, size, gap, weight?, color? }]
-    function drawEndCard(game, title, titleColor, lines) {
-        ctx.fillStyle = 'rgba(17,24,39,0.4)';
-        ctx.fillRect(0, 0, W, H);
-
-        const cardW = Math.min(320, W - 32);
-        const linesH = lines.reduce((sum, l) => sum + l.gap, 0);
-        const cardH = 72 + linesH + 20 + 48 * 2 + 12 + 20;
-        const x = (W - cardW) / 2;
-        const y = Math.max(16, (H - cardH) / 2);
-        withShadow(24, 8, () => fillRR(x, y, cardW, cardH, 20, C.white));
-
-        text(title, W / 2, y + 42, 30, '800', titleColor);
-        let ly = y + 72;
-        for (const l of lines) {
-            text(l.text, W / 2, ly + l.gap / 2, l.size, l.weight || '600', l.color || C.dark);
-            ly += l.gap;
+        for (let i = 0; i < 10; i++) {
+            const a = -Math.PI / 2 + i * Math.PI / 5;
+            const rr = i % 2 ? r * 0.48 : r;
+            ctx.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr);
         }
-        const play = { x: x + 20, y: ly + 20, w: cardW - 40, h: 48 };
-        const menu = { x: x + 20, y: play.y + 60, w: cardW - 40, h: 48 };
-        drawButton(play, 'Play Again', C.red);
-        drawButton(menu, 'Menu', C.dark);
-        game.endButtons = { play, menu };
+        ctx.closePath();
     }
 
-    function drawPaused() {
-        ctx.fillStyle = 'rgba(17,24,39,0.4)';
-        ctx.fillRect(0, 0, W, H);
-        text('Paused', W / 2, H / 2 - 16, 34, '800', C.white);
-        text('Tap to resume', W / 2, H / 2 + 22, 17, '600', C.white);
+    function drawStar(cx, cy, r, filled) {
+        ctx.lineJoin = 'round';
+        starPath(cx, cy, r);
+        ctx.fillStyle = filled ? C.yellow : C.white;
+        ctx.fill();
+        ctx.lineWidth = Math.max(2, r / 8);
+        ctx.strokeStyle = INK;
+        ctx.stroke();
     }
 
     function drawHeart(cx, top, s, color) {
@@ -244,6 +318,14 @@
         ctx.bezierCurveTo(cx + s / 2, top, cx, top, cx, top + s * 0.3);
         ctx.fillStyle = color;
         ctx.fill();
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = INK;
+        ctx.stroke();
+    }
+
+    function drawProgressBar(x, y, w, h, frac, color) {
+        boxO(x, y, w, h, h / 2, C.track, 2);
+        if (frac > 0) boxO(x, y, Math.max(h, w * clamp(frac, 0, 1)), h, h / 2, color, 2);
     }
 
     // MARK: - Art
@@ -275,13 +357,10 @@
         o.stop(t + dur);
     }
 
+    // Filtered white noise, played from a random spot in one shared buffer
     function noise(ac, t, dur, vol, freq, q) {
-        const len = Math.ceil(ac.sampleRate * dur);
-        const buf = ac.createBuffer(1, len, ac.sampleRate);
-        const data = buf.getChannelData(0);
-        for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
         const src = ac.createBufferSource();
-        src.buffer = buf;
+        src.buffer = sound.noiseBuffer;
         const f = ac.createBiquadFilter();
         f.type = 'bandpass';
         f.frequency.value = freq;
@@ -290,18 +369,22 @@
         g.gain.setValueAtTime(vol, t);
         g.gain.exponentialRampToValueAtTime(0.001, t + dur);
         src.connect(f).connect(g).connect(ac.destination);
-        src.start(t);
-        src.stop(t + dur);
+        src.start(t, Math.random() * 0.5, dur);
     }
 
     const SHOT_PITCH = { pistol: 900, fast: 1400, auto: 1100, machine: 700 };
     const SYNTH = {
         shot(ac, t, o) {
             const p = SHOT_PITCH[o.gun] || 900;
-            tone(ac, t, 'square', p, p * 0.3, 0.08, 0.06);
-            noise(ac, t, 0.05, 0.12, 2500, 1);
+            tone(ac, t, 'square', p, p * 0.3, 0.08, 0.05);
+            noise(ac, t, 0.05, 0.1, 2500, 1);
         },
-        birdFlap(ac, t) { for (let i = 0; i < 3; i++) noise(ac, t + i * 0.07, 0.05, 0.12, 500, 2); },
+        birdHit(ac, t, o) {
+            const p = o.big ? 300 : 520;
+            noise(ac, t, 0.09, 0.25, o.big ? 900 : 1600, 1.2); // pop
+            tone(ac, t + 0.02, 'sawtooth', p, p * 0.45, 0.14, 0.08); // squawk
+        },
+        birdFlap(ac, t) { for (let i = 0; i < 3; i++) noise(ac, t + i * 0.07, 0.05, 0.1, 500, 2); },
         slideHit(ac, t) {
             tone(ac, t, 'sine', 160, 60, 0.25, 0.3);
             noise(ac, t + 0.05, 0.7, 0.2, 3000, 0.7); // air hissing out
@@ -312,23 +395,40 @@
         },
         claimLife(ac, t) { [523, 659, 784].forEach((f, i) => tone(ac, t + i * 0.08, 'sine', f, f, 0.14, 0.18)); },
         doveShot(ac, t) { tone(ac, t, 'sine', 700, 300, 0.3, 0.15); },
-        levelUp(ac, t) { [392, 523, 659, 784].forEach((f, i) => tone(ac, t + i * 0.09, 'triangle', f, f, 0.12, 0.15)); },
+        wave(ac, t) { [392, 523].forEach((f, i) => tone(ac, t + i * 0.1, 'triangle', f, f, 0.12, 0.14)); },
+        levelClear(ac, t) { [392, 523, 659, 784].forEach((f, i) => tone(ac, t + i * 0.09, 'triangle', f, f, 0.14, 0.16)); },
         gameOver(ac, t) { [392, 330, 262].forEach((f, i) => tone(ac, t + i * 0.18, 'triangle', f, f * 0.97, 0.22, 0.18)); }
     };
 
     const sound = {
         ac: null,
+        noiseBuffer: null,
         muted: false,
         last: {},
 
-        // Browsers only allow audio after a tap, so every tap calls this
+        // Browsers only allow audio after a tap, so every tap calls this. iOS can leave the
+        // context 'suspended' or 'interrupted' (after muting, a call, the app going to the
+        // background), so it's resumed and nudged with a silent sound on every tap.
         unlock() {
             if (!this.ac) {
                 const AC = window.AudioContext || window.webkitAudioContext;
                 if (!AC) return;
+                // Play through the ringer's silent switch, like a game would (iOS 17+)
+                try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
                 this.ac = new AC();
+                const len = this.ac.sampleRate; // 1 s of noise, shared by every sound
+                this.noiseBuffer = this.ac.createBuffer(1, len, this.ac.sampleRate);
+                const data = this.noiseBuffer.getChannelData(0);
+                for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
             }
-            if (this.ac.state === 'suspended') this.ac.resume();
+            if (this.ac.state !== 'running') {
+                const resumed = this.ac.resume();
+                if (resumed && resumed.catch) resumed.catch(() => {});
+                const src = this.ac.createBufferSource();
+                src.buffer = this.ac.createBuffer(1, 1, this.ac.sampleRate);
+                src.connect(this.ac.destination);
+                src.start(0);
+            }
         },
 
         play(name, opts) {
@@ -346,20 +446,47 @@
         toggle() {
             this.muted = !this.muted;
             try { localStorage.setItem('myezGameMuted', this.muted ? '1' : '0'); } catch (e) {}
+            if (!this.muted) {
+                this.unlock();
+                this.play('claimGun'); // confirms sound is back
+            }
             log('sound', this.muted ? 'off' : 'on');
         }
     };
     try { sound.muted = localStorage.getItem('myezGameMuted') === '1'; } catch (e) {}
 
-    function muteRect() {
-        return { x: 12, y: safeTop + 64, w: 44, h: 44 };
+    // MARK: - Small round buttons
+
+    function iconRect(slot) {
+        return { x: 14, y: safeTop + 12 + slot * 54, w: 44, h: 44 };
     }
 
-    function drawMute() {
-        const r = muteRect();
-        const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
-        withShadow(8, 2, () => fillRR(r.x, r.y, r.w, r.h, r.w / 2, C.white));
-        ctx.fillStyle = C.dark;
+    function drawRoundButton(r, drawIcon) {
+        fillRR(r.x, r.y + 4, r.w, r.h, 14, INK);
+        boxO(r.x, r.y, r.w, r.h, 14, C.white, 3);
+        drawIcon(r.x + r.w / 2, r.y + r.h / 2);
+    }
+
+    function iconBack(cx, cy) {
+        ctx.strokeStyle = INK;
+        ctx.lineWidth = 3.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        line(cx + 8, cy, cx - 8, cy);
+        ctx.beginPath();
+        ctx.moveTo(cx - 1, cy - 7);
+        ctx.lineTo(cx - 8, cy);
+        ctx.lineTo(cx - 1, cy + 7);
+        ctx.stroke();
+    }
+
+    function iconPause(cx, cy) {
+        fillRR(cx - 8, cy - 9, 6, 18, 2, INK);
+        fillRR(cx + 2, cy - 9, 6, 18, 2, INK);
+    }
+
+    function iconSound(cx, cy) {
+        ctx.fillStyle = INK;
         ctx.beginPath();
         ctx.moveTo(cx - 10, cy - 4);
         ctx.lineTo(cx - 5, cy - 4);
@@ -369,7 +496,7 @@
         ctx.lineTo(cx - 10, cy + 4);
         ctx.closePath();
         ctx.fill();
-        ctx.strokeStyle = sound.muted ? C.red : C.dark;
+        ctx.strokeStyle = sound.muted ? C.red : INK;
         ctx.lineWidth = 2.5;
         ctx.lineCap = 'round';
         if (sound.muted) {
@@ -384,7 +511,6 @@
 
     // MARK: - Scene layout
 
-    // Inflatable water slide on the left, shooter standing just past the splash pool.
     function sceneLayout() {
         const groundY = H - safeBottom - 50;
         const x0 = 10;                                   // climbing wall face
@@ -421,64 +547,297 @@
         ctx.closePath();
     }
 
-    function drawWaterSlide(L, t) {
+    // MARK: - Background, one theme per level, cached until the size or theme changes
+
+    // Level 1 park, 2 beach, 3 desert, 4 street
+    const THEMES = ['park', 'beach', 'desert', 'street'];
+    const THEME_COLORS = {
+        park:   { skyTop: C.skyTop, skyBottom: C.skyBottom, ground: C.grass },
+        beach:  { skyTop: '#6EC1F2', skyBottom: '#E3F5FF', ground: '#F3D58C' },
+        desert: { skyTop: '#F6B26B', skyBottom: '#FDE8C4', ground: '#E8B566' },
+        street: { skyTop: '#7FB3E0', skyBottom: '#D9E9F7', ground: '#6B7280' }
+    };
+
+    let bgCache = null;
+    let bgKey = '';
+
+    function themeFor(level) {
+        return THEMES[(level - 1) % THEMES.length];
+    }
+
+    function currentTheme() {
+        return themeFor(screen === 'game' ? game.level : selectedLevel);
+    }
+
+    // Filled and outlined in INK, the same cartoon style as everything else
+    function inkFill(g, color, lw) {
+        g.fillStyle = color;
+        g.fill();
+        g.lineWidth = lw || 3;
+        g.strokeStyle = INK;
+        g.lineJoin = 'round';
+        g.stroke();
+    }
+
+    function drawSun(g, x, y, r) {
+        g.beginPath();
+        g.arc(x, y, r, 0, Math.PI * 2);
+        inkFill(g, C.sun, 3);
+    }
+
+    function drawPalm(g, x, gy, h) {
+        g.beginPath();
+        g.moveTo(x - 6, gy);
+        g.quadraticCurveTo(x - 2, gy - h * 0.5, x + 10, gy - h);
+        g.lineTo(x + 18, gy - h);
+        g.quadraticCurveTo(x + 8, gy - h * 0.5, x + 8, gy);
+        g.closePath();
+        inkFill(g, '#B7824A', 3);
+        const tx = x + 14, ty = gy - h;
+        for (const [dx, dy] of [[-44, 10], [-30, 26], [40, 12], [30, 28], [2, -30]]) {
+            g.beginPath();
+            g.moveTo(tx, ty);
+            g.quadraticCurveTo(tx + dx * 0.5, ty + dy * 0.2 - 16, tx + dx, ty + dy);
+            g.quadraticCurveTo(tx + dx * 0.5, ty + dy * 0.2 - 4, tx, ty);
+            inkFill(g, '#3FA34D', 2.5);
+        }
+    }
+
+    function drawCactus(g, x, gy, h) {
+        g.beginPath();
+        g.moveTo(x - 7, gy);
+        g.lineTo(x - 7, gy - h + 7);
+        g.arc(x, gy - h + 7, 7, Math.PI, 0);
+        g.lineTo(x + 7, gy);
+        g.closePath();
+        inkFill(g, '#4C9A52', 3);
+        for (const side of [-1, 1]) {
+            const ay = gy - h * (side < 0 ? 0.55 : 0.7);
+            g.beginPath();
+            g.moveTo(x + side * 7, ay);
+            g.lineTo(x + side * 16, ay);
+            g.lineTo(x + side * 16, ay - 18);
+            g.lineWidth = 9;
+            g.lineCap = 'round';
+            g.strokeStyle = INK;
+            g.stroke();
+            g.lineWidth = 4;
+            g.strokeStyle = '#4C9A52';
+            g.stroke();
+        }
+    }
+
+    // y of the top edge of an upper half-ellipse at x (the ground level if x is past it)
+    function ellipseTop(e, x) {
+        const k = (x - e.cx) / e.rx;
+        return Math.abs(k) >= 1 ? e.cy : e.cy - e.ry * Math.sqrt(1 - k * k);
+    }
+
+    // A small house: walls, pointed roof, door and two windows
+    function drawHouse(g, x, gy, w, h, wall, roof) {
+        g.beginPath();
+        g.rect(x, gy - h, w, h);
+        inkFill(g, wall, 3);
+        g.beginPath();
+        g.moveTo(x - 6, gy - h);
+        g.lineTo(x + w / 2, gy - h - w * 0.45);
+        g.lineTo(x + w + 6, gy - h);
+        g.closePath();
+        inkFill(g, roof, 3);
+        const dw = w * 0.22;
+        g.beginPath();
+        g.rect(x + w / 2 - dw / 2, gy - h * 0.5, dw, h * 0.5);
+        inkFill(g, '#8B5A3C', 2.5);
+        for (const wx of [x + w * 0.1, x + w * 0.7]) {
+            g.beginPath();
+            g.rect(wx, gy - h * 0.72, w * 0.2, w * 0.2);
+            inkFill(g, '#BFE6FF', 2.5);
+        }
+    }
+
+    function buildBackground() {
+        const L = sceneLayout();
+        const theme = currentTheme();
+        const T = THEME_COLORS[theme];
+        const c = document.createElement('canvas');
+        c.width = Math.round(W * dpr);
+        c.height = Math.round(H * dpr);
+        const g = c.getContext('2d');
+        g.setTransform(dpr, 0, 0, dpr, 0, 0);
         const gy = L.groundY;
 
-        // Ground shadow
-        ctx.fillStyle = 'rgba(17,24,39,0.08)';
-        ctx.beginPath();
-        ctx.ellipse((L.x0 + L.x2) / 2, gy + 4, (L.x2 - L.x0) / 2 + 10, 6, 0, 0, Math.PI * 2);
-        ctx.fill();
+        const sky = g.createLinearGradient(0, 0, 0, gy);
+        sky.addColorStop(0, T.skyTop);
+        sky.addColorStop(1, T.skyBottom);
+        g.fillStyle = sky;
+        g.fillRect(0, 0, W, H);
+
+        if (theme === 'park') {
+            g.fillStyle = C.sun;
+            g.beginPath();
+            g.arc(W * 0.8, safeTop + 160, 34, 0, Math.PI * 2);
+            g.fill();
+            g.fillStyle = C.hillBack;
+            g.beginPath();
+            g.ellipse(W * 0.2, gy + 20, W * 0.6, 120, 0, Math.PI, 0);
+            g.fill();
+            g.fillStyle = C.hillFront;
+            g.beginPath();
+            g.ellipse(W * 0.9, gy + 20, W * 0.55, 85, 0, Math.PI, 0);
+            g.fill();
+        } else if (theme === 'beach') {
+            drawSun(g, W * 0.78, safeTop + 150, 32);
+            // Sea with wavy white crests, then wet sand at the shoreline
+            const seaTop = gy - 70;
+            g.fillStyle = '#2E9BD6';
+            g.fillRect(0, seaTop, W, gy - seaTop);
+            g.fillStyle = INK;
+            g.fillRect(0, seaTop - 1.5, W, 3);
+            g.strokeStyle = 'rgba(255,255,255,0.7)';
+            g.lineWidth = 2.5;
+            g.lineCap = 'round';
+            for (let row = 0; row < 3; row++) {
+                const wy = seaTop + 16 + row * 18;
+                for (let wx = (row % 2) * 30 + 10; wx < W; wx += 60) {
+                    g.beginPath();
+                    g.moveTo(wx, wy);
+                    g.quadraticCurveTo(wx + 8, wy - 6, wx + 16, wy);
+                    g.quadraticCurveTo(wx + 24, wy + 6, wx + 32, wy);
+                    g.stroke();
+                }
+            }
+            g.fillStyle = '#E3BE6C';
+            g.fillRect(0, gy - 10, W, 10);
+            drawPalm(g, Math.min(W - 24, L.px + 40), gy, Math.min(150, (gy - safeTop) * 0.3));
+        } else if (theme === 'desert') {
+            drawSun(g, W * 0.75, safeTop + 140, 46);
+            // Small faded cacti on the dune tops read as far away, so the shooter stands out
+            const backDune = { cx: W * 0.55, cy: gy + 10, rx: W * 0.75, ry: 150 };
+            g.beginPath();
+            g.ellipse(backDune.cx, backDune.cy, backDune.rx, backDune.ry, 0, Math.PI, 0);
+            inkFill(g, '#F0C27A', 3);
+            g.globalAlpha = 0.55;
+            for (const [fx, h] of [[0.5, 34], [0.72, 26]]) {
+                const x = W * fx;
+                drawCactus(g, x, ellipseTop(backDune, x) + 3, h);
+            }
+            g.globalAlpha = 1;
+            g.beginPath();
+            g.ellipse(W * 0.95, gy + 10, W * 0.6, 60, 0, Math.PI, 0);
+            inkFill(g, '#DFA554', 3);
+        } else if (theme === 'street') {
+            // Small faded houses on a far hill, so the shooter stands out
+            const hill = { cx: W * 0.6, cy: gy + 10, rx: W * 0.75, ry: 120 };
+            g.beginPath();
+            g.ellipse(hill.cx, hill.cy, hill.rx, hill.ry, 0, Math.PI, 0);
+            g.fillStyle = '#B7D3B0';
+            g.fill();
+            const walls = ['#FDE68A', '#FBCFE8', '#BBF7D0', '#FED7AA'];
+            const roofs = ['#ED1C24', '#7C3AED', '#2563EB', '#B45309'];
+            g.globalAlpha = 0.5;
+            for (let i = 0, x = W * 0.05; x < W; i++) {
+                const w = 30 + ((i * 13) % 10);
+                const h = 26 + ((i * 17) % 10);
+                drawHouse(g, x, ellipseTop(hill, x + w / 2) + 4, w, h, walls[i % walls.length], roofs[i % roofs.length]);
+                x += w + 14;
+            }
+            g.globalAlpha = 1;
+            g.fillStyle = '#CBD5E1';
+            g.fillRect(0, gy - 10, W, 10);
+        }
+
+        g.fillStyle = T.ground;
+        g.fillRect(0, gy, W, H - gy);
+        if (theme === 'street') {
+            // Road dashes
+            g.fillStyle = C.yellow;
+            for (let x = 10; x < W; x += 44) g.fillRect(x, gy + 22, 24, 4);
+        }
+        g.fillStyle = INK;
+        g.fillRect(0, gy, W, 3);
+        bgCache = c;
+        bgKey = theme + W + 'x' + H;
+    }
+
+    const CLOUDS = [
+        { seed: 0.1, y: 0.16, s: 1, speed: 8 },
+        { seed: 0.55, y: 0.27, s: 0.75, speed: 12 },
+        { seed: 0.85, y: 0.08, s: 0.6, speed: 6 }
+    ];
+
+    function drawClouds(t) {
+        ctx.fillStyle = C.white;
+        for (const c of CLOUDS) {
+            const span = W + 240;
+            const x = ((c.seed * span + t * c.speed) % span) - 120;
+            const y = safeTop + 40 + c.y * (H - safeTop);
+            const s = c.s;
+            fillRR(x - 50 * s, y - 12 * s, 100 * s, 30 * s, 15 * s, C.white);
+            ctx.beginPath();
+            ctx.arc(x - 12 * s, y - 10 * s, 20 * s, 0, Math.PI * 2);
+            ctx.arc(x + 18 * s, y - 6 * s, 15 * s, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    // MARK: - Water slide
+
+    function drawWaterSlide(L, t) {
+        const gy = L.groundY;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
 
         // Canopy arch over the platform
-        ctx.strokeStyle = C.canopy;
-        ctx.lineWidth = 8;
-        ctx.lineCap = 'round';
+        const archX = (L.x0 + L.x1) / 2 + 2, archR = (L.x1 - L.x0) / 2 + 2;
+        ctx.strokeStyle = INK;
+        ctx.lineWidth = 13;
         ctx.beginPath();
-        ctx.arc((L.x0 + L.x1) / 2 + 2, L.top, (L.x1 - L.x0) / 2 + 2, Math.PI, 0);
+        ctx.arc(archX, L.top, archR, Math.PI, 0);
+        ctx.stroke();
+        ctx.strokeStyle = C.rail;
+        ctx.lineWidth = 7;
         ctx.stroke();
 
         // Inflated body
-        const grad = ctx.createLinearGradient(0, L.top, 0, gy);
-        grad.addColorStop(0, C.slideTop);
-        grad.addColorStop(1, C.slideBase);
         slideBodyPath(L);
-        ctx.fillStyle = grad;
+        ctx.fillStyle = C.slide;
         ctx.fill();
 
-        // Baffle seams and base tube, clipped to the body
+        // Wavy horizontal baffle seams and base tube, clipped to the body
         ctx.save();
         slideBodyPath(L);
         ctx.clip();
-        ctx.strokeStyle = 'rgba(255,255,255,0.14)';
-        ctx.lineWidth = 2;
-        for (let x = L.x0 + 22; x < L.x2; x += 22) line(x, L.top, x, gy);
-        ctx.fillStyle = C.slideDeep;
+        ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+        ctx.lineWidth = 2.5;
+        for (let y = L.top + 20; y < gy - 14; y += 20) {
+            ctx.beginPath();
+            ctx.moveTo(L.x0, y);
+            for (let x = L.x0, s = 1; x <= L.x2; x += 12, s = -s) ctx.quadraticCurveTo(x + 6, y + 5 * s, x + 12, y);
+            ctx.stroke();
+        }
+        ctx.fillStyle = C.slideDark;
         ctx.fillRect(L.x0, gy - 12, L.x2 - L.x0, 12);
         ctx.restore();
 
-        // Climbing holds on the wall face
-        const colors = [C.hold, C.red, C.white];
-        let i = 0;
-        for (let y = L.top + 26; y < gy - 22; y += 24, i++) {
-            ctx.fillStyle = colors[i % colors.length];
-            ctx.beginPath();
-            ctx.arc(L.x0 + (i % 2 ? 22 : 12), y, 3.5, 0, Math.PI * 2);
-            ctx.fill();
-        }
+        slideBodyPath(L);
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = INK;
+        ctx.stroke();
 
         // Puffy side rail along the platform and slide lane
-        ctx.lineCap = 'round';
-        ctx.strokeStyle = C.rail;
-        ctx.lineWidth = 12;
         ctx.beginPath();
         ctx.moveTo(L.x0 + 6, L.top);
         ctx.lineTo(L.x1, L.top);
         slideCurve(L);
+        ctx.strokeStyle = INK;
+        ctx.lineWidth = 16;
+        ctx.stroke();
+        ctx.strokeStyle = C.rail;
+        ctx.lineWidth = 10;
         ctx.stroke();
 
         // Water running down the lane
-        ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+        ctx.strokeStyle = C.white;
         ctx.lineWidth = 3;
         ctx.setLineDash([10, 9]);
         ctx.lineDashOffset = -t * 60;
@@ -490,10 +849,10 @@
 
         // Splash pool with inflated rim
         const px = L.x2 - 12, pw = L.poolW;
-        fillRR(px, gy - 20, pw, 22, 11, C.slideDeep);
+        boxO(px, gy - 20, pw, 22, 11, C.slideDark, 3);
         ctx.fillStyle = C.water;
         ctx.beginPath();
-        ctx.ellipse(px + pw / 2, gy - 13, pw / 2 - 7, 5, 0, 0, Math.PI * 2);
+        ctx.ellipse(px + pw / 2, gy - 12, pw / 2 - 8, 5, 0, 0, Math.PI * 2);
         ctx.fill();
 
         // Splash droplets at the exit
@@ -518,17 +877,19 @@
         ctx.restore();
     }
 
+    // MARK: - Shooter and guns
+
     // Gun arm pivots at the shoulder; the default pose aims up-left at the sky
     const DEFAULT_AIM = -Math.PI * 0.8;
     const ARM_LEN = 20;
 
-    // Every gun the shooter can hold. A crate catching the shooter swaps in an upgrade
+    // Every gun the shooter can hold. Shooting a falling crate swaps in an upgrade
     // for UPGRADE_TIME, then he goes back to the pistol.
     const GUNS = {
-        pistol:  { name: 'Pistol',      speed: 650,  cooldown: 0.12, auto: false, pellets: 1, length: 22, bullet: C.dark },
+        pistol:  { name: 'Pistol',      speed: 650,  cooldown: 0.12, auto: false, pellets: 1, length: 22, bullet: C.white },
         fast:    { name: 'Fast Gun',    speed: 1300, cooldown: 0.12, auto: false, pellets: 1, length: 30, bullet: C.red },
-        auto:    { name: 'Auto Gun',    speed: 800,  cooldown: 0.09, auto: true,  pellets: 1, length: 30, bullet: C.amber },
-        machine: { name: 'Machine Gun', speed: 800,  cooldown: 0.18, auto: false, pellets: 3, length: 39, bullet: C.dark }
+        auto:    { name: 'Auto Gun',    speed: 800,  cooldown: 0.09, auto: true,  pellets: 1, length: 30, bullet: C.yellow },
+        machine: { name: 'Machine Gun', speed: 800,  cooldown: 0.18, auto: false, pellets: 3, length: 39, bullet: C.white }
     };
     const UPGRADES = ['fast', 'auto', 'machine'];
     const UPGRADE_TIME = 15;
@@ -548,65 +909,72 @@
     function drawGun(kind) {
         const a = ARM_LEN;
         if (kind === 'fast') {
-            fillRR(a - 3, -5, 33, 10, 3, C.red);
-            fillRR(a + 6, -8, 14, 4, 2, C.yellow);
-            fillRR(a - 1, 3, 8, 12, 2, C.dark);
+            boxO(a - 3, -5, 33, 10, 3, C.red);
+            boxO(a + 6, -9, 14, 5, 2, C.yellow);
+            boxO(a - 1, 3, 8, 12, 2, C.metal);
         } else if (kind === 'auto') {
-            fillRR(a - 3, -5, 33, 10, 3, C.yellow);
-            fillRR(a + 9, 4, 9, 13, 2, C.dark);
-            fillRR(a - 1, 3, 7, 11, 2, C.dark);
+            boxO(a - 3, -5, 33, 10, 3, C.yellow);
+            boxO(a + 9, 4, 9, 13, 2, C.metal);
+            boxO(a - 1, 3, 7, 11, 2, C.metal);
         } else if (kind === 'machine') {
-            fillRR(a - 3, -6, 30, 12, 3, C.dark);
-            ctx.strokeStyle = C.dark;
-            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = INK;
+            ctx.lineWidth = 3;
             for (const dy of [-4, 0, 4]) line(a + 26, dy, a + 39, dy);
-            fillRR(a + 4, -2, 14, 4, 2, C.red);
-            fillRR(a - 1, 4, 8, 11, 2, C.dark);
+            boxO(a - 3, -6, 30, 12, 3, C.metal);
+            boxO(a + 4, -2, 14, 4, 2, C.red, 1.5);
+            boxO(a - 1, 4, 8, 11, 2, C.metal);
         } else {
-            fillRR(a - 3, -4, 25, 8, 2, C.metal);
-            fillRR(a - 1, 2, 7, 11, 2, C.metal);
+            boxO(a - 3, -4, 25, 8, 2, C.metal);
+            boxO(a - 1, 2, 7, 11, 2, C.metal);
         }
     }
 
-    function drawStickFigure(px, gy) {
+    function drawCharacter(px, gy, facingLeft) {
         ctx.lineCap = 'round';
-        ctx.lineWidth = 4;
-        ctx.strokeStyle = C.dark;
-        line(px, gy - 30, px - 9, gy - 2);
-        line(px, gy - 30, px + 9, gy - 2);
-        line(px, gy - 30, px, gy - 58);
-        line(px, gy - 52, px + 7, gy - 38);
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = INK;
+        ctx.lineWidth = 6;
+        line(px - 2, gy - 30, px - 8, gy - 5);
+        line(px + 2, gy - 30, px + 8, gy - 5);
+        boxO(px - 15, gy - 7, 12, 7, 3, INK, 1);
+        boxO(px + 3, gy - 7, 12, 7, 3, INK, 1);
 
-        ctx.fillStyle = C.dark;
+        boxO(px - 10, gy - 60, 20, 34, 8, C.shirt, 2.5);
+        circleO(px, gy - 71, 10, C.skin, 2.5);
+
+        // Black cap; the brim points the way he's aiming
+        const dir = facingLeft ? -1 : 1;
         ctx.beginPath();
-        ctx.arc(px, gy - 70, 10, 0, Math.PI * 2);
+        ctx.arc(px, gy - 73, 10.5, Math.PI, 0);
+        ctx.closePath();
+        ctx.fillStyle = C.hat;
         ctx.fill();
-        ctx.fillStyle = C.red;
-        ctx.beginPath();
-        ctx.arc(px, gy - 71, 10, Math.PI, 0);
-        ctx.fill();
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = INK;
+        ctx.stroke();
+        boxO(dir > 0 ? px + 2 : px - 16, gy - 76, 14, 5, 2.5, C.hat, 2);
     }
 
     function drawPlayer(L, aim, gun, muzzleFlash) {
         const px = L.px, gy = L.py;
+        const facingLeft = Math.cos(aim) < 0;
         const avatar = art('avatar');
         if (avatar) ctx.drawImage(avatar, px - 22, gy - 84, 44, 84);
-        else drawStickFigure(px, gy);
+        else drawCharacter(px, gy, facingLeft);
 
         // Gun arm, rotated toward the last shot; flipped when aiming left so the grip hangs down
         ctx.save();
         ctx.translate(px, gy - 52);
         ctx.rotate(aim);
-        if (Math.cos(aim) < 0) ctx.scale(1, -1);
+        if (facingLeft) ctx.scale(1, -1);
         ctx.lineCap = 'round';
-        ctx.strokeStyle = C.dark;
-        ctx.lineWidth = 4;
+        ctx.strokeStyle = INK;
+        ctx.lineWidth = 6;
         line(0, 0, ARM_LEN, 0);
         drawGun(gun);
         if (muzzleFlash > 0) {
             ctx.fillStyle = C.yellow;
-            ctx.beginPath();
-            ctx.arc(ARM_LEN + GUNS[gun].length + 3, 0, 6, 0, Math.PI * 2);
+            starPath(ARM_LEN + GUNS[gun].length + 6, 0, 9);
             ctx.fill();
         }
         ctx.restore();
@@ -614,16 +982,151 @@
 
     function drawScene(L, t, aim, gun, muzzleFlash) {
         const bg = art('background'), slide = art('slide');
-        if (bg) {
-            ctx.drawImage(bg, 0, 0, W, H);
-        } else {
-            ctx.fillStyle = C.light;
-            ctx.fillRect(0, 0, W, H);
-            drawGround(L.groundY);
+        if (bg) ctx.drawImage(bg, 0, 0, W, H);
+        else {
+            if (bgKey !== currentTheme() + W + 'x' + H) buildBackground();
+            ctx.drawImage(bgCache, 0, 0, W, H);
         }
+        drawClouds(t);
         if (slide) ctx.drawImage(slide, L.x0, L.top - 40, L.x2 + L.poolW - L.x0, L.groundY - L.top + 40);
         else drawWaterSlide(L, t);
         drawPlayer(L, aim === undefined ? DEFAULT_AIM : aim, gun || 'pistol', muzzleFlash || 0);
+    }
+
+    // MARK: - Birds
+
+    // Regular birds are worth 1, the big dark ones 2. Doves are harmless and shooting one costs a point.
+    const BIRD_KINDS = {
+        normal: { size: 1,    points: 1,  speed: 1,    radius: 18,
+                  body: '#5B4B8A', belly: '#9C8AD0', wing: '#463870', beak: C.yellow, pupil: INK, angry: true },
+        big:    { size: 1.45, points: 2,  speed: 0.85, radius: 26,
+                  body: '#2A1F3D', belly: '#4B3A66', wing: '#16101F', beak: C.amber, pupil: C.red, angry: true, spikes: true },
+        dove:   { size: 0.95, points: -1, speed: 1,    radius: 17,
+                  body: C.white, belly: '#EEF2F7', wing: '#DCE3EC', beak: '#F472B6', pupil: INK, angry: false }
+    };
+
+    // Art faces left at the origin; it's rotated to the flight direction and never drawn upside down
+    function drawBird(b, t) {
+        const K = BIRD_KINDS[b.kind];
+        const s = K.size;
+        const flap = Math.sin(t * (b.kind === 'big' ? 10 : 14) + b.phase);
+        const a = Math.atan2(b.vy, b.vx);
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        ctx.rotate(a);
+        ctx.scale(-s, Math.cos(a) < 0 ? -s : s);
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = INK;
+        ctx.lineWidth = 2.5 / s;
+
+        // Tail
+        ctx.beginPath();
+        ctx.moveTo(10, -2);
+        ctx.lineTo(22, -9);
+        ctx.lineTo(19, 0);
+        ctx.lineTo(22, 8);
+        ctx.closePath();
+        ctx.fillStyle = K.wing;
+        ctx.fill();
+        ctx.stroke();
+
+        // Body and belly
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 14, 10, 0, 0, Math.PI * 2);
+        ctx.fillStyle = K.body;
+        ctx.fill();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(-3, 4, 8, 4.5, 0, 0, Math.PI * 2);
+        ctx.fillStyle = K.belly;
+        ctx.fill();
+
+        // Head spikes on the big ones
+        if (K.spikes) {
+            ctx.fillStyle = INK;
+            ctx.beginPath();
+            ctx.moveTo(-16, -9); ctx.lineTo(-18, -18); ctx.lineTo(-12, -11);
+            ctx.lineTo(-11, -20); ctx.lineTo(-7, -11);
+            ctx.lineTo(-4, -17); ctx.lineTo(-4, -8);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // Head
+        ctx.beginPath();
+        ctx.arc(-11, -4, 8, 0, Math.PI * 2);
+        ctx.fillStyle = K.body;
+        ctx.fill();
+        ctx.stroke();
+
+        // Beak
+        ctx.beginPath();
+        ctx.moveTo(-17, -7);
+        ctx.lineTo(-26, -3);
+        ctx.lineTo(-17, 0);
+        ctx.closePath();
+        ctx.fillStyle = K.beak;
+        ctx.fill();
+        ctx.stroke();
+
+        // Eye, with an angry brow on the attackers
+        ctx.beginPath();
+        ctx.arc(-13, -6, 3.8, 0, Math.PI * 2);
+        ctx.fillStyle = C.white;
+        ctx.fill();
+        ctx.lineWidth = 1.5 / s;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(-14, -5.5, 1.9, 0, Math.PI * 2);
+        ctx.fillStyle = K.pupil;
+        ctx.fill();
+        if (K.angry) {
+            ctx.lineWidth = 2.5 / s;
+            line(-18, -12, -9, -9);
+        }
+
+        // Flapping wing
+        ctx.lineWidth = 2.5 / s;
+        ctx.beginPath();
+        ctx.moveTo(-6, -2);
+        ctx.lineTo(7, -2);
+        ctx.lineTo(1, -2 - 17 * flap);
+        ctx.closePath();
+        ctx.fillStyle = K.wing;
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+    // MARK: - Game rules
+
+    // Each level is WAVES waves of WAVE_TIME with a BREAK_TIME breather before each one.
+    // Within a level, every wave spawns a bit faster and flies a bit faster.
+    const WAVES = 5;
+    const WAVE_TIME = 9;   // s
+    const BREAK_TIME = 2.5; // s
+    const LEVELS = [
+        { speed: 105, every: 1.18, flock: [1, 1], zigzag: 0,  big: 0.12, origins: ['sky', 'corner', 'side'] },
+        { speed: 140, every: 0.9,  flock: [1, 2], zigzag: 12, big: 0.16, origins: ['sky', 'corner', 'side', 'beside'] },
+        { speed: 175, every: 0.7,  flock: [2, 3], zigzag: 22, big: 0.2,  origins: ['sky', 'corner', 'side', 'beside', 'feet'] },
+        { speed: 215, every: 0.55, flock: [3, 4], zigzag: 30, big: 0.25, origins: ['sky', 'corner', 'side', 'beside', 'feet'] }
+    ];
+    const ORIGIN_WEIGHT = { sky: 20, corner: 15, side: 30, beside: 15, feet: 20 };
+    const PASSING_SHARE = 0.15; // extra birds per attacker that just fly by and never hit the slide
+
+    const DOVE_EVERY = [2.5, 4.5]; // s
+    const MAX_HP = 5;              // slide health segments
+    const DROP_SPEED = 80;         // px/s crates fall
+    const HITSTOP = 0.05;          // s the action freezes on a hit
+    const MAX_PARTICLES = 220;
+
+    // Stars from slide health left when the level is cleared
+    function starsFor(hp) {
+        if (hp >= MAX_HP) return 3;
+        if (hp >= 3) return 2;
+        return 1;
     }
 
     // MARK: - Bird Defense
@@ -635,67 +1138,81 @@
         return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
     }
 
-    // Each level lasts LEVEL_TIME; the last one keeps going until the slide falls.
-    // Every level steps up all three: bird speed, how many birds arrive at once (flock range,
-    // spawn interval), and how many places they come from. Each bird in a flock picks its own entry.
-    const LEVEL_TIME = 60; // s
-    const LEVELS = [
-        { speed: 105, every: 1.18, flock: [1, 1], zigzag: 0,  origins: ['sky', 'corner', 'side'] },
-        { speed: 140, every: 0.9,  flock: [1, 2], zigzag: 12, origins: ['sky', 'corner', 'side', 'beside'] },
-        { speed: 175, every: 0.7,  flock: [2, 3], zigzag: 22, origins: ['sky', 'corner', 'side', 'beside', 'feet'] },
-        { speed: 215, every: 0.55, flock: [3, 4], zigzag: 30, origins: ['sky', 'corner', 'side', 'beside', 'feet'] }
-    ];
-    const ORIGIN_WEIGHT = { sky: 20, corner: 15, side: 30, beside: 15, feet: 20 };
+    const game = {
+        level: 1,
 
-    // Doves are harmless: they cross the screen from any edge and never hit the slide.
-    // Shooting one costs a point.
-    const DOVE_EVERY = [2.5, 4.5]; // s
-    const DOVE_PENALTY = 1;
-    const BIRD_COLORS = { tail: '#4B5563', body: '#374151', wing: C.gray, beak: C.yellow, eye: C.white };
-    const DOVE_COLORS = { tail: '#D1D5DB', body: '#E5E7EB', wing: '#9CA3AF', beak: '#F472B6', eye: C.dark };
-
-    const birdDefense = {
-        name: 'Bird Defense',
-        DROP_SPEED: 80,       // px/s crates fall
-        MAX_HP: 3,
-
-        init() { this.reset(); },
-
-        reset() {
-            this.hp = 3;
+        start(level) {
+            this.level = level;
+            this.hp = MAX_HP;
             this.score = 0;
+            this.kills = 0;
+            this.shotsFired = 0;
+            this.shotsHit = 0;
+            this.combo = 0;
+            this.bestCombo = 0;
+            this.comboPop = 0;
             this.birds = [];
             this.shots = [];
-            this.spawnTimer = 1;
+            this.drops = [];
+            this.particles = [];
+            this.poofs = [];
+            this.popups = [];
+            this.banner = null;
+            this.reticle = null;
             this.cooldown = 0;
             this.flash = 0;
+            this.shake = 0;
+            this.hitStop = 0;
             this.aim = DEFAULT_AIM;
             this.muzzleFlash = 0;
             this.gun = 'pistol';
             this.gunTime = 0;
             this.holding = null;
-            this.doves = [];
             this.doveTimer = rand(1.5, 3);
-            this.drops = [];      // falling crates: shoot one to claim it
             this.gunTimer = rand(8, 12);
-            this.lifeTimer = rand(8, 12);
-            this.popups = [];
-            this.debris = [];
+            this.lifeTimer = rand(10, 14);
             this.t = 0;
-            this.level = 1;
+            this.wave = 1;
+            this.phase = 'break';
+            this.phaseTime = BREAK_TIME;
+            this.spawnTimer = 0;
             this.over = false;
-            this.overAt = 0;
-            this.endButtons = null;
+            this.overT = 0;
+            this.won = false;
+            this.results = null;
+            this.buttons = null;
+            this.showBanner('Level ' + level, 'Wave 1/' + WAVES);
+            log('level start', level);
         },
 
-        spawnBird(L) {
+        progress() {
+            const inWave = this.phase === 'wave' ? 1 - this.phaseTime / WAVE_TIME : this.phase === 'clear' ? 1 : 0;
+            return (this.wave - 1 + inWave) / WAVES;
+        },
+
+        showBanner(title, sub) {
+            this.banner = { title, sub, life: 1.8 };
+        },
+
+        popup(str, color, x, y, size) {
+            this.popups.push({ text: str, color, x, y, size: size || 24, life: 0.9 });
+        },
+
+        // MARK: Spawning
+
+        spawnFlock(L) {
             const lv = LEVELS[this.level - 1];
             const count = lv.flock[0] + Math.floor(Math.random() * (lv.flock[1] - lv.flock[0] + 1));
-            for (let i = 0; i < count; i++) this.spawnOne(L, lv);
+            for (let i = 0; i < count; i++) {
+                this.spawnAttacker(L, lv);
+                if (Math.random() < PASSING_SHARE) this.spawnPasser(L, lv);
+            }
             sound.play('birdFlap');
         },
 
-        spawnOne(L, lv) {
+        waveSpeed(lv) { return lv.speed * (1 + 0.04 * (this.wave - 1)); },
+
+        spawnAttacker(L, lv) {
             const total = lv.origins.reduce((sum, o) => sum + ORIGIN_WEIGHT[o], 0);
             let roll = Math.random() * total, origin = lv.origins[0];
             for (const o of lv.origins) {
@@ -719,17 +1236,52 @@
                 y = rand(L.groundY - 34, L.groundY - 14);
             }
             const low = origin === 'feet';
+            const kind = !low && Math.random() < lv.big ? 'big' : 'normal';
 
             // Dive at a random spot on the slide's face; ground skimmers stay low
             const ty = low ? rand(L.groundY - 40, L.groundY - 16) : rand(L.top + 10, L.groundY - 30);
             const tx = slideSurfaceX(L, ty);
+            const speed = this.waveSpeed(lv) * BIRD_KINDS[kind].speed;
             const len = Math.hypot(tx - x, ty - y) || 1;
             this.birds.push({
+                kind, passing: false,
                 x, y, bx: x, by: y, tx, ty,
-                vx: (tx - x) / len * lv.speed,
-                vy: (ty - y) / len * lv.speed,
+                vx: (tx - x) / len * speed,
+                vy: (ty - y) / len * speed,
                 zigzag: low ? 0 : lv.zigzag,
                 phase: rand(0, Math.PI * 2)
+            });
+        },
+
+        // Flies straight across the sky above the slide and off the left edge
+        spawnPasser(L, lv) {
+            const top = safeTop + 90, bottom = Math.max(top + 10, L.top - 50);
+            const y0 = rand(top, bottom), y1 = clamp(y0 + rand(-40, 40), top, bottom);
+            const speed = this.waveSpeed(lv) * 1.1;
+            const dx = -(W + 80), dy = y1 - y0, len = Math.hypot(dx, dy);
+            this.birds.push({
+                kind: 'normal', passing: true,
+                x: W + 30, y: y0, bx: W + 30, by: y0,
+                vx: dx / len * speed, vy: dy / len * speed,
+                zigzag: 8, phase: rand(0, Math.PI * 2)
+            });
+        },
+
+        spawnDove(L) {
+            const top = safeTop + 60, bottom = L.groundY - 70;
+            const edgePoint = edge => edge === 'top'
+                ? { x: rand(20, W - 20), y: -20 }
+                : { x: edge === 'left' ? -20 : W + 20, y: rand(top, bottom) };
+            const edges = ['left', 'right', 'top'];
+            const from = edges[Math.floor(Math.random() * 3)];
+            const rest = edges.filter(e => e !== from);
+            const a = edgePoint(from), b = edgePoint(rest[Math.floor(Math.random() * 2)]);
+            const speed = rand(90, 130), len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+            this.birds.push({
+                kind: 'dove', passing: true,
+                x: a.x, y: a.y, bx: a.x, by: a.y,
+                vx: (b.x - a.x) / len * speed, vy: (b.y - a.y) / len * speed,
+                zigzag: 0, bob: true, phase: rand(0, Math.PI * 2)
             });
         },
 
@@ -746,59 +1298,199 @@
             log(type === 'gun' ? 'upgrade falling' : 'life falling', kind ? GUNS[kind].name : '');
         },
 
-        spawnDove(L) {
-            const top = safeTop + 60, bottom = L.groundY - 70;
-            const edgePoint = edge => edge === 'top'
-                ? { x: rand(20, W - 20), y: -20 }
-                : { x: edge === 'left' ? -20 : W + 20, y: rand(top, bottom) };
-            const edges = ['left', 'right', 'top'];
-            const from = edges[Math.floor(Math.random() * 3)];
-            const rest = edges.filter(e => e !== from);
-            const a = edgePoint(from), b = edgePoint(rest[Math.floor(Math.random() * 2)]);
-            const speed = rand(90, 130), len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
-            this.doves.push({
-                dove: true, x: a.x, y: a.y, bx: a.x, by: a.y,
-                vx: (b.x - a.x) / len * speed, vy: (b.y - a.y) / len * speed,
-                life: len / speed + 0.5, phase: rand(0, Math.PI * 2)
-            });
+        // MARK: Hit feedback
+
+        burst(x, y, kind, count) {
+            const K = BIRD_KINDS[kind];
+            const big = kind === 'big';
+            for (let i = 0; i < count && this.particles.length < MAX_PARTICLES; i++) {
+                this.particles.push({
+                    x, y,
+                    vx: rand(-140, 140), vy: rand(-180, 20),
+                    rot: rand(0, Math.PI * 2), vr: rand(-9, 9),
+                    life: rand(0.5, 0.9), feather: true,
+                    color: i % 3 === 0 ? K.belly : K.body,
+                    size: rand(3.5, 5.5) * (big ? 1.3 : 1)
+                });
+            }
+            this.poofs.push({ x, y, r: 16 * K.size, life: 0.22 });
+        },
+
+        killBird(b) {
+            b.dead = true;
+            const K = BIRD_KINDS[b.kind];
+            this.burst(b.x, b.y, b.kind, b.kind === 'big' ? 14 : 9);
+            this.hitStop = HITSTOP;
+
+            if (b.kind === 'dove') {
+                this.combo = 0;
+                this.score = Math.max(0, this.score + K.points);
+                this.popup(String(K.points), C.white, b.x, b.y - 22, 22);
+                sound.play('doveShot');
+                haptic('light');
+                log('dove shot', { score: this.score });
+                return;
+            }
+
+            this.kills++;
+            this.combo++;
+            this.comboPop = 0.15;
+            this.bestCombo = Math.max(this.bestCombo, this.combo);
+            this.score += K.points;
+            this.shake = Math.max(this.shake, b.kind === 'big' ? 7 : 4);
+            this.popup('+' + K.points, C.yellow, b.x, b.y - 22, b.kind === 'big' ? 32 : 26);
+            sound.play('birdHit', { big: b.kind === 'big' });
+            haptic(b.kind === 'big' ? 'medium' : 'light');
+            log('score', { score: this.score, kind: b.kind });
         },
 
         claimDrop(L, d) {
             if (d.type === 'gun') {
                 this.gun = d.kind;
                 this.gunTime = UPGRADE_TIME;
-                this.popup(GUNS[d.kind].name + '!', C.red, L.px - 40, L.py - 110);
-                log('upgrade collected', GUNS[d.kind].name);
+                this.popup(GUNS[d.kind].name + '!', C.yellow, L.px - 40, L.py - 110, 22);
                 sound.play('claimGun');
-            } else if (this.hp < this.MAX_HP) {
+                log('upgrade collected', GUNS[d.kind].name);
+            } else if (this.hp < MAX_HP) {
                 this.hp++;
-                this.popup('+1 Life', C.red, d.x, d.y - 30);
-                log('life collected', { hp: this.hp });
+                this.popup('+1 Slide', C.yellow, d.x, d.y - 30, 22);
                 sound.play('claimLife');
+                log('life collected', { hp: this.hp });
             } else {
-                this.popup('Health full', C.muted, d.x, d.y - 30);
+                this.popup('Slide full', C.white, d.x, d.y - 30, 20);
                 sound.play('claimLife');
             }
-            for (let i = 0; i < 10; i++) {
-                this.debris.push({ x: d.x, y: d.y, vx: rand(-140, 140), vy: rand(-240, -40), life: rand(0.5, 0.8), color: i % 2 ? C.white : C.red });
+            haptic('medium');
+            for (let i = 0; i < 10 && this.particles.length < MAX_PARTICLES; i++) {
+                this.particles.push({
+                    x: d.x, y: d.y, vx: rand(-140, 140), vy: rand(-240, -40),
+                    rot: rand(0, 6), vr: rand(-6, 6), life: rand(0.5, 0.8),
+                    color: i % 2 ? C.white : C.red, size: 4
+                });
             }
         },
 
-        popup(str, color, x, y) {
-            this.popups.push({ text: str, color, x, y, life: 1.4 });
+        hitSlide(b) {
+            b.dead = true;
+            this.hp--;
+            this.combo = 0;
+            this.flash = 0.35;
+            this.shake = 10;
+            sound.play('slideHit');
+            haptic('heavy');
+            log('slide hit', { hp: this.hp });
+            if (this.hp <= 0) this.end(false);
+        },
+
+        end(won) {
+            this.over = true;
+            this.won = won;
+            this.overT = 0;
+            this.holding = null;
+            sound.play(won ? 'levelClear' : 'gameOver');
+            haptic(won ? 'success' : 'error');
+            log(won ? 'level cleared' : 'game over', { level: this.level, score: this.score });
+        },
+
+        showResults() {
+            const level = this.level;
+            const stars = this.won ? starsFor(this.hp) : 0;
+            const prevBest = stats.best[level] || 0;
+            const newBest = this.score > prevBest;
+            const coins = this.score; // 1 coin per point
+            if (newBest) stats.best[level] = this.score;
+            stats.stars[level] = Math.max(stats.stars[level] || 0, stars);
+            stats.coins += coins;
+            if (this.won) stats.unlocked = Math.max(stats.unlocked, Math.min(LEVELS.length, level + 1));
+            stats.save();
+
+            this.results = {
+                stars, newBest, coins,
+                accuracy: this.shotsFired ? Math.round(this.shotsHit / this.shotsFired * 100) : 0,
+                t: 0
+            };
+            sendToApp('gameOver', { score: this.score, level, won: this.won, stars });
+            log('results', { level, score: this.score, stars, newBest });
+        },
+
+        // MARK: Update
+
+        updateEffects(dt) {
+            for (const p of this.particles) {
+                p.vy += (p.feather ? 320 : 900) * dt;
+                if (p.feather) p.vx *= 1 - 2 * dt;
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                p.rot += p.vr * dt;
+                p.life -= dt;
+            }
+            this.particles = this.particles.filter(p => p.life > 0);
+            for (const p of this.poofs) p.life -= dt;
+            this.poofs = this.poofs.filter(p => p.life > 0);
+            for (const p of this.popups) { p.life -= dt; p.y -= 40 * dt; }
+            this.popups = this.popups.filter(p => p.life > 0);
+            if (this.banner) {
+                this.banner.life -= dt;
+                if (this.banner.life <= 0) this.banner = null;
+            }
+            if (this.reticle) {
+                this.reticle.life -= dt;
+                if (this.reticle.life <= 0) this.reticle = null;
+            }
+            this.shake = Math.max(0, this.shake - dt * 45);
+            this.comboPop = Math.max(0, this.comboPop - dt);
+            this.flash = Math.max(0, this.flash - dt);
+            this.muzzleFlash = Math.max(0, this.muzzleFlash - dt);
+        },
+
+        updateWaves(dt, L) {
+            this.phaseTime -= dt;
+            if (this.phase === 'break') {
+                if (this.phaseTime <= 0) {
+                    this.phase = 'wave';
+                    this.phaseTime = WAVE_TIME;
+                    this.spawnTimer = 0.2;
+                    log('wave', this.wave);
+                }
+            } else if (this.phase === 'wave') {
+                const lv = LEVELS[this.level - 1];
+                this.spawnTimer -= dt;
+                if (this.spawnTimer <= 0) {
+                    this.spawnTimer += lv.every / (1 + 0.1 * (this.wave - 1));
+                    this.spawnFlock(L);
+                }
+                if (this.phaseTime <= 0) {
+                    if (this.wave < WAVES) {
+                        this.wave++;
+                        this.phase = 'break';
+                        this.phaseTime = BREAK_TIME;
+                        this.showBanner('Wave ' + this.wave + '/' + WAVES, 'Get ready');
+                        sound.play('wave');
+                    } else {
+                        this.phase = 'clear';
+                    }
+                }
+            }
         },
 
         update(dt) {
             this.t += dt;
-            this.flash = Math.max(0, this.flash - dt);
-            this.muzzleFlash = Math.max(0, this.muzzleFlash - dt);
-            this.cooldown -= dt;
-            for (const p of this.popups) { p.life -= dt; p.y -= 30 * dt; }
-            this.popups = this.popups.filter(p => p.life > 0);
-            for (const d of this.debris) { d.vy += 900 * dt; d.x += d.vx * dt; d.y += d.vy * dt; d.life -= dt; }
-            this.debris = this.debris.filter(d => d.life > 0);
-            if (this.over) return;
+            this.updateEffects(dt);
+            if (this.results) {
+                this.results.t += dt;
+                return;
+            }
+            if (this.over) {
+                this.overT += dt;
+                if (this.overT > 0.9) this.showResults();
+                return;
+            }
+            if (this.hitStop > 0) {
+                this.hitStop -= dt;
+                return;
+            }
             const L = sceneLayout();
+            this.cooldown -= dt;
 
             if (this.gunTime > 0) {
                 this.gunTime -= dt;
@@ -810,54 +1502,36 @@
             }
             if (this.holding && GUNS[this.gun].auto) this.fire(this.holding.x, this.holding.y);
 
-            const level = Math.min(LEVELS.length, 1 + Math.floor(this.t / LEVEL_TIME));
-            if (level !== this.level) {
-                this.level = level;
-                this.popup('Level ' + level, C.red, W / 2, L.groundY * 0.4);
-                sound.play('levelUp');
-                log('level', level);
-            }
+            this.updateWaves(dt, L);
 
-            this.spawnTimer -= dt;
-            if (this.spawnTimer <= 0) {
-                this.spawnTimer += LEVELS[this.level - 1].every;
-                this.spawnBird(L);
-            }
-
-            // One gun crate and one life crate in the air at a time
-            if (!this.drops.some(d => d.type === 'gun')) {
-                this.gunTimer -= dt;
-                if (this.gunTimer <= 0) {
-                    this.spawnDrop(L, 'gun');
-                    this.gunTimer = rand(14, 20);
+            if (this.phase !== 'clear') {
+                // One gun crate and one life crate in the air at a time
+                if (!this.drops.some(d => d.type === 'gun')) {
+                    this.gunTimer -= dt;
+                    if (this.gunTimer <= 0) {
+                        this.spawnDrop(L, 'gun');
+                        this.gunTimer = rand(14, 20);
+                    }
                 }
-            }
-            if (!this.drops.some(d => d.type === 'life')) {
-                this.lifeTimer -= dt;
-                if (this.lifeTimer <= 0) {
-                    this.spawnDrop(L, 'life');
-                    this.lifeTimer = rand(12, 18);
+                if (!this.drops.some(d => d.type === 'life')) {
+                    this.lifeTimer -= dt;
+                    if (this.lifeTimer <= 0) {
+                        this.spawnDrop(L, 'life');
+                        this.lifeTimer = rand(12, 18);
+                    }
                 }
-            }
-            this.doveTimer -= dt;
-            if (this.doveTimer <= 0) {
-                this.spawnDove(L);
-                this.doveTimer = rand(DOVE_EVERY[0], DOVE_EVERY[1]);
-            }
-            for (const d of this.doves) {
-                d.bx += d.vx * dt;
-                d.by += d.vy * dt;
-                d.x = d.bx;
-                d.y = d.by + Math.sin(this.t * 3 + d.phase) * 8;
-                d.life -= dt;
-                if (d.life <= 0) d.dead = true;
+                this.doveTimer -= dt;
+                if (this.doveTimer <= 0) {
+                    this.spawnDove(L);
+                    this.doveTimer = rand(DOVE_EVERY[0], DOVE_EVERY[1]);
+                }
             }
 
             for (const d of this.drops) {
-                d.y += this.DROP_SPEED * dt;
+                d.y += DROP_SPEED * dt;
                 if (d.y >= L.groundY - 14) {
                     d.dead = true;
-                    this.popup('Missed', C.muted, d.x, d.y - 40);
+                    this.popup('Missed', C.white, d.x, d.y - 40, 18);
                     log(d.type === 'gun' ? 'upgrade lost' : 'life lost');
                 }
             }
@@ -865,11 +1539,17 @@
             for (const b of this.birds) {
                 b.bx += b.vx * dt;
                 b.by += b.vy * dt;
-                // Zig-zag sideways to the flight path
-                const sp = Math.hypot(b.vx, b.vy) || 1;
-                const off = Math.sin(this.t * 5 + b.phase) * b.zigzag;
-                b.x = b.bx - b.vy / sp * off;
-                b.y = b.by + b.vx / sp * off;
+                if (b.bob) {
+                    b.x = b.bx;
+                    b.y = b.by + Math.sin(this.t * 3 + b.phase) * 8;
+                } else {
+                    // Zig-zag sideways to the flight path
+                    const sp = Math.hypot(b.vx, b.vy) || 1;
+                    const off = Math.sin(this.t * 5 + b.phase) * b.zigzag;
+                    b.x = b.bx - b.vy / sp * off;
+                    b.y = b.by + b.vx / sp * off;
+                }
+                if (b.passing && (b.x < -60 || b.x > W + 60 || b.y > H + 60)) b.gone = true;
             }
             for (const s of this.shots) {
                 s.px = s.x;
@@ -879,53 +1559,46 @@
             }
 
             for (const s of this.shots) {
-                const hit = this.drops.find(d => !d.dead && segDist(d.x, d.y, s.px, s.py, s.x, s.y) < 22);
-                if (hit) {
-                    s.dead = hit.dead = true;
-                    this.claimDrop(L, hit);
+                const crate = this.drops.find(d => !d.dead && segDist(d.x, d.y, s.px, s.py, s.x, s.y) < 22);
+                if (crate) {
+                    s.dead = crate.dead = true;
+                    s.volley.hit = true;
+                    this.claimDrop(L, crate);
                     continue;
                 }
-                for (const d of this.doves) {
-                    if (s.dead || d.dead) continue;
-                    if (segDist(d.x, d.y, s.px, s.py, s.x, s.y) < 18) {
-                        s.dead = d.dead = true;
-                        this.score = Math.max(0, this.score - DOVE_PENALTY);
-                        this.popup('Dove! -' + DOVE_PENALTY, C.muted, d.x, d.y - 24);
-                        log('dove shot', { score: this.score });
-                        sound.play('doveShot');
-                    }
-                }
                 for (const b of this.birds) {
-                    if (s.dead || b.dead) continue;
-                    if (segDist(b.x, b.y, s.px, s.py, s.x, s.y) < 18) {
-                        s.dead = b.dead = true;
-                        this.score++;
-                        log('score', { score: this.score });
+                    if (s.dead || b.dead || b.gone) continue;
+                    if (segDist(b.x, b.y, s.px, s.py, s.x, s.y) < BIRD_KINDS[b.kind].radius) {
+                        s.dead = true;
+                        if (b.kind !== 'dove') {
+                            s.volley.hit = true;
+                            this.shotsHit++;
+                        }
+                        this.killBird(b);
                     }
                 }
             }
 
             for (const b of this.birds) {
-                if (b.dead || (b.tx - b.bx) * b.vx + (b.ty - b.by) * b.vy > 0) continue;
-                b.dead = true;
-                this.hp--;
-                sound.play('slideHit');
-                this.flash = 0.35;
-                log('slide hit', { hp: this.hp });
-                if (this.hp <= 0) {
-                    this.over = true;
-                    this.overAt = performance.now();
-                    log('game over', { score: this.score });
-                    sound.play('gameOver');
-                    sendToApp('gameOver', { score: this.score, level: this.level });
-                    break;
-                }
+                if (b.dead || b.passing) continue;
+                if ((b.tx - b.bx) * b.vx + (b.ty - b.by) * b.vy > 0) continue;
+                this.hitSlide(b);
+                if (this.over) break;
             }
 
-            this.birds = this.birds.filter(b => !b.dead);
+            // A trigger pull whose bullets all fly off without hitting anything breaks the combo
+            for (const s of this.shots) {
+                if (s.dead || (s.x > -20 && s.x < W + 20 && s.y > -20 && s.y < H + 20)) continue;
+                s.dead = true;
+                s.volley.alive--;
+                if (s.volley.alive === 0 && !s.volley.hit) this.combo = 0;
+            }
+
+            this.birds = this.birds.filter(b => !b.dead && !b.gone);
+            this.shots = this.shots.filter(s => !s.dead);
             this.drops = this.drops.filter(d => !d.dead);
-            this.doves = this.doves.filter(d => !d.dead);
-            this.shots = this.shots.filter(s => !s.dead && s.x > -20 && s.x < W + 20 && s.y > -20 && s.y < H + 20);
+
+            if (!this.over && this.phase === 'clear' && !this.birds.some(b => !b.passing)) this.end(true);
         },
 
         fire(x, y) {
@@ -936,11 +1609,14 @@
             const gun = GUNS[this.gun];
             this.cooldown = gun.cooldown;
             const m = muzzlePos(L, this.aim, this.gun);
+            const volley = { alive: gun.pellets, hit: false };
             for (let i = 0; i < gun.pellets; i++) {
                 const a = this.aim + (i - (gun.pellets - 1) / 2) * SPREAD;
-                this.shots.push({ x: m.x, y: m.y, px: m.x, py: m.y, vx: Math.cos(a) * gun.speed, vy: Math.sin(a) * gun.speed, kind: this.gun });
+                this.shots.push({ x: m.x, y: m.y, px: m.x, py: m.y, vx: Math.cos(a) * gun.speed, vy: Math.sin(a) * gun.speed, kind: this.gun, volley });
             }
+            this.shotsFired++;
             this.muzzleFlash = 0.06;
+            this.reticle = { x, y, life: 0.3 };
             sound.play('shot', { gun: this.gun });
         },
 
@@ -962,81 +1638,178 @@
             if (this.holding && this.holding.id === id) this.holding = null;
         },
 
-        onPause() { this.holding = null; },
+        // MARK: Draw
 
         draw() {
             const L = sceneLayout();
+            ctx.save();
+            if (this.shake > 0) ctx.translate(rand(-1, 1) * this.shake, rand(-1, 1) * this.shake);
+
             drawScene(L, this.t, this.aim, this.gun, this.muzzleFlash);
-            if (this.flash > 0) drawSlideFlash(L, Math.min(0.9, this.flash / 0.35 * 1.2));
+            if (this.flash > 0) drawSlideFlash(L, Math.min(0.85, this.flash / 0.35));
             for (const d of this.drops) this.drawDrop(d);
-            for (const d of this.doves) this.drawBird(d);
-            for (const b of this.birds) this.drawBird(b);
+            for (const b of this.birds) drawBird(b, this.t);
 
             ctx.lineCap = 'round';
             for (const s of this.shots) {
-                const len = s.kind === 'fast' ? 18 : 9;
+                const len = s.kind === 'fast' ? 18 : 10;
                 const sp = Math.hypot(s.vx, s.vy);
+                const tx = s.x - s.vx / sp * len, ty = s.y - s.vy / sp * len;
+                ctx.strokeStyle = INK;
+                ctx.lineWidth = 6;
+                line(tx, ty, s.x, s.y);
                 ctx.strokeStyle = GUNS[s.kind].bullet;
-                ctx.lineWidth = s.kind === 'pistol' ? 3 : 4;
-                line(s.x - s.vx / sp * len, s.y - s.vy / sp * len, s.x, s.y);
+                ctx.lineWidth = 3;
+                line(tx, ty, s.x, s.y);
             }
-            for (const d of this.debris) {
-                ctx.globalAlpha = Math.min(1, d.life * 2);
-                ctx.fillStyle = d.color;
-                ctx.fillRect(d.x - 3, d.y - 3, 6, 6);
+
+            for (const p of this.poofs) {
+                const k = 1 - p.life / 0.22;
+                ctx.globalAlpha = 1 - k;
+                circleO(p.x, p.y, p.r * (0.6 + k * 0.9), C.white, 2.5);
             }
             ctx.globalAlpha = 1;
-            for (const p of this.popups) {
-                ctx.globalAlpha = Math.min(1, p.life);
-                text(p.text, p.x, p.y, 18, '800', p.color);
+            for (const p of this.particles) {
+                ctx.globalAlpha = Math.min(1, p.life * 2.5);
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rot);
+                ctx.fillStyle = p.color;
+                if (p.feather) {
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, p.size, p.size * 0.45, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                }
+                ctx.restore();
             }
             ctx.globalAlpha = 1;
 
-            // HUD
-            for (let i = 0; i < this.hp; i++) drawHeart(78 + i * 30, safeTop + 23, 24, C.red);
-            text('Level ' + this.level, W / 2, safeTop + 34, 18, '800', C.dark);
-            if (this.gunTime > 0) text(GUNS[this.gun].name + ' ' + Math.ceil(this.gunTime) + 's', W / 2, safeTop + 76, 16, '800', C.red);
-            else text(GUNS[this.gun].name, W / 2, safeTop + 76, 16, '800', C.muted);
-            drawPill('Score ' + this.score, W - 16, safeTop + 34, C.dark);
+            if (this.reticle) {
+                const r = this.reticle;
+                ctx.globalAlpha = r.life / 0.3;
+                ctx.strokeStyle = C.white;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(r.x, r.y, 12, 0, Math.PI * 2);
+                ctx.stroke();
+                line(r.x - 18, r.y, r.x - 8, r.y);
+                line(r.x + 8, r.y, r.x + 18, r.y);
+                line(r.x, r.y - 18, r.x, r.y - 8);
+                line(r.x, r.y + 8, r.x, r.y + 18);
+                ctx.globalAlpha = 1;
+            }
+
+            for (const p of this.popups) {
+                const k = 1 - p.life / 0.9;
+                const scale = k < 0.15 ? 0.6 + k / 0.15 * 0.6 : 1.2 - Math.min(0.2, (k - 0.15) * 0.6);
+                ctx.globalAlpha = Math.min(1, p.life * 3);
+                textO(p.text, p.x, p.y, Math.round(p.size * scale), p.color);
+            }
+            ctx.globalAlpha = 1;
+            ctx.restore();
+
+            this.drawHud(L);
+            if (this.banner) this.drawBanner();
         },
 
-        drawEnd() {
-            drawEndCard(this, 'Game Over', C.dark, [
-                { text: String(this.score), size: 44, gap: 52, weight: '800' },
-                { text: 'Birds stopped · Level ' + this.level, size: 14, gap: 22, weight: '500', color: C.muted }
-            ]);
+        drawHud(L) {
+            drawRoundButton(iconRect(0), iconPause);
+
+            // Level, wave and level progress
+            const lx = 70, rightW = 120;
+            const barW = Math.max(80, W - lx - rightW - 22);
+            text('Level ' + this.level, lx, safeTop + 22, 16, '900', INK, 'left');
+            const waveLabel = this.phase === 'clear' ? 'Last birds!' : 'Wave ' + this.wave + '/' + WAVES;
+            text(waveLabel, lx + barW, safeTop + 22, 12, '800', INK, 'right');
+            drawProgressBar(lx, safeTop + 34, barW, 14, this.progress(), C.red);
+
+            // Score with coin
+            ctx.font = '900 20px ' + FONT;
+            const label = String(this.score);
+            const pw = Math.max(84, ctx.measureText(label).width + 52);
+            const px = W - 14 - pw;
+            card(px, safeTop + 12, pw, 44, 14, C.white);
+            drawCoin(px + 22, safeTop + 34, 10);
+            text(label, px + pw - 14, safeTop + 35, 20, '900', INK, 'right');
+
+            // Slide health
+            const hy = safeTop + 66;
+            const segW = 16, gap = 4;
+            const hw = 64 + MAX_HP * (segW + gap) + 6;
+            card(14, hy, hw, 30, 15, C.white);
+            text('SLIDE', 26, hy + 15, 12, '900', INK, 'left');
+            for (let i = 0; i < MAX_HP; i++) {
+                const filled = i < this.hp;
+                const color = !filled ? C.track : this.hp <= 2 ? C.red : C.slide;
+                boxO(14 + 64 + i * (segW + gap), hy + 8, segW, 14, 4, color, 1.5);
+            }
+
+            // Combo badge
+            if (this.combo >= 2) {
+                const bw = 64, bh = 52, bx = W - 14 - bw, by = safeTop + 66;
+                card(bx, by, bw, bh, 12, C.red);
+                text('x' + this.combo, bx + bw / 2, by + 20, Math.round(22 * (1 + this.comboPop * 2)), '900', C.white);
+                text('COMBO', bx + bw / 2, by + 39, 10, '900', C.white);
+            }
+
+            // Current gun, bottom right on the grass
+            const gun = GUNS[this.gun];
+            const gunLabel = (this.gunTime > 0 ? gun.name + ' ' + Math.ceil(this.gunTime) + 's' : gun.name).toUpperCase();
+            ctx.font = '900 12px ' + FONT;
+            const gw = ctx.measureText(gunLabel).width + 24;
+            const gy = Math.min(H - safeBottom - 40, L.groundY + 12);
+            card(W - 14 - gw, gy, gw, 26, 13, this.gunTime > 0 ? C.yellow : C.white);
+            text(gunLabel, W - 14 - gw / 2, gy + 13, 12, '900', INK);
+        },
+
+        drawBanner() {
+            const b = this.banner;
+            const age = 1.8 - b.life;
+            const scale = age < 0.18 ? 0.5 + age / 0.18 * 0.5 : 1;
+            ctx.globalAlpha = Math.min(1, b.life * 3);
+            const cy = H * 0.36;
+            textO(b.title, W / 2, cy, Math.round(40 * scale), C.white, 8);
+            textO(b.sub, W / 2, cy + 40, Math.round(20 * scale), C.yellow, 5);
+            ctx.globalAlpha = 1;
         },
 
         drawDrop(p) {
             ctx.save();
             ctx.translate(p.x, p.y);
             ctx.rotate(Math.sin(this.t * 2 + p.sway) * 0.15);
+            ctx.lineJoin = 'round';
 
             // Parachute
-            ctx.fillStyle = C.red;
+            ctx.strokeStyle = INK;
+            ctx.lineWidth = 1.5;
+            line(-22, -34, -10, -9);
+            line(0, -34, 0, -9);
+            line(22, -34, 10, -9);
             ctx.beginPath();
             ctx.ellipse(0, -34, 24, 16, 0, Math.PI, 0);
             ctx.closePath();
+            ctx.fillStyle = C.red;
             ctx.fill();
-            ctx.fillStyle = C.white;
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
             ctx.beginPath();
             ctx.ellipse(0, -34, 8, 16, 0, Math.PI, 0);
             ctx.closePath();
+            ctx.fillStyle = C.white;
             ctx.fill();
-            ctx.strokeStyle = C.gray;
-            ctx.lineWidth = 1;
-            line(-23, -34, -10, -9);
-            line(0, -34, 0, -9);
-            line(23, -34, 10, -9);
+            ctx.lineWidth = 2;
+            ctx.stroke();
 
             // Crate showing what's inside
-            fillRR(-18, -10, 36, 24, 5, C.dark);
-            fillRR(-15, -7, 30, 18, 3, C.white);
+            boxO(-19, -10, 38, 26, 5, C.amber, 2.5);
+            boxO(-15, -6, 30, 18, 3, C.cream, 1.5);
             if (p.type === 'life') {
-                drawHeart(0, -6, 16, C.red);
+                drawHeart(0, -5, 15, C.red);
             } else {
                 ctx.save();
-                ctx.translate(-(ARM_LEN + 18) * 0.5, 0);
+                ctx.translate(-(ARM_LEN + 18) * 0.5, 2);
                 ctx.scale(0.5, 0.5);
                 drawGun(p.kind);
                 ctx.restore();
@@ -1044,129 +1817,292 @@
             ctx.restore();
         },
 
-        drawBird(b) {
-            const P = b.dove ? DOVE_COLORS : BIRD_COLORS;
-            const flap = Math.sin(this.t * 14 + b.phase);
+        // MARK: Results
+
+        drawResults() {
+            const r = this.results;
+            ctx.fillStyle = 'rgba(30,27,75,0.45)';
+            ctx.fillRect(0, 0, W, H);
+
+            const cw = Math.min(340, W - 32), ch = 470;
+            const x = (W - cw) / 2;
+            const y = Math.max(safeTop + 44, (H - ch) / 2 + 10);
+            const slideIn = Math.min(1, r.t / 0.25);
             ctx.save();
-            ctx.translate(b.x, b.y);
-            // Art faces left; tilt it along the dive
-            ctx.rotate(Math.atan2(b.vy, b.vx) - Math.PI);
+            ctx.translate(0, (1 - slideIn) * 60);
+            ctx.globalAlpha = slideIn;
+            card(x, y, cw, ch, 22, C.white);
 
-            ctx.fillStyle = P.tail;
-            ctx.beginPath();
-            ctx.moveTo(12, 0);
-            ctx.lineTo(21, -5);
-            ctx.lineTo(21, 5);
-            ctx.closePath();
-            ctx.fill();
+            // Title ribbon
+            const title = this.won ? 'Slide Saved!' : 'Slide Popped!';
+            const rw = Math.min(cw - 40, 250);
+            card(W / 2 - rw / 2, y - 26, rw, 52, 14, C.red);
+            text(title, W / 2, y + 1, 24, '900', C.white);
 
-            ctx.fillStyle = P.body;
-            ctx.beginPath();
-            ctx.ellipse(0, 0, 13, 8, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(-11, -3, 6, 0, Math.PI * 2);
-            ctx.fill();
+            // Stars pop in one by one
+            const starY = y + 70;
+            [[-62, 20], [0, 28], [62, 20]].forEach(([dx, size], i) => {
+                const at = 0.35 + i * 0.25;
+                const k = clamp((r.t - at) / 0.18, 0, 1);
+                const earned = i < r.stars && r.t >= at;
+                const s = earned ? (k < 1 ? 0.4 + k * 0.9 : 1.15 - Math.min(0.15, (r.t - at - 0.18) * 1.5)) : 1;
+                drawStar(W / 2 + dx, starY - (i === 1 ? 8 : 0), size * s, earned);
+            });
 
-            ctx.fillStyle = P.beak;
-            ctx.beginPath();
-            ctx.moveTo(-16, -5);
-            ctx.lineTo(-23, -2);
-            ctx.lineTo(-16, 0);
-            ctx.closePath();
-            ctx.fill();
+            text('SCORE', W / 2, y + 116, 12, '900', C.muted);
+            text(String(this.score), W / 2, y + 152, 48, '900', INK);
+            if (r.newBest && this.score > 0) {
+                ctx.font = '900 48px ' + FONT;
+                const sw = ctx.measureText(String(this.score)).width;
+                ctx.save();
+                ctx.translate(Math.min(W / 2 + sw / 2 + 34, x + cw - 40), y + 132);
+                ctx.rotate(-0.15);
+                card(-38, -13, 76, 26, 8, C.yellow);
+                text('NEW BEST', 0, 1, 11, '900', INK);
+                ctx.restore();
+            }
+            const ezPoints = Math.floor(this.score / GAME_POINTS_PER_EZ_POINT);
+            text('= ' + ezPoints + ' EZ Point' + (ezPoints === 1 ? '' : 's'), W / 2, y + 181, 12, '900', C.red);
 
-            ctx.fillStyle = P.eye;
-            ctx.beginPath();
-            ctx.arc(-12, -5, 1.8, 0, Math.PI * 2);
-            ctx.fill();
+            // Stat boxes
+            const sy = y + 192, gap = 8, bw = (cw - 40 - gap * 2) / 3;
+            const boxes = [
+                [String(this.kills), 'BIRDS'],
+                [r.accuracy + '%', 'ACCURACY'],
+                ['x' + this.bestCombo, 'BEST COMBO']
+            ];
+            boxes.forEach(([value, label], i) => {
+                const bx = x + 20 + i * (bw + gap);
+                boxO(bx, sy, bw, 60, 12, C.white, 2.5);
+                text(value, bx + bw / 2, sy + 24, 20, '900', INK);
+                text(label, bx + bw / 2, sy + 45, 10, '800', C.muted);
+            });
 
-            ctx.fillStyle = P.wing;
-            ctx.beginPath();
-            ctx.moveTo(-6, -2);
-            ctx.lineTo(6, -2);
-            ctx.lineTo(2, -2 - 16 * flap);
-            ctx.closePath();
-            ctx.fill();
+            // Coins earned and progress toward the next weapon
+            const cy = y + 266;
+            boxO(x + 20, cy, cw - 40, 40, 12, C.cream, 2.5);
+            drawCoin(x + 40, cy + 20, 10);
+            text('+' + r.coins + ' coins', x + 58, cy + 21, 15, '900', INK, 'left');
+            const toGo = Math.max(0, NEXT_WEAPON.cost - stats.coins);
+            text(toGo > 0 ? NEXT_WEAPON.name + ': ' + toGo + ' to go' : NEXT_WEAPON.name + ' ready!',
+                x + cw - 32, cy + 21, 11, '800', INK, 'right');
+            drawProgressBar(x + 20, cy + 50, cw - 40, 10, stats.coins / NEXT_WEAPON.cost, C.yellow);
 
+            // Buttons
+            const last = this.level >= LEVELS.length;
+            const primaryLabel = !this.won ? 'Try Again' : last ? 'Play Again' : 'Next Level';
+            const primary = { x: x + 20, y: y + 334, w: cw - 40, h: 54 };
+            const half = (cw - 40 - 12) / 2;
+            const replay = { x: x + 20, y: y + 400, w: half, h: 46 };
+            const home = { x: x + 32 + half, y: y + 400, w: half, h: 46 };
+            drawButton(primary, primaryLabel, C.red, C.white, 21);
+            drawButton(replay, 'Replay', C.white, INK, 17);
+            drawButton(home, 'Home', C.yellow, INK, 17);
             ctx.restore();
+
+            const nextLevel = this.won && !last ? this.level + 1 : this.level;
+            this.buttons = {
+                primary: { rect: primary, level: nextLevel },
+                replay: { rect: replay, level: this.level },
+                home: { rect: home }
+            };
         }
     };
 
+    // MARK: - Pause
+
+    function pauseButtons() {
+        const cw = Math.min(300, W - 48), x = (W - cw) / 2;
+        const y = Math.max(safeTop + 80, H / 2 - 150);
+        return {
+            card: { x, y, w: cw, h: 290 },
+            resume: { x: x + 20, y: y + 48, w: cw - 40, h: 50 },
+            restart: { x: x + 20, y: y + 110, w: cw - 40, h: 46 },
+            sound: { x: x + 20, y: y + 168, w: cw - 40, h: 46 },
+            home: { x: x + 20, y: y + 226, w: cw - 40, h: 46 }
+        };
+    }
+
+    function drawPaused() {
+        ctx.fillStyle = 'rgba(30,27,75,0.45)';
+        ctx.fillRect(0, 0, W, H);
+        const b = pauseButtons();
+        card(b.card.x, b.card.y, b.card.w, b.card.h, 22, C.white);
+        const rw = 150;
+        card(W / 2 - rw / 2, b.card.y - 24, rw, 48, 14, C.red);
+        text('Paused', W / 2, b.card.y + 1, 22, '900', C.white);
+        drawButton(b.resume, 'Resume', C.red, C.white, 19);
+        drawButton(b.restart, 'Restart level', C.white, INK, 17);
+        drawButton(b.sound, sound.muted ? 'Sound: Off' : 'Sound: On', C.white, INK, 17);
+        drawButton(b.home, 'Home', C.yellow, INK, 17);
+    }
+
+    function pause() {
+        if (screen !== 'game' || paused || game.over || game.results) return;
+        paused = true;
+        game.holding = null;
+        log('paused');
+    }
+
     // MARK: - Start screen
+
+    let selectedLevel = Math.min(LEVELS.length, stats.unlocked);
+    let startButtons = null;
 
     function drawStart() {
         drawScene(sceneLayout(), clock);
-        const y = safeTop + 130;
-        text(GAME_TITLE, W / 2, y, 40, '800', C.red);
-        text(GAME_TAGLINE, W / 2, y + 38, 16, '500', C.muted);
-        ctx.globalAlpha = 0.6 + 0.4 * Math.abs(Math.sin(clock * 2.5));
-        text('Tap to start', W / 2, y + 86, 20, '700', C.dark);
-        ctx.globalAlpha = 1;
-        if (appBridge) drawBack(); // closes the game in the app
-        drawMute();
+        const ty = safeTop + 96;
+        textO(GAME_TITLE, W / 2, ty, Math.min(40, W / 9), C.white, 9);
+        textO(GAME_TAGLINE, W / 2, ty + 40, 16, C.yellow, 4);
+
+        let slot = 0;
+        if (appBridge) drawRoundButton(iconRect(slot++), iconBack); // closes the game in the app
+        drawRoundButton(iconRect(slot), iconSound);
+
+        const cw = Math.min(340, W - 32), ch = 318;
+        const x = (W - cw) / 2, y = Math.max(ty + 74, Math.min(H * 0.32, H - safeBottom - ch - 70));
+        card(x, y, cw, ch, 22, C.white);
+
+        // Stats from this device
+        const gap = 8, bw = (cw - 40 - gap * 2) / 3;
+        const boxes = [
+            [String(stats.bestOverall()), 'BEST'],
+            [String(stats.coins), 'COINS'],
+            [stats.starTotal() + '/' + LEVELS.length * 3, 'STARS']
+        ];
+        boxes.forEach(([value, label], i) => {
+            const bx = x + 20 + i * (bw + gap);
+            boxO(bx, y + 18, bw, 56, 12, i === 1 ? C.cream : C.white, 2.5);
+            text(value, bx + bw / 2, y + 40, 19, '900', INK);
+            text(label, bx + bw / 2, y + 61, 10, '800', C.muted);
+        });
+
+        // Level picker
+        text('LEVELS', x + 20, y + 94, 11, '900', C.muted, 'left');
+        const tgap = 8, tw = (cw - 40 - tgap * 3) / 4, th = 66;
+        const tiles = [];
+        for (let i = 0; i < LEVELS.length; i++) {
+            const level = i + 1;
+            const tx = x + 20 + i * (tw + tgap), tyy = y + 106;
+            const unlocked = stats.isUnlocked(level);
+            const selected = level === selectedLevel;
+            boxO(tx, tyy, tw, th, 12, !unlocked ? C.track : selected ? C.yellow : C.white, selected ? 3.5 : 2.5);
+            if (unlocked) {
+                text(String(level), tx + tw / 2, tyy + 26, 24, '900', INK);
+                const earned = stats.stars[level] || 0;
+                for (let s = 0; s < 3; s++) drawStar(tx + tw / 2 + (s - 1) * 14, tyy + 50, 6, s < earned);
+            } else {
+                boxO(tx + tw / 2 - 9, tyy + 28, 18, 14, 3, C.muted, 2);
+                ctx.strokeStyle = INK;
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.arc(tx + tw / 2, tyy + 28, 6, Math.PI, 0);
+                ctx.stroke();
+            }
+            tiles.push({ rect: { x: tx, y: tyy, w: tw, h: th }, level, unlocked });
+        }
+
+        // Progress toward the next weapon
+        const toGo = Math.max(0, NEXT_WEAPON.cost - stats.coins);
+        text('Next weapon: ' + NEXT_WEAPON.name, x + 20, y + 196, 12, '900', INK, 'left');
+        text(toGo > 0 ? toGo + ' coins to go' : 'Ready!', x + cw - 20, y + 196, 11, '800', C.muted, 'right');
+        drawProgressBar(x + 20, y + 208, cw - 40, 10, stats.coins / NEXT_WEAPON.cost, C.yellow);
+
+        const pulse = 1 + Math.sin(clock * 4) * 0.02;
+        const play = { x: x + 20, y: y + 238, w: cw - 40, h: 58 };
+        ctx.save();
+        ctx.translate(play.x + play.w / 2, play.y + play.h / 2);
+        ctx.scale(pulse, pulse);
+        drawButton({ x: -play.w / 2, y: -play.h / 2, w: play.w, h: play.h }, 'Play Level ' + selectedLevel, C.red, C.white, 22);
+        ctx.restore();
+
+        startButtons = { tiles, play };
     }
 
     // MARK: - Navigation
 
-    function startGame() {
+    function startGame(level) {
         screen = 'game';
         paused = false;
-        birdDefense.init();
-        log('game start');
+        selectedLevel = level;
+        game.start(level);
     }
 
     function goStart() {
-        birdDefense.reset();
         screen = 'start';
         paused = false;
+        selectedLevel = Math.min(LEVELS.length, Math.max(selectedLevel, 1));
         log('menu load');
     }
 
     // MARK: - Input
 
-    function down(x, y, id) {
-        sound.unlock();
-        if (hit(muteRect(), x, y)) {
+    function startTap(x, y) {
+        let slot = 0;
+        if (appBridge && hit(iconRect(slot++), x, y)) {
+            sendToApp('close');
+            return;
+        }
+        if (hit(iconRect(slot), x, y)) {
             sound.toggle();
             return;
         }
+        if (!startButtons) return;
+        for (const tile of startButtons.tiles) {
+            if (!hit(tile.rect, x, y)) continue;
+            if (tile.unlocked) {
+                selectedLevel = tile.level;
+                haptic('light');
+            }
+            return;
+        }
+        if (hit(startButtons.play, x, y)) startGame(selectedLevel);
+    }
+
+    function down(x, y, id) {
+        sound.unlock();
         if (screen === 'start') {
-            if (appBridge && hit(backRect(), x, y)) sendToApp('close');
-            else startGame();
+            startTap(x, y);
             return;
         }
-        const g = birdDefense;
+        if (game.results) {
+            // Ignore taps carried over from the moment the level ended
+            const b = game.buttons;
+            if (!b || game.results.t < 0.5) return;
+            if (hit(b.primary.rect, x, y)) startGame(b.primary.level);
+            else if (hit(b.replay.rect, x, y)) startGame(b.replay.level);
+            else if (hit(b.home.rect, x, y)) goStart();
+            return;
+        }
         if (paused) {
-            paused = false;
-            lastTime = performance.now();
-            log('resume');
-            return;
-        }
-        if (hit(backRect(), x, y)) {
-            goStart();
-            return;
-        }
-        if (g.over) {
-            // Ignore taps carried over from the moment the game ended
-            if (performance.now() - g.overAt < 350) return;
-            if (hit(g.endButtons && g.endButtons.play, x, y)) {
-                g.reset();
-                log('game start');
-            } else if (hit(g.endButtons && g.endButtons.menu, x, y)) {
+            const b = pauseButtons();
+            if (hit(b.resume, x, y)) {
+                paused = false;
+                lastTime = performance.now();
+                log('resume');
+            } else if (hit(b.restart, x, y)) {
+                startGame(game.level);
+            } else if (hit(b.sound, x, y)) {
+                sound.toggle();
+            } else if (hit(b.home, x, y)) {
                 goStart();
             }
             return;
         }
-        g.onDown(x, y, id);
+        if (hit(iconRect(0), x, y)) {
+            pause();
+            return;
+        }
+        if (game.over) return;
+        game.onDown(x, y, id);
     }
 
     function move(x, y, id) {
-        if (screen === 'game' && !paused && !birdDefense.over) birdDefense.onMove(x, y, id);
+        if (screen === 'game' && !paused && !game.over) game.onMove(x, y, id);
     }
 
     function up(x, y, id) {
-        if (screen === 'game' && !paused && !birdDefense.over) birdDefense.onUp(x, y, id);
+        if (screen === 'game' && !paused && !game.over) game.onUp(x, y, id);
     }
 
     function touches(handler) {
@@ -1180,26 +2116,20 @@
     canvas.addEventListener('touchmove', touches(move), { passive: false });
     canvas.addEventListener('touchend', touches(up), { passive: false });
     canvas.addEventListener('touchcancel', touches(up), { passive: false });
+    canvas.addEventListener('touchend', () => sound.unlock()); // iOS only unlocks audio on touchend
 
     canvas.addEventListener('mousedown', e => down(e.clientX, e.clientY, 'mouse'));
     window.addEventListener('mousemove', e => move(e.clientX, e.clientY, 'mouse'));
     window.addEventListener('mouseup', e => up(e.clientX, e.clientY, 'mouse'));
 
-    // Desktop convenience: Escape returns to the start screen
+    // Desktop convenience: Escape pauses
     window.addEventListener('keydown', e => {
-        if (e.code === 'Escape' && screen === 'game') goStart();
+        if (e.code === 'Escape') pause();
     });
 
     document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-            if (screen === 'game' && !birdDefense.over && !paused) {
-                paused = true;
-                birdDefense.onPause();
-                log('paused');
-            }
-        } else {
-            lastTime = performance.now();
-        }
+        if (document.hidden) pause();
+        else lastTime = performance.now();
     });
 
     // MARK: - Layout & loop
@@ -1216,6 +2146,7 @@
         const cs = getComputedStyle(safeProbe);
         safeTop = parseFloat(cs.paddingTop) || 0;
         safeBottom = parseFloat(cs.paddingBottom) || 0;
+        buildBackground();
     }
 
     function frame(now) {
@@ -1223,11 +2154,9 @@
         lastTime = now;
         clock += dt;
         if (screen === 'game') {
-            if (!paused) birdDefense.update(dt);
-            birdDefense.draw();
-            drawBack();
-            drawMute();
-            if (birdDefense.over) birdDefense.drawEnd();
+            if (!paused) game.update(dt);
+            game.draw();
+            if (game.results) game.drawResults();
             if (paused) drawPaused();
         } else {
             drawStart();
