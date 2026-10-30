@@ -99,6 +99,7 @@
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		220724CA2F3949BD00D68B92 /* MyEZ/Security */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (2225278D2F394CAC003032EC /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = MyEZ/Security; sourceTree = "<group>"; };
+		22A1B2C32FF0000100D0E0F1 /* MyEZ/Games */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = MyEZ/Games; sourceTree = "<group>"; };
 		22FF73932FE1D34C008CD454 /* Walkthrough */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Walkthrough; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
@@ -161,6 +162,7 @@
 			isa = PBXGroup;
 			children = (
 				220724CA2F3949BD00D68B92 /* MyEZ/Security */,
+				22A1B2C32FF0000100D0E0F1 /* MyEZ/Games */,
 				3B84530E1F3D07DC009EA3B8 /* MyEZ */,
 				3B84530D1F3D07DC009EA3B8 /* Products */,
 				947A69AC2695BEC77772EB2B /* Frameworks */,
@@ -295,6 +297,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				220724CA2F3949BD00D68B92 /* MyEZ/Security */,
+				22A1B2C32FF0000100D0E0F1 /* MyEZ/Games */,
 				22FF73932FE1D34C008CD454 /* Walkthrough */,
 			);
 			name = MyEZ;

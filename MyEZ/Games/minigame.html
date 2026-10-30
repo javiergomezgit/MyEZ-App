@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>To Be Decided</title>
+<style>
+    html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #F9FAFB;
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+    canvas { display: block; }
+    #safe-area-probe {
+        position: fixed;
+        visibility: hidden;
+        pointer-events: none;
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="safe-area-probe"></div>
+<script>
+(function () {
+    'use strict';
+
+    // MARK: - Config
+
+    const C = {
+        red: '#ED1C24',
+        dark: '#111827',
+        gray: '#6B7280',
+        light: '#F9FAFB',
+        white: '#FFFFFF',
+        muted: '#6B7280',
+        line: '#E5E7EB',
+        yellow: '#F59E0B',
+        metal: '#374151',
+        amber: '#D97706',
+        // Inflatable water slide
+        slideTop: '#3B82F6',
+        slideBase: '#2563EB',
+        slideDeep: '#1D4ED8',
+        rail: '#60A5FA',
+        canopy: '#93C5FD',
+        water: '#BFDBFE',
+        hold: '#FDE047'
+    };
+    const FONT = 'system-ui, sans-serif';
+
+    // PLACEHOLDER: the game's name isn't decided yet.
+    const GAME_TITLE = 'To Be Decided';
+    const GAME_TAGLINE = 'Protect the water slide';
+
+    // PLACEHOLDER art: set a path (relative to this file) to replace the drawn version.
+    // Hit areas don't change, so keep replacement art about the same size and position.
+    const ART = {
+        background: null, // fills the whole screen
+        avatar: null,     // the shooter's body; the gun arm is still drawn on top
+        slide: null       // the water slide and pool
+    };
+
+    // PLACEHOLDER sounds: until a file is set here, each sound is synthesized in code.
+    // In the app, sound files sit next to this file, e.g. shot: 'shot.mp3'.
+    const SOUND_FILES = {
+        shot: null,      // every shot; the synth pitches it per gun
+        birdFlap: null,  // a flock arrives
+        slideHit: null,  // a bird pinches the inflatable
+        claimGun: null,
+        claimLife: null,
+        doveShot: null,
+        levelUp: null,
+        gameOver: null
+    };
+    const SOUND_MIN_GAP = { shot: 0.04, birdFlap: 0.35 }; // s, so rapid repeats don't pile up
+
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const safeProbe = document.getElementById('safe-area-probe');
+
+    // MARK: - Shared state
+
+    let W = 0, H = 0, dpr = 1, safeTop = 0, safeBottom = 0;
+    let screen = 'start'; // 'start' | 'game'
+    let paused = false;
+    let lastTime = performance.now();
+    let clock = 0;
+
+    function log(event, data) {
+        if (data === undefined) console.log('[MyEZ] ' + event);
+        else console.log('[MyEZ] ' + event, data);
+    }
+
+    // Messages to the iOS app (WKWebView handler "myezGame"); a no-op in a plain browser
+    const appBridge = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.myezGame;
+    function sendToApp(type, data) {
+        if (!appBridge) return;
+        appBridge.postMessage(Object.assign({ type }, data || {}));
+        log('sent to app', type);
+    }
+
+    function rand(a, b) { return a + Math.random() * (b - a); }
+    function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+    // MARK: - Drawing helpers
+
+    function rrPath(x, y, w, h, r) {
+        r = Math.max(0, Math.min(r, w / 2, h / 2));
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.arcTo(x + w, y, x + w, y + r, r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+        ctx.lineTo(x + r, y + h);
+        ctx.arcTo(x, y + h, x, y + h - r, r);
+        ctx.lineTo(x, y + r);
+        ctx.arcTo(x, y, x + r, y, r);
+        ctx.closePath();
+    }
+
+    function fillRR(x, y, w, h, r, color) {
+        ctx.beginPath();
+        rrPath(x, y, w, h, r);
+        ctx.fillStyle = color;
+        ctx.fill();
+    }
+
+    function withShadow(blur, offsetY, fn) {
+        ctx.save();
+        ctx.shadowColor = 'rgba(17,24,39,0.15)';
+        ctx.shadowBlur = blur;
+        ctx.shadowOffsetY = offsetY;
+        fn();
+        ctx.restore();
+    }
+
+    function text(str, x, y, size, weight, color, align) {
+        ctx.font = weight + ' ' + size + 'px ' + FONT;
+        ctx.fillStyle = color;
+        ctx.textAlign = align || 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(str, x, y);
+    }
+
+    function line(x1, y1, x2, y2) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+    }
+
+    function hit(r, x, y) {
+        return !!r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+    }
+
+    function drawGround(groundY) {
+        ctx.fillStyle = C.white;
+        ctx.fillRect(0, groundY, W, H - groundY);
+        ctx.fillStyle = C.line;
+        ctx.fillRect(0, groundY, W, 2);
+    }
+
+    // White pill anchored by its right edge
+    function drawPill(label, right, cy, color) {
+        ctx.font = '700 15px ' + FONT;
+        const w = ctx.measureText(label).width + 26, h = 34;
+        withShadow(8, 2, () => fillRR(right - w, cy - h / 2, w, h, h / 2, C.white));
+        text(label, right - w / 2, cy + 1, 15, '700', color);
+    }
+
+    function drawButton(r, label, color) {
+        fillRR(r.x, r.y, r.w, r.h, 12, color);
+        text(label, r.x + r.w / 2, r.y + r.h / 2 + 1, 17, '700', C.white);
+    }
+
+    function backRect() {
+        return { x: 12, y: safeTop + 12, w: 44, h: 44 };
+    }
+
+    function drawBack() {
+        const r = backRect();
+        const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+        withShadow(8, 2, () => fillRR(r.x, r.y, r.w, r.h, r.w / 2, C.white));
+        ctx.strokeStyle = C.dark;
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        line(cx + 8, cy, cx - 8, cy);
+        ctx.beginPath();
+        ctx.moveTo(cx - 1, cy - 7);
+        ctx.lineTo(cx - 8, cy);
+        ctx.lineTo(cx - 1, cy + 7);
+        ctx.stroke();
+    }
+
+    // lines: [{ text, size, gap, weight?, color? }]
+    function drawEndCard(game, title, titleColor, lines) {
+        ctx.fillStyle = 'rgba(17,24,39,0.4)';
+        ctx.fillRect(0, 0, W, H);
+
+        const cardW = Math.min(320, W - 32);
+        const linesH = lines.reduce((sum, l) => sum + l.gap, 0);
+        const cardH = 72 + linesH + 20 + 48 * 2 + 12 + 20;
+        const x = (W - cardW) / 2;
+        const y = Math.max(16, (H - cardH) / 2);
+        withShadow(24, 8, () => fillRR(x, y, cardW, cardH, 20, C.white));
+
+        text(title, W / 2, y + 42, 30, '800', titleColor);
+        let ly = y + 72;
+        for (const l of lines) {
+            text(l.text, W / 2, ly + l.gap / 2, l.size, l.weight || '600', l.color || C.dark);
+            ly += l.gap;
+        }
+        const play = { x: x + 20, y: ly + 20, w: cardW - 40, h: 48 };
+        const menu = { x: x + 20, y: play.y + 60, w: cardW - 40, h: 48 };
+        drawButton(play, 'Play Again', C.red);
+        drawButton(menu, 'Menu', C.dark);
+        game.endButtons = { play, menu };
+    }
+
+    function drawPaused() {
+        ctx.fillStyle = 'rgba(17,24,39,0.4)';
+        ctx.fillRect(0, 0, W, H);
+        text('Paused', W / 2, H / 2 - 16, 34, '800', C.white);
+        text('Tap to resume', W / 2, H / 2 + 22, 17, '600', C.white);
+    }
+
+    function drawHeart(cx, top, s, color) {
+        ctx.beginPath();
+        ctx.moveTo(cx, top + s * 0.3);
+        ctx.bezierCurveTo(cx, top, cx - s / 2, top, cx - s / 2, top + s * 0.3);
+        ctx.bezierCurveTo(cx - s / 2, top + s * 0.6, cx, top + s * 0.75, cx, top + s);
+        ctx.bezierCurveTo(cx, top + s * 0.75, cx + s / 2, top + s * 0.6, cx + s / 2, top + s * 0.3);
+        ctx.bezierCurveTo(cx + s / 2, top, cx, top, cx, top + s * 0.3);
+        ctx.fillStyle = color;
+        ctx.fill();
+    }
+
+    // MARK: - Art
+
+    const artImages = {};
+    for (const key in ART) {
+        if (!ART[key]) continue;
+        const img = new Image();
+        img.src = ART[key];
+        artImages[key] = img;
+    }
+
+    function art(key) {
+        const img = artImages[key];
+        return img && img.complete && img.naturalWidth ? img : null;
+    }
+
+    // MARK: - Sound
+
+    function tone(ac, t, type, f0, f1, dur, vol) {
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.type = type;
+        o.frequency.setValueAtTime(f0, t);
+        o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+        g.gain.setValueAtTime(vol, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        o.connect(g).connect(ac.destination);
+        o.start(t);
+        o.stop(t + dur);
+    }
+
+    function noise(ac, t, dur, vol, freq, q) {
+        const len = Math.ceil(ac.sampleRate * dur);
+        const buf = ac.createBuffer(1, len, ac.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+        const src = ac.createBufferSource();
+        src.buffer = buf;
+        const f = ac.createBiquadFilter();
+        f.type = 'bandpass';
+        f.frequency.value = freq;
+        f.Q.value = q;
+        const g = ac.createGain();
+        g.gain.setValueAtTime(vol, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        src.connect(f).connect(g).connect(ac.destination);
+        src.start(t);
+        src.stop(t + dur);
+    }
+
+    const SHOT_PITCH = { pistol: 900, fast: 1400, auto: 1100, machine: 700 };
+    const SYNTH = {
+        shot(ac, t, o) {
+            const p = SHOT_PITCH[o.gun] || 900;
+            tone(ac, t, 'square', p, p * 0.3, 0.08, 0.06);
+            noise(ac, t, 0.05, 0.12, 2500, 1);
+        },
+        birdFlap(ac, t) { for (let i = 0; i < 3; i++) noise(ac, t + i * 0.07, 0.05, 0.12, 500, 2); },
+        slideHit(ac, t) {
+            tone(ac, t, 'sine', 160, 60, 0.25, 0.3);
+            noise(ac, t + 0.05, 0.7, 0.2, 3000, 0.7); // air hissing out
+        },
+        claimGun(ac, t) {
+            tone(ac, t, 'triangle', 523, 523, 0.1, 0.15);
+            tone(ac, t + 0.1, 'triangle', 784, 784, 0.15, 0.15);
+        },
+        claimLife(ac, t) { [523, 659, 784].forEach((f, i) => tone(ac, t + i * 0.08, 'sine', f, f, 0.14, 0.18)); },
+        doveShot(ac, t) { tone(ac, t, 'sine', 700, 300, 0.3, 0.15); },
+        levelUp(ac, t) { [392, 523, 659, 784].forEach((f, i) => tone(ac, t + i * 0.09, 'triangle', f, f, 0.12, 0.15)); },
+        gameOver(ac, t) { [392, 330, 262].forEach((f, i) => tone(ac, t + i * 0.18, 'triangle', f, f * 0.97, 0.22, 0.18)); }
+    };
+
+    const sound = {
+        ac: null,
+        muted: false,
+        last: {},
+
+        // Browsers only allow audio after a tap, so every tap calls this
+        unlock() {
+            if (!this.ac) {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (!AC) return;
+                this.ac = new AC();
+            }
+            if (this.ac.state === 'suspended') this.ac.resume();
+        },
+
+        play(name, opts) {
+            if (this.muted || !this.ac) return;
+            const now = this.ac.currentTime;
+            if (now - (this.last[name] || -1) < (SOUND_MIN_GAP[name] || 0)) return;
+            this.last[name] = now;
+            if (SOUND_FILES[name]) {
+                new Audio(SOUND_FILES[name]).play().catch(() => {});
+                return;
+            }
+            SYNTH[name](this.ac, now, opts || {});
+        },
+
+        toggle() {
+            this.muted = !this.muted;
+            try { localStorage.setItem('myezGameMuted', this.muted ? '1' : '0'); } catch (e) {}
+            log('sound', this.muted ? 'off' : 'on');
+        }
+    };
+    try { sound.muted = localStorage.getItem('myezGameMuted') === '1'; } catch (e) {}
+
+    function muteRect() {
+        return { x: 12, y: safeTop + 64, w: 44, h: 44 };
+    }
+
+    function drawMute() {
+        const r = muteRect();
+        const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+        withShadow(8, 2, () => fillRR(r.x, r.y, r.w, r.h, r.w / 2, C.white));
+        ctx.fillStyle = C.dark;
+        ctx.beginPath();
+        ctx.moveTo(cx - 10, cy - 4);
+        ctx.lineTo(cx - 5, cy - 4);
+        ctx.lineTo(cx + 1, cy - 9);
+        ctx.lineTo(cx + 1, cy + 9);
+        ctx.lineTo(cx - 5, cy + 4);
+        ctx.lineTo(cx - 10, cy + 4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = sound.muted ? C.red : C.dark;
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        if (sound.muted) {
+            line(cx + 5, cy - 5, cx + 11, cy + 5);
+            line(cx + 11, cy - 5, cx + 5, cy + 5);
+        } else {
+            ctx.beginPath();
+            ctx.arc(cx + 2, cy, 7, -0.8, 0.8);
+            ctx.stroke();
+        }
+    }
+
+    // MARK: - Scene layout
+
+    // Inflatable water slide on the left, shooter standing just past the splash pool.
+    function sceneLayout() {
+        const groundY = H - safeBottom - 50;
+        const x0 = 10;                                   // climbing wall face
+        const SLIDE_SCALE = 1.2;                         // slide drawn 20% wider than the base proportions
+        const x1 = x0 + clamp(W * 0.1, 36, 60) * SLIDE_SCALE; // platform edge, slide starts here
+        const top = Math.max(safeTop + 110, groundY - Math.min(340, (groundY - safeTop) * 0.5));
+        // Run scales with drop height so tall portrait screens still get a slope, not a tower
+        const run = clamp(Math.max(W * 0.22, (groundY - top) * 0.45), 70, Math.min(180, W * 0.4)) * SLIDE_SCALE;
+        const x2 = x1 + run;                             // slide exit
+        const poolW = clamp(W * 0.12, 50, 90);
+        const px = Math.min(W - 44, x2 - 12 + poolW + 34);
+        return { groundY, x0, x1, x2, top, poolW, px, py: groundY };
+    }
+
+    // x of the slide's front surface at height y (quarter ellipse from platform to exit)
+    function slideSurfaceX(L, y) {
+        if (y <= L.top) return L.x1;
+        const t = Math.min(1, (y - L.top) / (L.groundY - L.top));
+        return L.x2 - (L.x2 - L.x1) * Math.sqrt(1 - t * t);
+    }
+
+    function slideCurve(L) {
+        ctx.ellipse(L.x2, L.top, L.x2 - L.x1, L.groundY - L.top, 0, Math.PI, Math.PI / 2, true);
+    }
+
+    function slideBodyPath(L) {
+        const r = 14;
+        ctx.beginPath();
+        ctx.moveTo(L.x0, L.groundY);
+        ctx.lineTo(L.x0, L.top + r);
+        ctx.arcTo(L.x0, L.top, L.x0 + r, L.top, r);
+        ctx.lineTo(L.x1, L.top);
+        slideCurve(L);
+        ctx.closePath();
+    }
+
+    function drawWaterSlide(L, t) {
+        const gy = L.groundY;
+
+        // Ground shadow
+        ctx.fillStyle = 'rgba(17,24,39,0.08)';
+        ctx.beginPath();
+        ctx.ellipse((L.x0 + L.x2) / 2, gy + 4, (L.x2 - L.x0) / 2 + 10, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Canopy arch over the platform
+        ctx.strokeStyle = C.canopy;
+        ctx.lineWidth = 8;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc((L.x0 + L.x1) / 2 + 2, L.top, (L.x1 - L.x0) / 2 + 2, Math.PI, 0);
+        ctx.stroke();
+
+        // Inflated body
+        const grad = ctx.createLinearGradient(0, L.top, 0, gy);
+        grad.addColorStop(0, C.slideTop);
+        grad.addColorStop(1, C.slideBase);
+        slideBodyPath(L);
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // Baffle seams and base tube, clipped to the body
+        ctx.save();
+        slideBodyPath(L);
+        ctx.clip();
+        ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+        ctx.lineWidth = 2;
+        for (let x = L.x0 + 22; x < L.x2; x += 22) line(x, L.top, x, gy);
+        ctx.fillStyle = C.slideDeep;
+        ctx.fillRect(L.x0, gy - 12, L.x2 - L.x0, 12);
+        ctx.restore();
+
+        // Climbing holds on the wall face
+        const colors = [C.hold, C.red, C.white];
+        let i = 0;
+        for (let y = L.top + 26; y < gy - 22; y += 24, i++) {
+            ctx.fillStyle = colors[i % colors.length];
+            ctx.beginPath();
+            ctx.arc(L.x0 + (i % 2 ? 22 : 12), y, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Puffy side rail along the platform and slide lane
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = C.rail;
+        ctx.lineWidth = 12;
+        ctx.beginPath();
+        ctx.moveTo(L.x0 + 6, L.top);
+        ctx.lineTo(L.x1, L.top);
+        slideCurve(L);
+        ctx.stroke();
+
+        // Water running down the lane
+        ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([10, 9]);
+        ctx.lineDashOffset = -t * 60;
+        ctx.beginPath();
+        ctx.moveTo(L.x1 - 4, L.top);
+        slideCurve(L);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Splash pool with inflated rim
+        const px = L.x2 - 12, pw = L.poolW;
+        fillRR(px, gy - 20, pw, 22, 11, C.slideDeep);
+        ctx.fillStyle = C.water;
+        ctx.beginPath();
+        ctx.ellipse(px + pw / 2, gy - 13, pw / 2 - 7, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Splash droplets at the exit
+        ctx.fillStyle = C.water;
+        for (let k = 0; k < 4; k++) {
+            const p = (t * 1.4 + k / 4) % 1;
+            ctx.globalAlpha = 1 - p;
+            ctx.beginPath();
+            ctx.arc(L.x2 + 4 + k * 6 + p * 10, gy - 22 - Math.sin(p * Math.PI) * 16, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+    }
+
+    // Red silhouette laid over the slide when a bird gets through
+    function drawSlideFlash(L, alpha) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = C.red;
+        slideBodyPath(L);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // Gun arm pivots at the shoulder; the default pose aims up-left at the sky
+    const DEFAULT_AIM = -Math.PI * 0.8;
+    const ARM_LEN = 20;
+
+    // Every gun the shooter can hold. A crate catching the shooter swaps in an upgrade
+    // for UPGRADE_TIME, then he goes back to the pistol.
+    const GUNS = {
+        pistol:  { name: 'Pistol',      speed: 650,  cooldown: 0.12, auto: false, pellets: 1, length: 22, bullet: C.dark },
+        fast:    { name: 'Fast Gun',    speed: 1300, cooldown: 0.12, auto: false, pellets: 1, length: 30, bullet: C.red },
+        auto:    { name: 'Auto Gun',    speed: 800,  cooldown: 0.09, auto: true,  pellets: 1, length: 30, bullet: C.amber },
+        machine: { name: 'Machine Gun', speed: 800,  cooldown: 0.18, auto: false, pellets: 3, length: 39, bullet: C.dark }
+    };
+    const UPGRADES = ['fast', 'auto', 'machine'];
+    const UPGRADE_TIME = 15;
+    const SPREAD = 0.12; // radians between machine-gun bullets
+
+    function gunPivot(L) {
+        return { x: L.px, y: L.py - 52 };
+    }
+
+    function muzzlePos(L, aim, kind) {
+        const p = gunPivot(L);
+        const len = ARM_LEN + GUNS[kind].length;
+        return { x: p.x + Math.cos(aim) * len, y: p.y + Math.sin(aim) * len };
+    }
+
+    // Drawn pointing along +x, starting at the hand
+    function drawGun(kind) {
+        const a = ARM_LEN;
+        if (kind === 'fast') {
+            fillRR(a - 3, -5, 33, 10, 3, C.red);
+            fillRR(a + 6, -8, 14, 4, 2, C.yellow);
+            fillRR(a - 1, 3, 8, 12, 2, C.dark);
+        } else if (kind === 'auto') {
+            fillRR(a - 3, -5, 33, 10, 3, C.yellow);
+            fillRR(a + 9, 4, 9, 13, 2, C.dark);
+            fillRR(a - 1, 3, 7, 11, 2, C.dark);
+        } else if (kind === 'machine') {
+            fillRR(a - 3, -6, 30, 12, 3, C.dark);
+            ctx.strokeStyle = C.dark;
+            ctx.lineWidth = 2.5;
+            for (const dy of [-4, 0, 4]) line(a + 26, dy, a + 39, dy);
+            fillRR(a + 4, -2, 14, 4, 2, C.red);
+            fillRR(a - 1, 4, 8, 11, 2, C.dark);
+        } else {
+            fillRR(a - 3, -4, 25, 8, 2, C.metal);
+            fillRR(a - 1, 2, 7, 11, 2, C.metal);
+        }
+    }
+
+    function drawStickFigure(px, gy) {
+        ctx.lineCap = 'round';
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = C.dark;
+        line(px, gy - 30, px - 9, gy - 2);
+        line(px, gy - 30, px + 9, gy - 2);
+        line(px, gy - 30, px, gy - 58);
+        line(px, gy - 52, px + 7, gy - 38);
+
+        ctx.fillStyle = C.dark;
+        ctx.beginPath();
+        ctx.arc(px, gy - 70, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = C.red;
+        ctx.beginPath();
+        ctx.arc(px, gy - 71, 10, Math.PI, 0);
+        ctx.fill();
+    }
+
+    function drawPlayer(L, aim, gun, muzzleFlash) {
+        const px = L.px, gy = L.py;
+        const avatar = art('avatar');
+        if (avatar) ctx.drawImage(avatar, px - 22, gy - 84, 44, 84);
+        else drawStickFigure(px, gy);
+
+        // Gun arm, rotated toward the last shot; flipped when aiming left so the grip hangs down
+        ctx.save();
+        ctx.translate(px, gy - 52);
+        ctx.rotate(aim);
+        if (Math.cos(aim) < 0) ctx.scale(1, -1);
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = C.dark;
+        ctx.lineWidth = 4;
+        line(0, 0, ARM_LEN, 0);
+        drawGun(gun);
+        if (muzzleFlash > 0) {
+            ctx.fillStyle = C.yellow;
+            ctx.beginPath();
+            ctx.arc(ARM_LEN + GUNS[gun].length + 3, 0, 6, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    function drawScene(L, t, aim, gun, muzzleFlash) {
+        const bg = art('background'), slide = art('slide');
+        if (bg) {
+            ctx.drawImage(bg, 0, 0, W, H);
+        } else {
+            ctx.fillStyle = C.light;
+            ctx.fillRect(0, 0, W, H);
+            drawGround(L.groundY);
+        }
+        if (slide) ctx.drawImage(slide, L.x0, L.top - 40, L.x2 + L.poolW - L.x0, L.groundY - L.top + 40);
+        else drawWaterSlide(L, t);
+        drawPlayer(L, aim === undefined ? DEFAULT_AIM : aim, gun || 'pistol', muzzleFlash || 0);
+    }
+
+    // MARK: - Bird Defense
+
+    // Distance from point P to segment AB, so fast bullets can't skip past a target between frames
+    function segDist(px, py, ax, ay, bx, by) {
+        const dx = bx - ax, dy = by - ay;
+        const t = clamp(((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy || 1), 0, 1);
+        return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+    }
+
+    // Each level lasts LEVEL_TIME; the last one keeps going until the slide falls.
+    // Every level steps up all three: bird speed, how many birds arrive at once (flock range,
+    // spawn interval), and how many places they come from. Each bird in a flock picks its own entry.
+    const LEVEL_TIME = 60; // s
+    const LEVELS = [
+        { speed: 105, every: 1.18, flock: [1, 1], zigzag: 0,  origins: ['sky', 'corner', 'side'] },
+        { speed: 140, every: 0.9,  flock: [1, 2], zigzag: 12, origins: ['sky', 'corner', 'side', 'beside'] },
+        { speed: 175, every: 0.7,  flock: [2, 3], zigzag: 22, origins: ['sky', 'corner', 'side', 'beside', 'feet'] },
+        { speed: 215, every: 0.55, flock: [3, 4], zigzag: 30, origins: ['sky', 'corner', 'side', 'beside', 'feet'] }
+    ];
+    const ORIGIN_WEIGHT = { sky: 20, corner: 15, side: 30, beside: 15, feet: 20 };
+
+    // Doves are harmless: they cross the screen from any edge and never hit the slide.
+    // Shooting one costs a point.
+    const DOVE_EVERY = [2.5, 4.5]; // s
+    const DOVE_PENALTY = 1;
+    const BIRD_COLORS = { tail: '#4B5563', body: '#374151', wing: C.gray, beak: C.yellow, eye: C.white };
+    const DOVE_COLORS = { tail: '#D1D5DB', body: '#E5E7EB', wing: '#9CA3AF', beak: '#F472B6', eye: C.dark };
+
+    const birdDefense = {
+        name: 'Bird Defense',
+        DROP_SPEED: 80,       // px/s crates fall
+        MAX_HP: 3,
+
+        init() { this.reset(); },
+
+        reset() {
+            this.hp = 3;
+            this.score = 0;
+            this.birds = [];
+            this.shots = [];
+            this.spawnTimer = 1;
+            this.cooldown = 0;
+            this.flash = 0;
+            this.aim = DEFAULT_AIM;
+            this.muzzleFlash = 0;
+            this.gun = 'pistol';
+            this.gunTime = 0;
+            this.holding = null;
+            this.doves = [];
+            this.doveTimer = rand(1.5, 3);
+            this.drops = [];      // falling crates: shoot one to claim it
+            this.gunTimer = rand(8, 12);
+            this.lifeTimer = rand(8, 12);
+            this.popups = [];
+            this.debris = [];
+            this.t = 0;
+            this.level = 1;
+            this.over = false;
+            this.overAt = 0;
+            this.endButtons = null;
+        },
+
+        spawnBird(L) {
+            const lv = LEVELS[this.level - 1];
+            const count = lv.flock[0] + Math.floor(Math.random() * (lv.flock[1] - lv.flock[0] + 1));
+            for (let i = 0; i < count; i++) this.spawnOne(L, lv);
+            sound.play('birdFlap');
+        },
+
+        spawnOne(L, lv) {
+            const total = lv.origins.reduce((sum, o) => sum + ORIGIN_WEIGHT[o], 0);
+            let roll = Math.random() * total, origin = lv.origins[0];
+            for (const o of lv.origins) {
+                roll -= ORIGIN_WEIGHT[o];
+                if (roll < 0) { origin = o; break; }
+            }
+
+            let x = W + 20, y;
+            if (origin === 'sky') {
+                x = rand(Math.max(W * 0.35, L.x2 + 30), W - 20);
+                y = -20;
+            } else if (origin === 'corner') {
+                y = rand(safeTop, safeTop + L.groundY * 0.3);
+            } else if (origin === 'side') {
+                y = rand(L.groundY * 0.25, L.groundY - 90);
+            } else if (origin === 'beside') {
+                // Low, right past the shooter at his own height
+                y = rand(L.py - 85, L.py - 25);
+            } else {
+                // Bottom-right corner, skimming just above the ground under his feet
+                y = rand(L.groundY - 34, L.groundY - 14);
+            }
+            const low = origin === 'feet';
+
+            // Dive at a random spot on the slide's face; ground skimmers stay low
+            const ty = low ? rand(L.groundY - 40, L.groundY - 16) : rand(L.top + 10, L.groundY - 30);
+            const tx = slideSurfaceX(L, ty);
+            const len = Math.hypot(tx - x, ty - y) || 1;
+            this.birds.push({
+                x, y, bx: x, by: y, tx, ty,
+                vx: (tx - x) / len * lv.speed,
+                vy: (ty - y) / len * lv.speed,
+                zigzag: low ? 0 : lv.zigzag,
+                phase: rand(0, Math.PI * 2)
+            });
+        },
+
+        // Crates parachute straight down from a random spot in the sky; one that
+        // reaches the ground unclaimed is lost
+        spawnDrop(L, type) {
+            const x = rand(Math.max(W * 0.3, L.x2 + 30), W - 30);
+            let kind = null;
+            if (type === 'gun') {
+                const others = UPGRADES.filter(k => k !== this.gun);
+                kind = others[Math.floor(Math.random() * others.length)];
+            }
+            this.drops.push({ type, kind, x, y: -40, sway: rand(0, 6) });
+            log(type === 'gun' ? 'upgrade falling' : 'life falling', kind ? GUNS[kind].name : '');
+        },
+
+        spawnDove(L) {
+            const top = safeTop + 60, bottom = L.groundY - 70;
+            const edgePoint = edge => edge === 'top'
+                ? { x: rand(20, W - 20), y: -20 }
+                : { x: edge === 'left' ? -20 : W + 20, y: rand(top, bottom) };
+            const edges = ['left', 'right', 'top'];
+            const from = edges[Math.floor(Math.random() * 3)];
+            const rest = edges.filter(e => e !== from);
+            const a = edgePoint(from), b = edgePoint(rest[Math.floor(Math.random() * 2)]);
+            const speed = rand(90, 130), len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+            this.doves.push({
+                dove: true, x: a.x, y: a.y, bx: a.x, by: a.y,
+                vx: (b.x - a.x) / len * speed, vy: (b.y - a.y) / len * speed,
+                life: len / speed + 0.5, phase: rand(0, Math.PI * 2)
+            });
+        },
+
+        claimDrop(L, d) {
+            if (d.type === 'gun') {
+                this.gun = d.kind;
+                this.gunTime = UPGRADE_TIME;
+                this.popup(GUNS[d.kind].name + '!', C.red, L.px - 40, L.py - 110);
+                log('upgrade collected', GUNS[d.kind].name);
+                sound.play('claimGun');
+            } else if (this.hp < this.MAX_HP) {
+                this.hp++;
+                this.popup('+1 Life', C.red, d.x, d.y - 30);
+                log('life collected', { hp: this.hp });
+                sound.play('claimLife');
+            } else {
+                this.popup('Health full', C.muted, d.x, d.y - 30);
+                sound.play('claimLife');
+            }
+            for (let i = 0; i < 10; i++) {
+                this.debris.push({ x: d.x, y: d.y, vx: rand(-140, 140), vy: rand(-240, -40), life: rand(0.5, 0.8), color: i % 2 ? C.white : C.red });
+            }
+        },
+
+        popup(str, color, x, y) {
+            this.popups.push({ text: str, color, x, y, life: 1.4 });
+        },
+
+        update(dt) {
+            this.t += dt;
+            this.flash = Math.max(0, this.flash - dt);
+            this.muzzleFlash = Math.max(0, this.muzzleFlash - dt);
+            this.cooldown -= dt;
+            for (const p of this.popups) { p.life -= dt; p.y -= 30 * dt; }
+            this.popups = this.popups.filter(p => p.life > 0);
+            for (const d of this.debris) { d.vy += 900 * dt; d.x += d.vx * dt; d.y += d.vy * dt; d.life -= dt; }
+            this.debris = this.debris.filter(d => d.life > 0);
+            if (this.over) return;
+            const L = sceneLayout();
+
+            if (this.gunTime > 0) {
+                this.gunTime -= dt;
+                if (this.gunTime <= 0) {
+                    log('upgrade ended', GUNS[this.gun].name);
+                    this.gunTime = 0;
+                    this.gun = 'pistol';
+                }
+            }
+            if (this.holding && GUNS[this.gun].auto) this.fire(this.holding.x, this.holding.y);
+
+            const level = Math.min(LEVELS.length, 1 + Math.floor(this.t / LEVEL_TIME));
+            if (level !== this.level) {
+                this.level = level;
+                this.popup('Level ' + level, C.red, W / 2, L.groundY * 0.4);
+                sound.play('levelUp');
+                log('level', level);
+            }
+
+            this.spawnTimer -= dt;
+            if (this.spawnTimer <= 0) {
+                this.spawnTimer += LEVELS[this.level - 1].every;
+                this.spawnBird(L);
+            }
+
+            // One gun crate and one life crate in the air at a time
+            if (!this.drops.some(d => d.type === 'gun')) {
+                this.gunTimer -= dt;
+                if (this.gunTimer <= 0) {
+                    this.spawnDrop(L, 'gun');
+                    this.gunTimer = rand(14, 20);
+                }
+            }
+            if (!this.drops.some(d => d.type === 'life')) {
+                this.lifeTimer -= dt;
+                if (this.lifeTimer <= 0) {
+                    this.spawnDrop(L, 'life');
+                    this.lifeTimer = rand(12, 18);
+                }
+            }
+            this.doveTimer -= dt;
+            if (this.doveTimer <= 0) {
+                this.spawnDove(L);
+                this.doveTimer = rand(DOVE_EVERY[0], DOVE_EVERY[1]);
+            }
+            for (const d of this.doves) {
+                d.bx += d.vx * dt;
+                d.by += d.vy * dt;
+                d.x = d.bx;
+                d.y = d.by + Math.sin(this.t * 3 + d.phase) * 8;
+                d.life -= dt;
+                if (d.life <= 0) d.dead = true;
+            }
+
+            for (const d of this.drops) {
+                d.y += this.DROP_SPEED * dt;
+                if (d.y >= L.groundY - 14) {
+                    d.dead = true;
+                    this.popup('Missed', C.muted, d.x, d.y - 40);
+                    log(d.type === 'gun' ? 'upgrade lost' : 'life lost');
+                }
+            }
+
+            for (const b of this.birds) {
+                b.bx += b.vx * dt;
+                b.by += b.vy * dt;
+                // Zig-zag sideways to the flight path
+                const sp = Math.hypot(b.vx, b.vy) || 1;
+                const off = Math.sin(this.t * 5 + b.phase) * b.zigzag;
+                b.x = b.bx - b.vy / sp * off;
+                b.y = b.by + b.vx / sp * off;
+            }
+            for (const s of this.shots) {
+                s.px = s.x;
+                s.py = s.y;
+                s.x += s.vx * dt;
+                s.y += s.vy * dt;
+            }
+
+            for (const s of this.shots) {
+                const hit = this.drops.find(d => !d.dead && segDist(d.x, d.y, s.px, s.py, s.x, s.y) < 22);
+                if (hit) {
+                    s.dead = hit.dead = true;
+                    this.claimDrop(L, hit);
+                    continue;
+                }
+                for (const d of this.doves) {
+                    if (s.dead || d.dead) continue;
+                    if (segDist(d.x, d.y, s.px, s.py, s.x, s.y) < 18) {
+                        s.dead = d.dead = true;
+                        this.score = Math.max(0, this.score - DOVE_PENALTY);
+                        this.popup('Dove! -' + DOVE_PENALTY, C.muted, d.x, d.y - 24);
+                        log('dove shot', { score: this.score });
+                        sound.play('doveShot');
+                    }
+                }
+                for (const b of this.birds) {
+                    if (s.dead || b.dead) continue;
+                    if (segDist(b.x, b.y, s.px, s.py, s.x, s.y) < 18) {
+                        s.dead = b.dead = true;
+                        this.score++;
+                        log('score', { score: this.score });
+                    }
+                }
+            }
+
+            for (const b of this.birds) {
+                if (b.dead || (b.tx - b.bx) * b.vx + (b.ty - b.by) * b.vy > 0) continue;
+                b.dead = true;
+                this.hp--;
+                sound.play('slideHit');
+                this.flash = 0.35;
+                log('slide hit', { hp: this.hp });
+                if (this.hp <= 0) {
+                    this.over = true;
+                    this.overAt = performance.now();
+                    log('game over', { score: this.score });
+                    sound.play('gameOver');
+                    sendToApp('gameOver', { score: this.score, level: this.level });
+                    break;
+                }
+            }
+
+            this.birds = this.birds.filter(b => !b.dead);
+            this.drops = this.drops.filter(d => !d.dead);
+            this.doves = this.doves.filter(d => !d.dead);
+            this.shots = this.shots.filter(s => !s.dead && s.x > -20 && s.x < W + 20 && s.y > -20 && s.y < H + 20);
+        },
+
+        fire(x, y) {
+            const L = sceneLayout();
+            const pivot = gunPivot(L);
+            this.aim = Math.atan2(y - pivot.y, x - pivot.x);
+            if (this.cooldown > 0) return;
+            const gun = GUNS[this.gun];
+            this.cooldown = gun.cooldown;
+            const m = muzzlePos(L, this.aim, this.gun);
+            for (let i = 0; i < gun.pellets; i++) {
+                const a = this.aim + (i - (gun.pellets - 1) / 2) * SPREAD;
+                this.shots.push({ x: m.x, y: m.y, px: m.x, py: m.y, vx: Math.cos(a) * gun.speed, vy: Math.sin(a) * gun.speed, kind: this.gun });
+            }
+            this.muzzleFlash = 0.06;
+            sound.play('shot', { gun: this.gun });
+        },
+
+        onDown(x, y, id) {
+            this.holding = { id, x, y };
+            this.fire(x, y);
+        },
+
+        // Dragging re-aims; the auto gun keeps firing at the finger
+        onMove(x, y, id) {
+            if (!this.holding || this.holding.id !== id) return;
+            this.holding.x = x;
+            this.holding.y = y;
+            const pivot = gunPivot(sceneLayout());
+            this.aim = Math.atan2(y - pivot.y, x - pivot.x);
+        },
+
+        onUp(x, y, id) {
+            if (this.holding && this.holding.id === id) this.holding = null;
+        },
+
+        onPause() { this.holding = null; },
+
+        draw() {
+            const L = sceneLayout();
+            drawScene(L, this.t, this.aim, this.gun, this.muzzleFlash);
+            if (this.flash > 0) drawSlideFlash(L, Math.min(0.9, this.flash / 0.35 * 1.2));
+            for (const d of this.drops) this.drawDrop(d);
+            for (const d of this.doves) this.drawBird(d);
+            for (const b of this.birds) this.drawBird(b);
+
+            ctx.lineCap = 'round';
+            for (const s of this.shots) {
+                const len = s.kind === 'fast' ? 18 : 9;
+                const sp = Math.hypot(s.vx, s.vy);
+                ctx.strokeStyle = GUNS[s.kind].bullet;
+                ctx.lineWidth = s.kind === 'pistol' ? 3 : 4;
+                line(s.x - s.vx / sp * len, s.y - s.vy / sp * len, s.x, s.y);
+            }
+            for (const d of this.debris) {
+                ctx.globalAlpha = Math.min(1, d.life * 2);
+                ctx.fillStyle = d.color;
+                ctx.fillRect(d.x - 3, d.y - 3, 6, 6);
+            }
+            ctx.globalAlpha = 1;
+            for (const p of this.popups) {
+                ctx.globalAlpha = Math.min(1, p.life);
+                text(p.text, p.x, p.y, 18, '800', p.color);
+            }
+            ctx.globalAlpha = 1;
+
+            // HUD
+            for (let i = 0; i < this.hp; i++) drawHeart(78 + i * 30, safeTop + 23, 24, C.red);
+            text('Level ' + this.level, W / 2, safeTop + 34, 18, '800', C.dark);
+            if (this.gunTime > 0) text(GUNS[this.gun].name + ' ' + Math.ceil(this.gunTime) + 's', W / 2, safeTop + 76, 16, '800', C.red);
+            else text(GUNS[this.gun].name, W / 2, safeTop + 76, 16, '800', C.muted);
+            drawPill('Score ' + this.score, W - 16, safeTop + 34, C.dark);
+        },
+
+        drawEnd() {
+            drawEndCard(this, 'Game Over', C.dark, [
+                { text: String(this.score), size: 44, gap: 52, weight: '800' },
+                { text: 'Birds stopped · Level ' + this.level, size: 14, gap: 22, weight: '500', color: C.muted }
+            ]);
+        },
+
+        drawDrop(p) {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(Math.sin(this.t * 2 + p.sway) * 0.15);
+
+            // Parachute
+            ctx.fillStyle = C.red;
+            ctx.beginPath();
+            ctx.ellipse(0, -34, 24, 16, 0, Math.PI, 0);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = C.white;
+            ctx.beginPath();
+            ctx.ellipse(0, -34, 8, 16, 0, Math.PI, 0);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = C.gray;
+            ctx.lineWidth = 1;
+            line(-23, -34, -10, -9);
+            line(0, -34, 0, -9);
+            line(23, -34, 10, -9);
+
+            // Crate showing what's inside
+            fillRR(-18, -10, 36, 24, 5, C.dark);
+            fillRR(-15, -7, 30, 18, 3, C.white);
+            if (p.type === 'life') {
+                drawHeart(0, -6, 16, C.red);
+            } else {
+                ctx.save();
+                ctx.translate(-(ARM_LEN + 18) * 0.5, 0);
+                ctx.scale(0.5, 0.5);
+                drawGun(p.kind);
+                ctx.restore();
+            }
+            ctx.restore();
+        },
+
+        drawBird(b) {
+            const P = b.dove ? DOVE_COLORS : BIRD_COLORS;
+            const flap = Math.sin(this.t * 14 + b.phase);
+            ctx.save();
+            ctx.translate(b.x, b.y);
+            // Art faces left; tilt it along the dive
+            ctx.rotate(Math.atan2(b.vy, b.vx) - Math.PI);
+
+            ctx.fillStyle = P.tail;
+            ctx.beginPath();
+            ctx.moveTo(12, 0);
+            ctx.lineTo(21, -5);
+            ctx.lineTo(21, 5);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = P.body;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 13, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(-11, -3, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = P.beak;
+            ctx.beginPath();
+            ctx.moveTo(-16, -5);
+            ctx.lineTo(-23, -2);
+            ctx.lineTo(-16, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = P.eye;
+            ctx.beginPath();
+            ctx.arc(-12, -5, 1.8, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = P.wing;
+            ctx.beginPath();
+            ctx.moveTo(-6, -2);
+            ctx.lineTo(6, -2);
+            ctx.lineTo(2, -2 - 16 * flap);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
+        }
+    };
+
+    // MARK: - Start screen
+
+    function drawStart() {
+        drawScene(sceneLayout(), clock);
+        const y = safeTop + 130;
+        text(GAME_TITLE, W / 2, y, 40, '800', C.red);
+        text(GAME_TAGLINE, W / 2, y + 38, 16, '500', C.muted);
+        ctx.globalAlpha = 0.6 + 0.4 * Math.abs(Math.sin(clock * 2.5));
+        text('Tap to start', W / 2, y + 86, 20, '700', C.dark);
+        ctx.globalAlpha = 1;
+        if (appBridge) drawBack(); // closes the game in the app
+        drawMute();
+    }
+
+    // MARK: - Navigation
+
+    function startGame() {
+        screen = 'game';
+        paused = false;
+        birdDefense.init();
+        log('game start');
+    }
+
+    function goStart() {
+        birdDefense.reset();
+        screen = 'start';
+        paused = false;
+        log('menu load');
+    }
+
+    // MARK: - Input
+
+    function down(x, y, id) {
+        sound.unlock();
+        if (hit(muteRect(), x, y)) {
+            sound.toggle();
+            return;
+        }
+        if (screen === 'start') {
+            if (appBridge && hit(backRect(), x, y)) sendToApp('close');
+            else startGame();
+            return;
+        }
+        const g = birdDefense;
+        if (paused) {
+            paused = false;
+            lastTime = performance.now();
+            log('resume');
+            return;
+        }
+        if (hit(backRect(), x, y)) {
+            goStart();
+            return;
+        }
+        if (g.over) {
+            // Ignore taps carried over from the moment the game ended
+            if (performance.now() - g.overAt < 350) return;
+            if (hit(g.endButtons && g.endButtons.play, x, y)) {
+                g.reset();
+                log('game start');
+            } else if (hit(g.endButtons && g.endButtons.menu, x, y)) {
+                goStart();
+            }
+            return;
+        }
+        g.onDown(x, y, id);
+    }
+
+    function move(x, y, id) {
+        if (screen === 'game' && !paused && !birdDefense.over) birdDefense.onMove(x, y, id);
+    }
+
+    function up(x, y, id) {
+        if (screen === 'game' && !paused && !birdDefense.over) birdDefense.onUp(x, y, id);
+    }
+
+    function touches(handler) {
+        return e => {
+            e.preventDefault(); // also suppresses the emulated mouse events
+            for (const t of e.changedTouches) handler(t.clientX, t.clientY, 'touch' + t.identifier);
+        };
+    }
+
+    canvas.addEventListener('touchstart', touches(down), { passive: false });
+    canvas.addEventListener('touchmove', touches(move), { passive: false });
+    canvas.addEventListener('touchend', touches(up), { passive: false });
+    canvas.addEventListener('touchcancel', touches(up), { passive: false });
+
+    canvas.addEventListener('mousedown', e => down(e.clientX, e.clientY, 'mouse'));
+    window.addEventListener('mousemove', e => move(e.clientX, e.clientY, 'mouse'));
+    window.addEventListener('mouseup', e => up(e.clientX, e.clientY, 'mouse'));
+
+    // Desktop convenience: Escape returns to the start screen
+    window.addEventListener('keydown', e => {
+        if (e.code === 'Escape' && screen === 'game') goStart();
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            if (screen === 'game' && !birdDefense.over && !paused) {
+                paused = true;
+                birdDefense.onPause();
+                log('paused');
+            }
+        } else {
+            lastTime = performance.now();
+        }
+    });
+
+    // MARK: - Layout & loop
+
+    function resize() {
+        dpr = window.devicePixelRatio || 1;
+        W = window.innerWidth;
+        H = window.innerHeight;
+        canvas.width = Math.round(W * dpr);
+        canvas.height = Math.round(H * dpr);
+        canvas.style.width = W + 'px';
+        canvas.style.height = H + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const cs = getComputedStyle(safeProbe);
+        safeTop = parseFloat(cs.paddingTop) || 0;
+        safeBottom = parseFloat(cs.paddingBottom) || 0;
+    }
+
+    function frame(now) {
+        const dt = Math.min((now - lastTime) / 1000, 1 / 30);
+        lastTime = now;
+        clock += dt;
+        if (screen === 'game') {
+            if (!paused) birdDefense.update(dt);
+            birdDefense.draw();
+            drawBack();
+            drawMute();
+            if (birdDefense.over) birdDefense.drawEnd();
+            if (paused) drawPaused();
+        } else {
+            drawStart();
+        }
+        requestAnimationFrame(frame);
+    }
+
+    window.addEventListener('resize', resize);
+    window.addEventListener('orientationchange', () => setTimeout(resize, 100));
+
+    resize();
+    log('menu load');
+    requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

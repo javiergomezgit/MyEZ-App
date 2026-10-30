@@ -34,6 +34,7 @@ struct DealsView: View {
     @State private var selectedTab: DealsTab = .points
     @State private var blogItem: IdentifiableURL?
     @State private var showingPurchaseConfirm = false
+    @State private var showingGame = false
 
     private var activeVM: DealsViewModel {
         selectedTab == .deals ? dealsVM : pointsVM
@@ -47,6 +48,14 @@ struct DealsView: View {
                 .padding(.bottom, 8)
 
             tabContent
+        }
+        .overlay(alignment: .bottomTrailing) {
+            gameButton
+                .padding(.trailing, 20)
+                .padding(.bottom, 95) // clears the 75pt custom tab bar
+        }
+        .fullScreenCover(isPresented: $showingGame) {
+            MiniGameView()
         }
         .background { SceneBackgroundView() }
         .toolbar(.hidden, for: .navigationBar)
@@ -72,6 +81,26 @@ struct DealsView: View {
         .sheet(item: $blogItem) { item in
             SafariView(url: item.url).ignoresSafeArea()
         }
+    }
+
+    // MARK: Game Button
+
+    private var gameButton: some View {
+        Button {
+            showingGame = true
+        } label: {
+            Image(systemName: "gamecontroller.fill")
+                .font(.system(size: 24, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(width: 60, height: 60)
+                .background(
+                    Circle().fill(LinearGradient(colors: [AppColors.buttonRedStart, AppColors.buttonRedEnd],
+                                                 startPoint: .topLeading, endPoint: .bottomTrailing))
+                )
+                .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 4)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Play \(MiniGameViewModel.gameTitle)")
     }
 
     // MARK: Tab Picker
