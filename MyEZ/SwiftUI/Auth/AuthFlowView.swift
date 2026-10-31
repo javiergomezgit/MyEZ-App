@@ -242,6 +242,14 @@ struct SignupView: View {
         } message: {
             Text(viewModel.errorMessage ?? "")
         }
+        .alert("Account Already Set Up", isPresented: $viewModel.showAccountExists) {
+            Button("Email Me a Link") {
+                viewModel.sendSetPasswordLink()
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("We already created a MyEZ account for \(viewModel.email) with your EZ Inflatables order history. Set your password and your equipment will be waiting for you.")
+        }
         .navigationBarTitleDisplayMode(.inline)
     }
 }

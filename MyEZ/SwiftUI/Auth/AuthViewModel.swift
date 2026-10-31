@@ -8,6 +8,9 @@ final class AuthViewModel: ObservableObject {
     @Published var verifyPassword = ""
     @Published var isLoading = false
     @Published var errorMessage: String?
+    /// Set when signup hits an imported account, so the view can offer to send
+    /// the set-password link instead of showing a dead-end error.
+    @Published var showAccountExists = false
 
     func login(appState: AppState) {
         let emailTrimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -76,6 +79,25 @@ final class AuthViewModel: ObservableObject {
                     if !token.isEmpty, let uid = Auth.auth().currentUser?.uid {
                         AuthService.shared.updateFCMToken(firebaseUID: uid, token: token)
                     }
+                case .failure(.accountExists):
+                    self?.showAccountExists = true
+                case .failure(let error):
+                    self?.errorMessage = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    /// Sends the Firebase action link an imported customer uses to set their
+    /// first password. Same endpoint as "Forgot Password", different wording.
+    func sendSetPasswordLink() {
+        let emailTrimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !emailTrimmed.isEmpty else { return }
+        AuthService.shared.sendPasswordReset(email: emailTrimmed) { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    self?.errorMessage = "Check your email for a link to set your password."
                 case .failure(let error):
                     self?.errorMessage = error.localizedDescription
                 }

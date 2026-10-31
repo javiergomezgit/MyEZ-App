@@ -13,6 +13,9 @@ final class AuthService {
     private static let defaultProfileImageURL = "https://firebasestorage.googleapis.com/v0/b/myezfirebase.appspot.com/o/myez-default-profile-image.png?alt=media&token=220f60c3-4cb2-480f-a365-f7852b229857"
 
     enum AuthError: LocalizedError {
+        /// The email already has a Firebase Auth account — typically a customer
+        /// pre-created by the Sales Master importer, who has never set a password.
+        case accountExists
         case message(String)
         case network(Error)
         case invalidResponse
@@ -21,6 +24,8 @@ final class AuthService {
 
         var errorDescription: String? {
             switch self {
+            case .accountExists:
+                return "You already have a MyEZ account for this email."
             case .message(let msg): return msg
             case .network(let err): return "Network error: \(err.localizedDescription)"
             case .invalidResponse: return "Invalid response"
@@ -66,7 +71,11 @@ final class AuthService {
     func registerUser(name: String, email: String, password: String, completion: @escaping (Result<Void, AuthError>) -> Void) {
         Auth.auth().createUser(withEmail: email, password: password) { [weak self] result, error in
             if let error = error {
-                completion(.failure(.message(error.localizedDescription)))
+                if AuthErrorCode(rawValue: (error as NSError).code) == .emailAlreadyInUse {
+                    completion(.failure(.accountExists))
+                } else {
+                    completion(.failure(.message(error.localizedDescription)))
+                }
                 return
             }
             guard let firebaseUser = result?.user else {
