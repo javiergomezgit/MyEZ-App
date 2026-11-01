@@ -20,6 +20,10 @@ struct ProfileView: View {
                     header
                     profileCard
 
+                    if viewModel.user != nil {
+                        gameSection
+                    }
+
                     profileSection("Account", rows: [
                         ProfileRow(icon: "person.text.rectangle", title: "My Information", tint: AppColors.accentRed,
                             action: { showingMyInformation = true },
@@ -180,6 +184,24 @@ struct ProfileView: View {
         }
         .padding(20)
         .sceneCard(cornerRadius: 22, fillColor: AppColors.surfacePrimary)
+    }
+
+    private var gameSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("GAME")
+                .font(.system(size: 12, weight: .bold))
+                .tracking(1.1)
+                .foregroundColor(AppColors.textSecondary)
+                .padding(.leading, 6)
+
+            HStack(spacing: 10) {
+                statCard(value: "\(viewModel.gameStats.ezPoints)", label: "EZ Points Earned")
+                statCard(value: "\(viewModel.gameStats.bestScore)", label: "Best Score")
+                statCard(value: "\(viewModel.gameStats.gamesPlayed)", label: "Games Played")
+            }
+            .padding(14)
+            .sceneCard(cornerRadius: 20, fillColor: AppColors.surfacePrimary)
+        }
     }
 
     private func statCard(value: String, label: String) -> some View {

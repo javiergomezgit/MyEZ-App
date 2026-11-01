@@ -39,7 +39,8 @@ private struct GameWebView: UIViewRepresentable {
         // The handler is held weakly via the proxy so the web view doesn't retain the coordinator
         config.userContentController.add(WeakMessageHandler(context.coordinator), name: Self.handlerName)
 
-        let webView = WKWebView(frame: .zero, configuration: config)
+        let webView = SafeAreaWebView(frame: .zero, configuration: config)
+        webView.navigationDelegate = context.coordinator
         webView.isOpaque = false
         webView.backgroundColor = .clear
         webView.scrollView.isScrollEnabled = false
@@ -60,7 +61,7 @@ private struct GameWebView: UIViewRepresentable {
         webView.configuration.userContentController.removeScriptMessageHandler(forName: handlerName)
     }
 
-    final class Coordinator: NSObject, WKScriptMessageHandler {
+    final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         let onMessage: ([String: Any]) -> Void
 
         init(onMessage: @escaping ([String: Any]) -> Void) {
@@ -72,6 +73,24 @@ private struct GameWebView: UIViewRepresentable {
             guard let body = message.body as? [String: Any] else { return }
             onMessage(body)
         }
+
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            (webView as? SafeAreaWebView)?.sendSafeArea()
+        }
+    }
+}
+
+// The scroll view uses .never insets, so CSS env(safe-area-inset-*) can come back 0 and the
+// game's top bar ends up under the camera. Hand the page the window's real insets instead.
+private final class SafeAreaWebView: WKWebView {
+    override func safeAreaInsetsDidChange() {
+        super.safeAreaInsetsDidChange()
+        sendSafeArea()
+    }
+
+    func sendSafeArea() {
+        let insets = window?.safeAreaInsets ?? safeAreaInsets
+        evaluateJavaScript("window.myezSetSafeArea && window.myezSetSafeArea(\(insets.top), \(insets.bottom))")
     }
 }
 

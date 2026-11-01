@@ -17,6 +17,13 @@ final class ProfileViewModel: ObservableObject {
     @Published var editPhone: String = ""
     @Published var editCompanyName: String = ""
     @Published var editZipCode: String = ""
+    @Published var gameStats = GameStats()
+
+    struct GameStats {
+        var gamesPlayed = 0
+        var bestScore = 0
+        var ezPoints = 0
+    }
 
     private lazy var dbRef: DatabaseReference = Database.database().reference()
 
@@ -35,6 +42,7 @@ final class ProfileViewModel: ObservableObject {
         editZipCode = userInformation.zipCode
         loadProfileFromFirebase()
         loadMonthlyPlace()
+        loadGameStats()
     }
 
     private func loadProfileFromFirebase() {
@@ -261,6 +269,29 @@ final class ProfileViewModel: ObservableObject {
                 self.currentUserRank = place > 0 ? place : 0
             }
         })
+    }
+
+    // Read-only summary of users/{uid}/gameScores/minigame, written by MiniGameViewModel.
+    // EZ Points are counted per game the same way they were awarded (score / 10, rounded down).
+    private func loadGameStats() {
+        guard !firebaseUID.isEmpty else { return }
+        dbRef.child("users").child(firebaseUID).child("gameScores").child(MiniGameViewModel.gameKey)
+            .observeSingleEvent(of: .value, with: { [weak self] snapshot in
+                guard let self = self else { return }
+                let games = (snapshot.value as? [String: Any]) ?? [:]
+                let scores: [Int] = games.values.compactMap { value in
+                    guard let dict = value as? [String: Any] else { return nil }
+                    return Self.intValue(dict["score"])
+                }
+                let stats = GameStats(
+                    gamesPlayed: scores.count,
+                    bestScore: scores.max() ?? 0,
+                    ezPoints: scores.reduce(0) { $0 + $1 / MiniGameViewModel.gamePointsPerEZPoint }
+                )
+                DispatchQueue.main.async { self.gameStats = stats }
+            }) { error in
+                print("❌ Failed to load game stats: \(error.localizedDescription)")
+            }
     }
 
     private static func intValue(_ value: Any?) -> Int? {

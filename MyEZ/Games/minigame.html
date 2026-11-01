@@ -884,7 +884,7 @@
     const ARM_LEN = 20;
 
     // Every gun the shooter can hold. Shooting a falling crate swaps in an upgrade
-    // for UPGRADE_TIME, then he goes back to the pistol.
+    // for UPGRADE_TIME, then he goes back to the level's own gun (pistol unless the level sets one).
     const GUNS = {
         pistol:  { name: 'Pistol',      speed: 650,  cooldown: 0.12, auto: false, pellets: 1, length: 22, bullet: C.white },
         fast:    { name: 'Fast Gun',    speed: 1300, cooldown: 0.12, auto: false, pellets: 1, length: 30, bullet: C.red },
@@ -1110,8 +1110,8 @@
     const LEVELS = [
         { speed: 105, every: 1.18, flock: [1, 1], zigzag: 0,  big: 0.12, origins: ['sky', 'corner', 'side'] },
         { speed: 140, every: 0.9,  flock: [1, 2], zigzag: 12, big: 0.16, origins: ['sky', 'corner', 'side', 'beside'] },
-        { speed: 175, every: 0.7,  flock: [2, 3], zigzag: 22, big: 0.2,  origins: ['sky', 'corner', 'side', 'beside', 'feet'] },
-        { speed: 215, every: 0.55, flock: [3, 4], zigzag: 30, big: 0.25, origins: ['sky', 'corner', 'side', 'beside', 'feet'] }
+        { speed: 175, every: 0.7,  flock: [2, 3], zigzag: 22, big: 0.2,  origins: ['sky', 'corner', 'side', 'beside', 'feet'], gun: 'fast' },
+        { speed: 175, every: 0.55, flock: [3, 4], zigzag: 30, big: 0.25, origins: ['sky', 'corner', 'side', 'beside', 'feet'], gun: 'fast' }
     ];
     const ORIGIN_WEIGHT = { sky: 20, corner: 15, side: 30, beside: 15, feet: 20 };
     const PASSING_SHARE = 0.15; // extra birds per attacker that just fly by and never hit the slide
@@ -1165,7 +1165,7 @@
             this.hitStop = 0;
             this.aim = DEFAULT_AIM;
             this.muzzleFlash = 0;
-            this.gun = 'pistol';
+            this.gun = this.baseGun();
             this.gunTime = 0;
             this.holding = null;
             this.doveTimer = rand(1.5, 3);
@@ -1184,6 +1184,9 @@
             this.showBanner('Level ' + level, 'Wave 1/' + WAVES);
             log('level start', level);
         },
+
+        // Harder levels start with a better gun (LEVELS[n].gun)
+        baseGun() { return LEVELS[this.level - 1].gun || 'pistol'; },
 
         progress() {
             const inWave = this.phase === 'wave' ? 1 - this.phaseTime / WAVE_TIME : this.phase === 'clear' ? 1 : 0;
@@ -1497,7 +1500,7 @@
                 if (this.gunTime <= 0) {
                     log('upgrade ended', GUNS[this.gun].name);
                     this.gunTime = 0;
-                    this.gun = 'pistol';
+                    this.gun = this.baseGun();
                 }
             }
             if (this.holding && GUNS[this.gun].auto) this.fire(this.holding.x, this.holding.y);
@@ -1571,8 +1574,10 @@
                     if (segDist(b.x, b.y, s.px, s.py, s.x, s.y) < BIRD_KINDS[b.kind].radius) {
                         s.dead = true;
                         if (b.kind !== 'dove') {
+                            // Accuracy is per trigger pull, so a 3-bullet volley counts once
+                            if (!s.volley.counted) this.shotsHit++;
+                            s.volley.counted = true;
                             s.volley.hit = true;
-                            this.shotsHit++;
                         }
                         this.killBird(b);
                     }
@@ -2143,11 +2148,19 @@
         canvas.style.width = W + 'px';
         canvas.style.height = H + 'px';
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        // env() can report 0 inside the app's WKWebView, so the app also sends the real insets
         const cs = getComputedStyle(safeProbe);
-        safeTop = parseFloat(cs.paddingTop) || 0;
-        safeBottom = parseFloat(cs.paddingBottom) || 0;
+        safeTop = Math.max(parseFloat(cs.paddingTop) || 0, appSafeTop);
+        safeBottom = Math.max(parseFloat(cs.paddingBottom) || 0, appSafeBottom);
         buildBackground();
     }
+
+    let appSafeTop = 0, appSafeBottom = 0;
+    window.myezSetSafeArea = function (top, bottom) {
+        appSafeTop = top || 0;
+        appSafeBottom = bottom || 0;
+        resize();
+    };
 
     function frame(now) {
         const dt = Math.min((now - lastTime) / 1000, 1 / 30);
