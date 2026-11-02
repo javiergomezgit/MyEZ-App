@@ -272,21 +272,34 @@ final class ProfileViewModel: ObservableObject {
     }
 
     // Read-only summary of users/{uid}/gameScores/minigame, written by MiniGameViewModel.
-    // EZ Points are counted per game the same way they were awarded (score / 10, rounded down).
+    // EZ Points replay the award rule in play order: only beating the month's best on a level earns.
     private func loadGameStats() {
         guard !firebaseUID.isEmpty else { return }
         dbRef.child("users").child(firebaseUID).child("gameScores").child(MiniGameViewModel.gameKey)
             .observeSingleEvent(of: .value, with: { [weak self] snapshot in
                 guard let self = self else { return }
                 let games = (snapshot.value as? [String: Any]) ?? [:]
-                let scores: [Int] = games.values.compactMap { value in
-                    guard let dict = value as? [String: Any] else { return nil }
-                    return Self.intValue(dict["score"])
+                let played: [(score: Int, level: Int, playedAt: Int)] = games.values.compactMap { value in
+                    guard let dict = value as? [String: Any], let score = Self.intValue(dict["score"]) else { return nil }
+                    return (score, Self.intValue(dict["level"]) ?? 0, Self.intValue(dict["playedAt"]) ?? 0)
+                }.sorted { $0.playedAt < $1.playedAt }
+
+                let monthFormatter = DateFormatter()
+                monthFormatter.dateFormat = "yyyy-MM"
+                var monthBest: [String: Int] = [:] // "yyyy-MM|level" -> best so far
+                var ezPoints = 0
+                for game in played {
+                    let month = monthFormatter.string(from: Date(timeIntervalSince1970: TimeInterval(game.playedAt)))
+                    let key = "\(month)|\(game.level)"
+                    let previousBest = monthBest[key] ?? 0
+                    ezPoints += MiniGameViewModel.ezPoints(for: game.score, previousBest: previousBest)
+                    monthBest[key] = max(previousBest, game.score)
                 }
+
                 let stats = GameStats(
-                    gamesPlayed: scores.count,
-                    bestScore: scores.max() ?? 0,
-                    ezPoints: scores.reduce(0) { $0 + $1 / MiniGameViewModel.gamePointsPerEZPoint }
+                    gamesPlayed: played.count,
+                    bestScore: played.map(\.score).max() ?? 0,
+                    ezPoints: ezPoints
                 )
                 DispatchQueue.main.async { self.gameStats = stats }
             }) { error in

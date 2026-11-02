@@ -12,6 +12,14 @@ final class MiniGameViewModel: ObservableObject {
     static let gamePointsPerEZPoint = 10
 
     @Published var errorMessage: String?
+    // EZ Points for the last finished game, sent back to the results card. A new id per game.
+    @Published var award: GameAward?
+
+    struct GameAward: Equatable {
+        let id = UUID()
+        let ezPoints: Int
+        let signedIn: Bool
+    }
 
     private lazy var dbRef: DatabaseReference = Database.database().reference()
 
@@ -60,37 +68,71 @@ final class MiniGameViewModel: ObservableObject {
 
     // MARK: - Firebase
 
+    // Only the part of a score above this month's best on the level earns EZ Points, so replaying
+    // can't farm them: a level's EZ Points for the month add up to floor(best / 10).
+    // Keep in sync with ezPointsFor in minigame.html.
+    static func ezPoints(for score: Int, previousBest: Int) -> Int {
+        max(0, score / gamePointsPerEZPoint - previousBest / gamePointsPerEZPoint)
+    }
+
     // users/{uid}/gameScores/{gameKey}/{autoId} = { score, level, playedAt }
     private func recordGame(score: Int, level: Int) {
         guard isSignedIn else {
             print("⚠️ Game finished as a guest; score not saved")
+            award = GameAward(ezPoints: 0, signedIn: false)
             return
         }
-        let entry: [String: Any] = [
-            "score": score,
-            "level": level,
-            "playedAt": Int(Date().timeIntervalSince1970)
-        ]
-        let gameRef = dbRef.child("users").child(firebaseUID).child("gameScores").child(Self.gameKey)
-            .childByAutoId()
-        gameRef.setValue(entry) { [weak self] error, _ in
-            DispatchQueue.main.async {
-                if let error = error {
-                    print("❌ Failed to save game score: \(error.localizedDescription)")
-                    self?.errorMessage = "Couldn't save your score."
-                    return
+        let scoresRef = dbRef.child("users").child(firebaseUID).child("gameScores").child(Self.gameKey)
+
+        // Read this month's best for the level before saving, so the new game isn't compared with itself
+        scoresRef.observeSingleEvent(of: .value, with: { [weak self] snapshot in
+            guard let self = self else { return }
+            let previousBest = self.monthBest(in: snapshot.value as? [String: Any] ?? [:], level: level)
+            let entry: [String: Any] = [
+                "score": score,
+                "level": level,
+                "playedAt": Int(Date().timeIntervalSince1970)
+            ]
+            let gameRef = scoresRef.childByAutoId()
+            gameRef.setValue(entry) { [weak self] error, _ in
+                DispatchQueue.main.async {
+                    guard let self = self else { return }
+                    if let error = error {
+                        print("❌ Failed to save game score: \(error.localizedDescription)")
+                        self.errorMessage = "Couldn't save your score."
+                        self.award = GameAward(ezPoints: 0, signedIn: true)
+                        return
+                    }
+                    print("✅ Saved game score \(score) (level \(level), month best was \(previousBest))")
+                    let ezPoints = Self.ezPoints(for: score, previousBest: previousBest)
+                    self.award = GameAward(ezPoints: ezPoints, signedIn: true)
+                    self.awardPoints(ezPoints, score: score, gameID: gameRef.key ?? UUID().uuidString)
                 }
-                print("✅ Saved game score \(score) (level \(level))")
-                self?.awardPoints(score: score, gameID: gameRef.key ?? UUID().uuidString)
+            }
+        }) { [weak self] error in
+            print("❌ Failed to read game scores: \(error.localizedDescription)")
+            DispatchQueue.main.async {
+                self?.errorMessage = "Couldn't save your score."
+                self?.award = GameAward(ezPoints: 0, signedIn: true)
             }
         }
     }
 
-    // Converts the game score into EZ Points: a pointTransactions entry plus the monthly
-    // leaderboard, the same records DealsView writes for a points deal. Leftover game points
-    // (score % 10) are dropped.
-    private func awardPoints(score: Int, gameID: String) {
-        let ezPoints = score / Self.gamePointsPerEZPoint
+    // Best score on the level among games played this calendar month (device time, like the leaderboard key)
+    private func monthBest(in games: [String: Any], level: Int) -> Int {
+        guard let monthStart = Calendar.current.dateInterval(of: .month, for: Date())?.start else { return 0 }
+        let since = Int(monthStart.timeIntervalSince1970)
+        return games.values.compactMap { value -> Int? in
+            guard let dict = value as? [String: Any],
+                  intFromAny(dict["level"]) == level,
+                  intFromAny(dict["playedAt"]) >= since else { return nil }
+            return intFromAny(dict["score"])
+        }.max() ?? 0
+    }
+
+    // Records the EZ Points: a pointTransactions entry plus the monthly leaderboard, the same
+    // records DealsView writes for a points deal.
+    private func awardPoints(_ ezPoints: Int, score: Int, gameID: String) {
         guard ezPoints > 0 else { return }
 
         let transaction: [String: Any] = [

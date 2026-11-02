@@ -9,7 +9,7 @@ struct MiniGameView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        GameWebView { message in
+        GameWebView(award: viewModel.award) { message in
             if message["type"] as? String == "close" {
                 dismiss()
             } else {
@@ -26,6 +26,7 @@ struct MiniGameView: View {
 private struct GameWebView: UIViewRepresentable {
     static let handlerName = "myezGame"
 
+    let award: MiniGameViewModel.GameAward?
     let onMessage: ([String: Any]) -> Void
 
     func makeCoordinator() -> Coordinator {
@@ -55,7 +56,13 @@ private struct GameWebView: UIViewRepresentable {
         return webView
     }
 
-    func updateUIView(_ webView: WKWebView, context: Context) {}
+    func updateUIView(_ webView: WKWebView, context: Context) {
+        guard let award = award, award.id != context.coordinator.sentAwardID else { return }
+        context.coordinator.sentAwardID = award.id
+        webView.evaluateJavaScript(
+            "window.myezSetAward && window.myezSetAward({ ezPoints: \(award.ezPoints), signedIn: \(award.signedIn) })"
+        )
+    }
 
     static func dismantleUIView(_ webView: WKWebView, coordinator: Coordinator) {
         webView.configuration.userContentController.removeScriptMessageHandler(forName: handlerName)
@@ -63,6 +70,7 @@ private struct GameWebView: UIViewRepresentable {
 
     final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         let onMessage: ([String: Any]) -> Void
+        var sentAwardID: UUID?
 
         init(onMessage: @escaping ([String: Any]) -> Void) {
             self.onMessage = onMessage

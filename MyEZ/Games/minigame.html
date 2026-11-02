@@ -74,6 +74,11 @@
     // Every 10 game points earn 1 EZ Point in the app (awarded by MiniGameViewModel).
     // Keep in sync with MiniGameViewModel.gamePointsPerEZPoint.
     const GAME_POINTS_PER_EZ_POINT = 10;
+    // Only the part of a score above the month's best earns, so a level's EZ Points for the month add
+    // up to floor(best / 10). Keep in sync with MiniGameViewModel.ezPoints(for:previousBest:).
+    function ezPointsFor(score, previousBest) {
+        return Math.max(0, Math.floor(score / GAME_POINTS_PER_EZ_POINT) - Math.floor(previousBest / GAME_POINTS_PER_EZ_POINT));
+    }
 
     // Testing: every level is playable from the start screen. Turn off to require winning
     // the previous level first.
@@ -170,6 +175,8 @@
         stars: {},    // level -> best stars
         coins: 0,
         unlocked: 1,
+        month: '',    // 'yyyy-MM' that monthBest belongs to
+        monthBest: {}, // level -> best score this month (browser stand-in for the app's EZ Points rule)
 
         load() {
             try {
@@ -181,7 +188,8 @@
         save() {
             try {
                 localStorage.setItem('myezGameStats', JSON.stringify({
-                    best: this.best, stars: this.stars, coins: this.coins, unlocked: this.unlocked
+                    best: this.best, stars: this.stars, coins: this.coins, unlocked: this.unlocked,
+                    month: this.month, monthBest: this.monthBest
                 }));
             } catch (e) {}
         },
@@ -1405,10 +1413,21 @@
             stats.stars[level] = Math.max(stats.stars[level] || 0, stars);
             stats.coins += coins;
             if (this.won) stats.unlocked = Math.max(stats.unlocked, Math.min(LEVELS.length, level + 1));
+
+            // EZ Points only for beating this month's best on the level, and only the improvement.
+            // The app works it out from Firebase and answers through myezSetAward; a browser uses this device.
+            let ezPoints = null;
+            if (!appBridge) {
+                const now = new Date();
+                const month = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+                if (stats.month !== month) { stats.month = month; stats.monthBest = {}; }
+                ezPoints = ezPointsFor(this.score, stats.monthBest[level] || 0);
+                stats.monthBest[level] = Math.max(stats.monthBest[level] || 0, this.score);
+            }
             stats.save();
 
             this.results = {
-                stars, newBest, coins,
+                stars, newBest, coins, ezPoints, signedIn: true,
                 accuracy: this.shotsFired ? Math.round(this.shotsHit / this.shotsFired * 100) : 0,
                 t: 0
             };
@@ -1866,8 +1885,12 @@
                 text('NEW BEST', 0, 1, 11, '900', INK);
                 ctx.restore();
             }
-            const ezPoints = Math.floor(this.score / GAME_POINTS_PER_EZ_POINT);
-            text('= ' + ezPoints + ' EZ Point' + (ezPoints === 1 ? '' : 's'), W / 2, y + 181, 12, '900', C.red);
+            const ez = r.ezPoints;
+            const ezLabel = !r.signedIn ? 'Sign in to earn EZ Points'
+                : ez === null ? 'Checking EZ Points…'
+                : ez > 0 ? '+' + ez + ' EZ Point' + (ez === 1 ? '' : 's')
+                : 'Beat this month\'s best for EZ Points';
+            text(ezLabel, W / 2, y + 181, 12, '900', ez > 0 ? C.red : C.muted);
 
             // Stat boxes
             const sy = y + 192, gap = 8, bw = (cw - 40 - gap * 2) / 3;
@@ -2154,6 +2177,13 @@
         safeBottom = Math.max(parseFloat(cs.paddingBottom) || 0, appSafeBottom);
         buildBackground();
     }
+
+    // The app's answer to 'gameOver': EZ Points earned for that game, or signedIn false for guests
+    window.myezSetAward = function (award) {
+        if (!game.results) return;
+        game.results.ezPoints = award.ezPoints || 0;
+        game.results.signedIn = award.signedIn !== false;
+    };
 
     let appSafeTop = 0, appSafeBottom = 0;
     window.myezSetSafeArea = function (top, bottom) {
