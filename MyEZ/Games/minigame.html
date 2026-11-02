@@ -529,8 +529,9 @@
         const run = clamp(Math.max(W * 0.22, (groundY - top) * 0.45), 70, Math.min(180, W * 0.4)) * SLIDE_SCALE;
         const x2 = x1 + run;                             // slide exit
         const poolW = clamp(W * 0.12, 50, 90);
-        const px = Math.min(W - 44, x2 - 12 + poolW + 34);
-        return { groundY, x0, x1, x2, top, poolW, px, py: groundY };
+        const homePx = Math.min(W - 44, x2 - 12 + poolW + 34); // where the shooter starts each level
+        const px = screen === 'game' && game.playerX !== null ? game.playerX : homePx;
+        return { groundY, x0, x1, x2, top, poolW, px, homePx, py: groundY };
     }
 
     // x of the slide's front surface at height y (quarter ellipse from platform to exit)
@@ -716,7 +717,7 @@
             }
             g.fillStyle = '#E3BE6C';
             g.fillRect(0, gy - 10, W, 10);
-            drawPalm(g, Math.min(W - 24, L.px + 40), gy, Math.min(150, (gy - safeTop) * 0.3));
+            drawPalm(g, Math.min(W - 24, L.homePx + 40), gy, Math.min(150, (gy - safeTop) * 0.3));
         } else if (theme === 'desert') {
             drawSun(g, W * 0.75, safeTop + 140, 46);
             // Small faded cacti on the dune tops read as far away, so the shooter stands out
@@ -901,6 +902,8 @@
     };
     const UPGRADES = ['fast', 'auto', 'machine'];
     const UPGRADE_TIME = 15;
+    const WALK_SPEED = 260;     // px/s
+    const WALK_HINT_TIME = 6;   // s the ground hint shows at the start of a level
     const SPREAD = 0.12; // radians between machine-gun bullets
 
     function gunPivot(L) {
@@ -937,15 +940,16 @@
         }
     }
 
-    function drawCharacter(px, gy, facingLeft) {
+    // stride: how far the feet swing apart while walking (0 standing)
+    function drawCharacter(px, gy, facingLeft, stride) {
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         ctx.strokeStyle = INK;
         ctx.lineWidth = 6;
-        line(px - 2, gy - 30, px - 8, gy - 5);
-        line(px + 2, gy - 30, px + 8, gy - 5);
-        boxO(px - 15, gy - 7, 12, 7, 3, INK, 1);
-        boxO(px + 3, gy - 7, 12, 7, 3, INK, 1);
+        line(px - 2, gy - 30, px - 8 + stride, gy - 5);
+        line(px + 2, gy - 30, px + 8 - stride, gy - 5);
+        boxO(px - 15 + stride, gy - 7, 12, 7, 3, INK, 1);
+        boxO(px + 3 - stride, gy - 7, 12, 7, 3, INK, 1);
 
         boxO(px - 10, gy - 60, 20, 34, 8, C.shirt, 2.5);
         circleO(px, gy - 71, 10, C.skin, 2.5);
@@ -963,12 +967,12 @@
         boxO(dir > 0 ? px + 2 : px - 16, gy - 76, 14, 5, 2.5, C.hat, 2);
     }
 
-    function drawPlayer(L, aim, gun, muzzleFlash) {
+    function drawPlayer(L, aim, gun, muzzleFlash, stride) {
         const px = L.px, gy = L.py;
         const facingLeft = Math.cos(aim) < 0;
         const avatar = art('avatar');
         if (avatar) ctx.drawImage(avatar, px - 22, gy - 84, 44, 84);
-        else drawCharacter(px, gy, facingLeft);
+        else drawCharacter(px, gy, facingLeft, stride);
 
         // Gun arm, rotated toward the last shot; flipped when aiming left so the grip hangs down
         ctx.save();
@@ -988,7 +992,7 @@
         ctx.restore();
     }
 
-    function drawScene(L, t, aim, gun, muzzleFlash) {
+    function drawScene(L, t, aim, gun, muzzleFlash, stride) {
         const bg = art('background'), slide = art('slide');
         if (bg) ctx.drawImage(bg, 0, 0, W, H);
         else {
@@ -998,7 +1002,7 @@
         drawClouds(t);
         if (slide) ctx.drawImage(slide, L.x0, L.top - 40, L.x2 + L.poolW - L.x0, L.groundY - L.top + 40);
         else drawWaterSlide(L, t);
-        drawPlayer(L, aim === undefined ? DEFAULT_AIM : aim, gun || 'pistol', muzzleFlash || 0);
+        drawPlayer(L, aim === undefined ? DEFAULT_AIM : aim, gun || 'pistol', muzzleFlash || 0, stride || 0);
     }
 
     // MARK: - Birds
@@ -1148,6 +1152,7 @@
 
     const game = {
         level: 1,
+        playerX: null, // null until the level starts, then the shooter's x
 
         start(level) {
             this.level = level;
@@ -1176,6 +1181,10 @@
             this.gun = this.baseGun();
             this.gunTime = 0;
             this.holding = null;
+            this.walker = null;     // the finger on the ground strip
+            this.walkTarget = null; // x the shooter walks toward while that finger is down
+            this.walkPhase = 0;
+            this.playerX = null;
             this.doveTimer = rand(1.5, 3);
             this.gunTimer = rand(8, 12);
             this.lifeTimer = rand(10, 14);
@@ -1398,6 +1407,8 @@
             this.won = won;
             this.overT = 0;
             this.holding = null;
+            this.walker = null;
+            this.walkTarget = null;
             sound.play(won ? 'levelClear' : 'gameOver');
             haptic(won ? 'success' : 'error');
             log(won ? 'level cleared' : 'game over', { level: this.level, score: this.score });
@@ -1523,6 +1534,7 @@
                 }
             }
             if (this.holding && GUNS[this.gun].auto) this.fire(this.holding.x, this.holding.y);
+            this.updateWalk(dt, L);
 
             this.updateWaves(dt, L);
 
@@ -1644,13 +1656,33 @@
             sound.play('shot', { gun: this.gun });
         },
 
+        // The shooter walks anywhere across the screen, in front of the slide too
+        updateWalk(dt, L) {
+            if (this.playerX === null) this.playerX = L.homePx;
+            if (this.walkTarget === null) return;
+            const goal = clamp(this.walkTarget, 24, W - 24);
+            const step = WALK_SPEED * dt;
+            this.playerX = Math.abs(goal - this.playerX) <= step ? goal : this.playerX + Math.sign(goal - this.playerX) * step;
+            this.walkPhase += dt * 14;
+        },
+
+        // A finger on the ground strip walks instead of shooting, so one thumb walks while the other shoots
         onDown(x, y, id) {
+            if (y >= sceneLayout().groundY - 8) {
+                this.walker = { id };
+                this.walkTarget = x;
+                return;
+            }
             this.holding = { id, x, y };
             this.fire(x, y);
         },
 
         // Dragging re-aims; the auto gun keeps firing at the finger
         onMove(x, y, id) {
+            if (this.walker && this.walker.id === id) {
+                this.walkTarget = x;
+                return;
+            }
             if (!this.holding || this.holding.id !== id) return;
             this.holding.x = x;
             this.holding.y = y;
@@ -1659,6 +1691,10 @@
         },
 
         onUp(x, y, id) {
+            if (this.walker && this.walker.id === id) {
+                this.walker = null;
+                this.walkTarget = null;
+            }
             if (this.holding && this.holding.id === id) this.holding = null;
         },
 
@@ -1669,7 +1705,8 @@
             ctx.save();
             if (this.shake > 0) ctx.translate(rand(-1, 1) * this.shake, rand(-1, 1) * this.shake);
 
-            drawScene(L, this.t, this.aim, this.gun, this.muzzleFlash);
+            drawScene(L, this.t, this.aim, this.gun, this.muzzleFlash, this.walkTarget !== null ? Math.sin(this.walkPhase) * 7 : 0);
+            this.drawWalkHint(L);
             if (this.flash > 0) drawSlideFlash(L, Math.min(0.85, this.flash / 0.35));
             for (const d of this.drops) this.drawDrop(d);
             for (const b of this.birds) drawBird(b, this.t);
@@ -1786,6 +1823,13 @@
             const gy = Math.min(H - safeBottom - 40, L.groundY + 12);
             card(W - 14 - gw, gy, gw, 26, 13, this.gunTime > 0 ? C.yellow : C.white);
             text(gunLabel, W - 14 - gw / 2, gy + 13, 12, '900', INK);
+        },
+
+        drawWalkHint(L) {
+            if (this.t > WALK_HINT_TIME) return;
+            ctx.globalAlpha = 0.75 * clamp(WALK_HINT_TIME - this.t, 0, 1);
+            text('\u25C0  drag on the ground to walk  \u25B6', W * 0.42, L.groundY + 26, 12, '900', C.white);
+            ctx.globalAlpha = 1;
         },
 
         drawBanner() {
@@ -1969,6 +2013,8 @@
         if (screen !== 'game' || paused || game.over || game.results) return;
         paused = true;
         game.holding = null;
+        game.walker = null;
+        game.walkTarget = null;
         log('paused');
     }
 
