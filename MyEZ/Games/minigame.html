@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>To Be Decided</title>
+<title>Weekend Warrior</title>
 <style>
     html, body {
         margin: 0;
@@ -64,8 +64,7 @@
     };
     const FONT = 'ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif';
 
-    // PLACEHOLDER: the game's name isn't decided yet.
-    const GAME_TITLE = 'To Be Decided';
+    const GAME_TITLE = 'Weekend Warrior';
     const GAME_TAGLINE = 'Protect the water slide';
 
     // PLACEHOLDER: weapon unlocks aren't built yet; this only drives the progress bar.
@@ -258,6 +257,13 @@
         ctx.textAlign = align || 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(str, x, y);
+    }
+
+    // Shrinks size until str fits maxWidth, so long titles don't run off narrow screens.
+    function fitSize(str, size, maxWidth) {
+        ctx.font = '900 ' + size + 'px ' + FONT;
+        const w = ctx.measureText(str).width;
+        return w > maxWidth ? Math.floor(size * maxWidth / w) : size;
     }
 
     // Chunky outlined text for titles and score popups
@@ -467,6 +473,12 @@
 
     function iconRect(slot) {
         return { x: 14, y: safeTop + 12 + slot * 54, w: 44, h: 44 };
+    }
+
+    // Mirror of iconRect(0) on the right edge, so a button can sit opposite the back
+    // button instead of stacking down into the title.
+    function iconRectRight() {
+        return { x: W - 58, y: safeTop + 12, w: 44, h: 44 };
     }
 
     function drawRoundButton(r, drawIcon) {
@@ -2026,12 +2038,11 @@
     function drawStart() {
         drawScene(sceneLayout(), clock);
         const ty = safeTop + 96;
-        textO(GAME_TITLE, W / 2, ty, Math.min(40, W / 9), C.white, 9);
+        textO(GAME_TITLE, W / 2, ty, fitSize(GAME_TITLE, Math.min(40, W / 9), W - 72), C.white, 9);
         textO(GAME_TAGLINE, W / 2, ty + 40, 16, C.yellow, 4);
 
-        let slot = 0;
-        if (appBridge) drawRoundButton(iconRect(slot++), iconBack); // closes the game in the app
-        drawRoundButton(iconRect(slot), iconSound);
+        if (appBridge) drawRoundButton(iconRect(0), iconBack); // closes the game in the app
+        drawRoundButton(iconRectRight(), iconSound);
 
         const cw = Math.min(340, W - 32), ch = 318;
         const x = (W - cw) / 2, y = Math.max(ty + 74, Math.min(H * 0.32, H - safeBottom - ch - 70));
@@ -2112,12 +2123,11 @@
     // MARK: - Input
 
     function startTap(x, y) {
-        let slot = 0;
-        if (appBridge && hit(iconRect(slot++), x, y)) {
+        if (appBridge && hit(iconRect(0), x, y)) {
             sendToApp('close');
             return;
         }
-        if (hit(iconRect(slot), x, y)) {
+        if (hit(iconRectRight(), x, y)) {
             sound.toggle();
             return;
         }

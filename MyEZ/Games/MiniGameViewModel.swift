@@ -5,8 +5,7 @@ import UIKit
 // Records finished games for the signed-in user. Guests (who skipped sign-in) can play,
 // but nothing is saved for them.
 final class MiniGameViewModel: ObservableObject {
-    // PLACEHOLDER: the game's name isn't decided yet. Also used as the Firebase key.
-    static let gameTitle = "To Be Decided"
+    static let gameTitle = "Weekend Warrior"
     static let gameKey = "minigame"
     // Every 10 game points earn 1 EZ Point. Keep in sync with GAME_POINTS_PER_EZ_POINT in minigame.html.
     static let gamePointsPerEZPoint = 10
