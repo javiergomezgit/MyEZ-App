@@ -169,14 +169,20 @@ Firebase Auth creates account → FastAPI creates Odoo records → Firebase writ
 
 ### 3. Sales Master CSV Import
 ```bash
-python3 SM-Importer/sm_import.py --csv /path/to/clients.csv
+python3 SM-Importer/run_all.py --customers /path/to/customers.csv --purchases /path/to/purchases.csv
 ```
-CSV columns: Name, Company, Address, Address 2, City, State, Zip, Phone, Email, CreatedOn, SalesRep
+`run_all.py` runs the four scripts in order: `sm_customers.py` (Auth users + profiles),
+`sm_purchases.py` (transactions, units, `owned_weight`), `update_ranks.py` (`typeuser`,
+rank-up FCM), `update_leaderboard.py`. Either CSV may be omitted; ranks and the
+leaderboard always run afterwards. A single script also runs on its own, e.g.
+`python3 SM-Importer/sm_customers.py --csv /path/to/customers.csv`.
+
+Customer CSV columns: Name, Company, Address, Address 2, City, State, Zip, Phone, Email, CreatedOn, SalesRep
 
 - Skips rows missing email or name
 - Duplicate email in Odoo → skip
 - Same email twice in CSV → add delivery address to existing partner
-- Firebase Auth user created silently, password reset link sent via Admin SDK
+- Firebase Auth user created silently with a random discarded password — no email is sent
 - `createdIn: "sm_manual"`
 
 ---
